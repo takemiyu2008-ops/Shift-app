@@ -248,7 +248,7 @@ function getCellWidth() {
 // タッチイベントかどうかを判定
 let touchMoved = false;
 
-// シフトバー作成
+// シフトバー作成（パーセントベースで位置計算）
 function createShiftBar(s, lvl) {
     const bar = document.createElement('div');
     let cls = 'shift-bar';
@@ -257,12 +257,15 @@ function createShiftBar(s, lvl) {
     bar.className = cls;
     bar.dataset.id = s.id;
 
-    const w = getCellWidth();
+    // パーセントベースで位置を計算（24時間 = 100%）
     let start = s.startHour, end = s.endHour;
     if (s.overnight && !s.isOvernightContinuation) end = 24;
 
-    bar.style.left = `${start * w}px`;
-    bar.style.width = `${(end - start) * w}px`;
+    const leftPercent = (start / 24) * 100;
+    const widthPercent = ((end - start) / 24) * 100;
+
+    bar.style.left = `${leftPercent}%`;
+    bar.style.width = `${widthPercent}%`;
     bar.style.top = `${8 + lvl * 28}px`;
     bar.style.height = '24px';
     bar.style.background = `linear-gradient(135deg, ${s.color}, ${adjustColor(s.color, -20)})`;
