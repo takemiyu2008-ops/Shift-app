@@ -62,6 +62,7 @@
                     <button class="admin-tab" data-tab="leaveRequests">有給申請</button>
                     <button class="admin-tab" data-tab="employees">従業員管理</button>
                     <button class="admin-tab" data-tab="broadcast">全員へ通知</button>
+                    <button class="admin-tab" data-tab="settings">設定</button>
                 </div>
             </div>
             <div class="admin-content" id="adminContent">
@@ -291,12 +292,43 @@
                     <label for="adminPin">暗証番号（4桁）</label>
                     <input type="password" id="adminPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
                         inputmode="numeric" required>
-                    <p class="form-hint">初期暗証番号: 1234</p>
                 </div>
                 <p id="pinError" class="error-text" style="display: none;">暗証番号が間違っています</p>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="pinCancelBtn">キャンセル</button>
                     <button type="submit" class="btn btn-primary">認証</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 暗証番号変更モーダル -->
+    <div class="modal-overlay" id="changePinModalOverlay">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2 class="modal-title">🔑 暗証番号変更</h2>
+                <button class="modal-close" id="changePinModalClose">×</button>
+            </div>
+            <form id="changePinForm" class="modal-body">
+                <div class="form-group">
+                    <label for="currentPin">現在の暗証番号</label>
+                    <input type="password" id="currentPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                        inputmode="numeric" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPin">新しい暗証番号</label>
+                    <input type="password" id="newPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                        inputmode="numeric" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPin">新しい暗証番号（確認）</label>
+                    <input type="password" id="confirmPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                        inputmode="numeric" required>
+                </div>
+                <p id="changePinError" class="error-text" style="display: none;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="changePinCancelBtn">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">変更</button>
                 </div>
             </form>
         </div>

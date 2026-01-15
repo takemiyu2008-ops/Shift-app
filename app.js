@@ -15,7 +15,12 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // 設定
-const CONFIG = { ADMIN_PIN: '1234' };
+let CONFIG = { ADMIN_PIN: '1234' };
+
+// Firebaseから暗証番号を読み込み
+database.ref('settings/adminPin').once('value', snap => {
+    if (snap.val()) CONFIG.ADMIN_PIN = snap.val();
+});
 
 // 状態管理
 const state = {
@@ -370,6 +375,8 @@ function renderAdminPanel() {
         });
     } else if (state.activeAdminTab === 'broadcast') {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
+    } else if (state.activeAdminTab === 'settings') {
+        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button></div>`;
     }
 }
 
@@ -550,6 +557,27 @@ function initEventListeners() {
     };
 
     document.onkeydown = e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => closeModal(m)); };
+
+    // 暗証番号変更モーダル
+    document.getElementById('changePinModalClose').onclick = () => closeModal(document.getElementById('changePinModalOverlay'));
+    document.getElementById('changePinCancelBtn').onclick = () => closeModal(document.getElementById('changePinModalOverlay'));
+    document.getElementById('changePinModalOverlay').onclick = e => { if (e.target.id === 'changePinModalOverlay') closeModal(document.getElementById('changePinModalOverlay')); };
+    document.getElementById('changePinForm').onsubmit = e => {
+        e.preventDefault();
+        const current = document.getElementById('currentPin').value;
+        const newPin = document.getElementById('newPin').value;
+        const confirm = document.getElementById('confirmPin').value;
+        const errEl = document.getElementById('changePinError');
+        if (current !== CONFIG.ADMIN_PIN) { errEl.textContent = '現在の暗証番号が違います'; errEl.style.display = 'block'; return; }
+        if (newPin !== confirm) { errEl.textContent = '新しい暗証番号が一致しません'; errEl.style.display = 'block'; return; }
+        if (newPin.length !== 4) { errEl.textContent = '暗証番号は4桁で入力してください'; errEl.style.display = 'block'; return; }
+        CONFIG.ADMIN_PIN = newPin;
+        database.ref('settings/adminPin').set(newPin);
+        closeModal(document.getElementById('changePinModalOverlay'));
+        document.getElementById('changePinForm').reset();
+        errEl.style.display = 'none';
+        alert('暗証番号を変更しました');
+    };
 }
 
 // 初期化

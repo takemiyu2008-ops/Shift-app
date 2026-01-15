@@ -994,46 +994,141 @@ body {
    ======================================== */
 @media (max-width: 768px) {
     .app-container {
-        padding: 16px;
+        padding: 12px;
+        padding-top: 50px;
+    }
+
+    .connection-status {
+        top: 8px;
+        right: 8px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
     }
 
     .header {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         text-align: center;
+        padding: 16px;
     }
 
     .header-title {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
 
     .header-actions {
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .header-actions .btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .role-toggle {
+        padding: 6px 12px;
     }
 
     .date-nav {
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 8px;
+        padding: 12px;
     }
 
     .current-period {
         min-width: auto;
         order: -1;
         width: 100%;
+        font-size: 0.95rem;
+    }
+
+    .nav-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    /* ガントチャート改善 */
+    .gantt-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .gantt-header {
+        min-width: 1000px;
+    }
+
+    .gantt-row {
+        min-width: 1000px;
     }
 
     .gantt-label-header,
     .gantt-date-label {
-        width: 80px;
-        min-width: 80px;
+        width: 60px;
+        min-width: 60px;
+        padding: 8px;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+
+    .date-number {
+        font-size: 1.1rem;
+    }
+
+    .date-day {
+        font-size: 0.75rem;
     }
 
     .time-cell,
     .hour-cell {
-        min-width: 40px;
+        min-width: 38px;
+    }
+
+    .time-cell {
+        font-size: 0.7rem;
+        padding: 8px 2px;
+    }
+
+    .shift-bar {
+        font-size: 0.7rem;
+        padding: 0 4px;
+    }
+
+    .shift-bar .shift-time {
+        display: none;
+    }
+
+    /* スクロール改善 */
+    .gantt-body {
+        max-height: none;
+        overflow-y: visible;
     }
 
     .modal {
-        margin: 16px;
+        margin: 8px;
+        max-height: 95vh;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .admin-panel {
+        padding: 12px;
+    }
+
+    .admin-tabs {
+        gap: 4px;
+    }
+
+    .admin-tab {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .legend {
+        padding: 12px;
     }
 }
