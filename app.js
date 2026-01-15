@@ -74,6 +74,20 @@ function getMonthDay(date) {
 }
 function getDayOfWeek(str) { return new Date(str).getDay(); }
 
+// 日付選択時に曜日を表示
+function updateShiftDateDay() {
+    const dateInput = document.getElementById('shiftDate');
+    const dayDisplay = document.getElementById('shiftDateDay');
+    if (dateInput.value) {
+        const dow = getDayOfWeek(dateInput.value);
+        const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+        dayDisplay.textContent = dayNames[dow];
+        dayDisplay.style.color = dow === 0 ? '#ef4444' : dow === 6 ? '#3b82f6' : 'inherit';
+    } else {
+        dayDisplay.textContent = '';
+    }
+}
+
 // Firebase からデータを読み込み
 function loadData() {
     const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'employees', 'messages', 'swapRequests'];
@@ -415,6 +429,7 @@ function openEditShiftModal(s) {
     document.getElementById('shiftSubmitBtn').textContent = '更新';
     document.getElementById('editShiftId').value = s.id;
     document.getElementById('shiftDate').value = s.date;
+    updateShiftDateDay();
     document.getElementById('shiftName').value = s.name;
     document.getElementById('shiftStart').value = s.startHour;
     document.getElementById('shiftEnd').value = s.endHour;
@@ -468,6 +483,7 @@ function initEventListeners() {
         document.getElementById('shiftSubmitBtn').textContent = '追加';
         document.getElementById('editShiftId').value = '';
         document.getElementById('shiftDate').value = formatDate(new Date());
+        updateShiftDateDay();
         document.getElementById('shiftName').value = '';
         document.getElementById('overnightShift').checked = false;
         document.getElementById('fixedShift').checked = false;
@@ -475,6 +491,9 @@ function initEventListeners() {
         state.selectedColor = '#6366f1';
         openModal(document.getElementById('modalOverlay'));
     };
+
+    // 日付変更時に曜日を表示
+    document.getElementById('shiftDate').onchange = updateShiftDateDay;
 
     document.getElementById('modalClose').onclick = () => closeModal(document.getElementById('modalOverlay'));
     document.getElementById('cancelBtn').onclick = () => closeModal(document.getElementById('modalOverlay'));
