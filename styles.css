@@ -321,6 +321,41 @@ body {
     color: white;
 }
 
+/* 管理者タブのバッジ */
+.admin-tab {
+    position: relative;
+}
+
+.tab-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
 .admin-content {
     max-height: 400px;
     overflow-y: auto;
@@ -1135,11 +1170,26 @@ body {
 
     .shift-bar {
         font-size: 0.7rem;
-        padding: 0 4px;
+        padding: 0 6px;
+        min-height: 28px;
+        touch-action: manipulation;
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .shift-bar:active {
+        transform: scale(0.98);
+        opacity: 0.9;
     }
 
     .shift-bar .shift-time {
         display: none;
+    }
+
+    .shift-bar .delete-btn {
+        width: 22px;
+        height: 22px;
+        opacity: 0.8;
     }
 
     /* スクロール改善 */
