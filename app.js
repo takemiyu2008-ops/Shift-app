@@ -249,6 +249,7 @@ function createShiftBar(s, lvl) {
 
     let icons = '';
     if (s.changeHistory) icons += '<span class="change-icon" title="シフト変更あり">📝</span>';
+    if (s.swapHistory) icons += '<span class="swap-icon" title="シフト交代あり">🤝</span>';
     if (s.isFixed) icons += '<span class="fixed-icon">🔁</span>';
     if (s.overnight && !s.isOvernightContinuation) icons += '<span class="overnight-icon">🌙</span>';
     if (s.isOvernightContinuation) icons += '<span class="overnight-icon">→</span>';
@@ -257,12 +258,17 @@ function createShiftBar(s, lvl) {
         s.isOvernightContinuation ? `〜${s.endHour}:00` : `${s.startHour}:00-${s.endHour}:00`;
 
     // 変更履歴がある場合はツールチップに表示
-    let tooltip = '';
     if (s.changeHistory) {
         const h = s.changeHistory;
-        tooltip = `変更前: ${h.previousDate} ${h.previousStartHour}:00-${h.previousEndHour}:00\n理由: ${h.reason}`;
-        bar.title = tooltip;
+        bar.title = `変更前: ${h.previousDate} ${h.previousStartHour}:00-${h.previousEndHour}:00\n理由: ${h.reason}`;
         bar.classList.add('changed');
+    }
+
+    // 交代履歴がある場合はツールチップに表示
+    if (s.swapHistory) {
+        const h = s.swapHistory;
+        bar.title = `交代前: ${h.previousName} → 交代後: ${h.newName}`;
+        bar.classList.add('swapped');
     }
 
     bar.innerHTML = `${icons}<span class="shift-name">${s.name}</span><span class="shift-time">${time}</span><button class="delete-btn">×</button>`;
@@ -271,6 +277,8 @@ function createShiftBar(s, lvl) {
         if (e.target.classList.contains('delete-btn') || s.isFixed || s.isOvernightContinuation) return;
         if (s.changeHistory) {
             showChangeHistoryModal(s);
+        } else if (s.swapHistory) {
+            showSwapHistoryModal(s);
         } else {
             openEditShiftModal(s);
         }
@@ -291,6 +299,19 @@ function showChangeHistoryModal(s) {
         `【変更前】\n日付: ${h.previousDate}\n時間: ${h.previousStartHour}:00〜${h.previousEndHour}:00\n\n` +
         `【変更後（現在）】\n日付: ${s.date}\n時間: ${s.startHour}:00〜${s.endHour}:00\n\n` +
         `理由: ${h.reason}\n\n` +
+        `「OK」で編集画面を開きます`
+    );
+    if (result) openEditShiftModal(s);
+}
+
+// 交代履歴モーダル表示
+function showSwapHistoryModal(s) {
+    const h = s.swapHistory;
+    const result = confirm(
+        `🤝 シフト交代履歴\n\n` +
+        `【交代前】\n担当者: ${h.previousName}\n\n` +
+        `【交代後（現在）】\n担当者: ${h.newName}\n\n` +
+        `メッセージ: ${h.message || 'なし'}\n\n` +
         `「OK」で編集画面を開きます`
     );
     if (result) openEditShiftModal(s);
@@ -382,7 +403,23 @@ function approveRequest(type, id) {
         if (r) { r.status = 'approved'; saveToFirebase('leaveRequests', state.leaveRequests); }
     } else if (type === 'swap') {
         const r = state.swapRequests.find(x => x.id === id);
-        if (r) { r.status = 'approved'; const s = state.shifts.find(x => x.id === r.shiftId); if (s) s.name = r.targetEmployee; saveToFirebase('shifts', state.shifts); saveToFirebase('swapRequests', state.swapRequests); }
+        if (r) {
+            r.status = 'approved';
+            const s = state.shifts.find(x => x.id === r.shiftId);
+            if (s) {
+                // 交代前の情報を保存
+                s.swapHistory = {
+                    previousName: s.name,
+                    newName: r.targetEmployee,
+                    swappedAt: new Date().toISOString(),
+                    message: r.message
+                };
+                // 新しい担当者に更新
+                s.name = r.targetEmployee;
+            }
+            saveToFirebase('shifts', state.shifts);
+            saveToFirebase('swapRequests', state.swapRequests);
+        }
     }
     render(); renderAdminPanel(); updateMessageBar();
 }
