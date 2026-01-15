@@ -635,9 +635,28 @@ body {
 }
 
 .shift-bar .fixed-icon,
-.shift-bar .overnight-icon {
+.shift-bar .overnight-icon,
+.shift-bar .change-icon {
     margin-right: 4px;
     font-size: 0.7rem;
+}
+
+/* 変更履歴があるシフト */
+.shift-bar.changed {
+    border: 2px solid rgba(59, 130, 246, 0.8);
+    animation: changedPulse 2s infinite;
+}
+
+@keyframes changedPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0);
+    }
 }
 
 .shift-bar .delete-btn {

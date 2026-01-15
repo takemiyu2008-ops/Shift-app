@@ -248,6 +248,7 @@ function createShiftBar(s, lvl) {
     bar.style.background = `linear-gradient(135deg, ${s.color}, ${adjustColor(s.color, -20)})`;
 
     let icons = '';
+    if (s.changeHistory) icons += '<span class="change-icon" title="シフト変更あり">📝</span>';
     if (s.isFixed) icons += '<span class="fixed-icon">🔁</span>';
     if (s.overnight && !s.isOvernightContinuation) icons += '<span class="overnight-icon">🌙</span>';
     if (s.isOvernightContinuation) icons += '<span class="overnight-icon">→</span>';
@@ -255,11 +256,24 @@ function createShiftBar(s, lvl) {
     let time = s.overnight && !s.isOvernightContinuation ? `${s.startHour}:00-翌${s.endHour}:00` :
         s.isOvernightContinuation ? `〜${s.endHour}:00` : `${s.startHour}:00-${s.endHour}:00`;
 
+    // 変更履歴がある場合はツールチップに表示
+    let tooltip = '';
+    if (s.changeHistory) {
+        const h = s.changeHistory;
+        tooltip = `変更前: ${h.previousDate} ${h.previousStartHour}:00-${h.previousEndHour}:00\n理由: ${h.reason}`;
+        bar.title = tooltip;
+        bar.classList.add('changed');
+    }
+
     bar.innerHTML = `${icons}<span class="shift-name">${s.name}</span><span class="shift-time">${time}</span><button class="delete-btn">×</button>`;
 
     bar.addEventListener('click', e => {
         if (e.target.classList.contains('delete-btn') || s.isFixed || s.isOvernightContinuation) return;
-        openEditShiftModal(s);
+        if (s.changeHistory) {
+            showChangeHistoryModal(s);
+        } else {
+            openEditShiftModal(s);
+        }
     });
     bar.querySelector('.delete-btn').addEventListener('click', e => {
         e.stopPropagation();
@@ -267,6 +281,19 @@ function createShiftBar(s, lvl) {
         else if (!s.isOvernightContinuation) deleteShift(s.id);
     });
     return bar;
+}
+
+// 変更履歴モーダル表示
+function showChangeHistoryModal(s) {
+    const h = s.changeHistory;
+    const result = confirm(
+        `📝 シフト変更履歴\n\n` +
+        `【変更前】\n日付: ${h.previousDate}\n時間: ${h.previousStartHour}:00〜${h.previousEndHour}:00\n\n` +
+        `【変更後（現在）】\n日付: ${s.date}\n時間: ${s.startHour}:00〜${s.endHour}:00\n\n` +
+        `理由: ${h.reason}\n\n` +
+        `「OK」で編集画面を開きます`
+    );
+    if (result) openEditShiftModal(s);
 }
 
 function adjustColor(hex, amt) {
@@ -330,7 +357,26 @@ function sendBroadcast(title, content) {
 function approveRequest(type, id) {
     if (type === 'change') {
         const r = state.changeRequests.find(x => x.id === id);
-        if (r) { r.status = 'approved'; const s = state.shifts.find(x => x.id === r.originalShiftId); if (s) { s.date = r.newDate; s.startHour = r.newStartHour; s.endHour = r.newEndHour; } saveToFirebase('shifts', state.shifts); saveToFirebase('changeRequests', state.changeRequests); }
+        if (r) {
+            r.status = 'approved';
+            const s = state.shifts.find(x => x.id === r.originalShiftId);
+            if (s) {
+                // 変更前の情報を保存
+                s.changeHistory = {
+                    previousDate: s.date,
+                    previousStartHour: s.startHour,
+                    previousEndHour: s.endHour,
+                    changedAt: new Date().toISOString(),
+                    reason: r.reason
+                };
+                // 新しい情報に更新
+                s.date = r.newDate;
+                s.startHour = r.newStartHour;
+                s.endHour = r.newEndHour;
+            }
+            saveToFirebase('shifts', state.shifts);
+            saveToFirebase('changeRequests', state.changeRequests);
+        }
     } else if (type === 'leave') {
         const r = state.leaveRequests.find(x => x.id === id);
         if (r) { r.status = 'approved'; saveToFirebase('leaveRequests', state.leaveRequests); }
