@@ -508,10 +508,13 @@ body {
     backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    overflow: hidden;
     box-shadow: var(--shadow-lg);
     /* ブラウザのダブルタップズームとピンチズームを無効化し、タップとスクロールは許可 */
     touch-action: manipulation;
+    /* 縦スクロール用に overflow-y を auto に変更 */
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
 }
 
 .gantt-header {
@@ -531,12 +534,17 @@ body {
     color: var(--text-secondary);
     text-align: center;
     border-right: 1px solid var(--border-color);
+    /* スクロール時に固定 */
+    position: sticky;
+    left: 0;
+    background: var(--bg-secondary);
+    z-index: 11;
 }
 
 .gantt-time-header {
     display: flex;
     flex: 1;
-    overflow-x: auto;
+    overflow-x: visible;
 }
 
 .time-cell {
@@ -556,8 +564,7 @@ body {
 
 /* ガントチャート本体 */
 .gantt-body {
-    max-height: 500px;
-    overflow-y: auto;
+    min-width: fit-content;
 }
 
 .gantt-row {
