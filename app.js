@@ -163,15 +163,32 @@ function renderTimeHeader() {
     }
 }
 
-// シフトレベル計算
+// シフトレベル計算（重なるシフトを縦に並べる）
 function calculateShiftLevels(shifts) {
     const levels = {};
+
+    // 各シフトの表示用終了時間を計算（夜勤は開始日は24時まで表示）
+    const getDisplayEndHour = (s) => {
+        if (s.overnight && !s.isOvernightContinuation) {
+            return 24; // 夜勤シフトの開始日は24時（0時）まで
+        }
+        return s.endHour;
+    };
+
     const sorted = [...shifts].sort((a, b) => a.startHour - b.startHour);
     sorted.forEach(s => {
         let lvl = 0;
+        const sEnd = getDisplayEndHour(s);
+
         for (const o of sorted) {
             if (o.id === s.id || levels[o.id] === undefined) continue;
-            if (!(s.endHour <= o.startHour || s.startHour >= o.endHour) && levels[o.id] >= lvl) lvl = levels[o.id] + 1;
+            const oEnd = getDisplayEndHour(o);
+
+            // 時間帯が重なるかチェック
+            const overlaps = !(sEnd <= o.startHour || s.startHour >= oEnd);
+            if (overlaps && levels[o.id] >= lvl) {
+                lvl = levels[o.id] + 1;
+            }
         }
         levels[s.id] = lvl;
     });
