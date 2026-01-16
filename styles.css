@@ -594,7 +594,7 @@ body {
     /* 横スクロール時に左側に固定し、シフトバーより上に表示 */
     position: sticky;
     left: 0;
-    z-index: 8;
+    z-index: 100;
 }
 
 .date-number {
@@ -623,6 +623,8 @@ body {
     display: flex;
     position: relative;
     min-height: 80px;
+    /* 日付ラベルより低いz-indexを設定 */
+    z-index: 1;
 }
 
 .hour-cell {
