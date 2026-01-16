@@ -175,23 +175,42 @@ function calculateShiftLevels(shifts) {
         return s.endHour;
     };
 
-    const sorted = [...shifts].sort((a, b) => a.startHour - b.startHour);
+    // 開始時間でソート、同じ場合はIDでソート（安定したソートのため）
+    const sorted = [...shifts].sort((a, b) => {
+        if (a.startHour !== b.startHour) return a.startHour - b.startHour;
+        return String(a.id).localeCompare(String(b.id));
+    });
+
+    // デバッグ用ログ
+    console.log('Calculating levels for shifts:', sorted.map(s => ({
+        id: s.id,
+        name: s.name,
+        start: s.startHour,
+        end: s.endHour,
+        displayEnd: getDisplayEndHour(s),
+        overnight: s.overnight
+    })));
+
     sorted.forEach(s => {
         let lvl = 0;
+        const sStart = s.startHour;
         const sEnd = getDisplayEndHour(s);
 
         for (const o of sorted) {
             if (o.id === s.id || levels[o.id] === undefined) continue;
+            const oStart = o.startHour;
             const oEnd = getDisplayEndHour(o);
 
-            // 時間帯が重なるかチェック
-            const overlaps = !(sEnd <= o.startHour || s.startHour >= oEnd);
+            // 時間帯が重なるかチェック（開始=終了の場合も重なりとみなす）
+            const overlaps = !(sEnd < oStart || sStart > oEnd);
             if (overlaps && levels[o.id] >= lvl) {
                 lvl = levels[o.id] + 1;
             }
         }
         levels[s.id] = lvl;
     });
+
+    console.log('Calculated levels:', levels);
     return levels;
 }
 
