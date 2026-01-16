@@ -360,18 +360,33 @@ function createShiftBar(s, lvl) {
 
     // 削除ボタン
     const deleteBtn = bar.querySelector('.delete-btn');
+
+    // 削除処理のヘルパー関数
+    const handleShiftDelete = () => {
+        if (s.isFixed) {
+            // 固定シフトの場合
+            const parts = s.id.split('-');
+            deleteFixedShift(parts[1]);
+        } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
+            // 夜勤継続シフトの場合、元のシフトを削除
+            const originalId = s.id.replace('on-', '');
+            deleteShift(originalId);
+        } else {
+            // 通常シフトの場合
+            deleteShift(s.id);
+        }
+    };
+
     deleteBtn.addEventListener('click', e => {
         e.stopPropagation();
-        if (s.isFixed) deleteFixedShift(s.id.split('-')[1]);
-        else if (!s.isOvernightContinuation) deleteShift(s.id);
+        handleShiftDelete();
     });
 
     // 削除ボタンのタッチイベント
     deleteBtn.addEventListener('touchend', e => {
         e.stopPropagation();
         e.preventDefault();
-        if (s.isFixed) deleteFixedShift(s.id.split('-')[1]);
-        else if (!s.isOvernightContinuation) deleteShift(s.id);
+        handleShiftDelete();
     }, { passive: false });
 
     return bar;
@@ -1283,9 +1298,15 @@ function initPopoverEvents() {
             setTimeout(() => {
                 if (confirm('このシフトを削除しますか？')) {
                     if (s.isFixed) {
+                        // 固定シフトの場合
                         const parts = s.id.split('-');
                         deleteFixedShift(parts[1]);
-                    } else if (!s.isOvernightContinuation) {
+                    } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
+                        // 夜勤継続シフトの場合、元のシフトを削除
+                        const originalId = s.id.replace('on-', '');
+                        deleteShift(originalId);
+                    } else {
+                        // 通常シフトの場合
                         deleteShift(s.id);
                     }
                 }
