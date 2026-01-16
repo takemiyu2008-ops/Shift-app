@@ -591,6 +591,10 @@ body {
     justify-content: center;
     border-right: 1px solid var(--border-color);
     background: var(--bg-secondary);
+    /* 横スクロール時に左側に固定し、シフトバーより上に表示 */
+    position: sticky;
+    left: 0;
+    z-index: 8;
 }
 
 .date-number {
