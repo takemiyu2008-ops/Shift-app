@@ -68,7 +68,14 @@ function getWeekStart(date) {
     d.setDate(d.getDate() - diff);
     return d;
 }
-function formatDate(date) { return new Date(date).toISOString().split('T')[0]; }
+// 日付をローカルタイムゾーンでフォーマット（YYYY-MM-DD形式）
+function formatDate(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 function formatDateTime(str) {
     const d = new Date(str);
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
