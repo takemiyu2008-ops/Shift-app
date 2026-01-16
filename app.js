@@ -59,9 +59,13 @@ database.ref('.info/connected').on('value', (snap) => {
 });
 
 // ユーティリティ関数
+// 週の開始日を取得（月曜日始まり）
 function getWeekStart(date) {
     const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
+    const day = d.getDay();
+    // 月曜日を0として計算（日曜日は6になる）
+    const diff = day === 0 ? 6 : day - 1;
+    d.setDate(d.getDate() - diff);
     return d;
 }
 function formatDate(date) { return new Date(date).toISOString().split('T')[0]; }
