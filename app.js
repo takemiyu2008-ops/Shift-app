@@ -754,6 +754,7 @@ function approveRequest(type, id) {
         }
     } else if (type === 'swap') {
         const r = state.swapRequests.find(x => x.id === id);
+        alert('swap request found: ' + (r ? 'yes' : 'no') + ', shiftId: ' + (r ? r.shiftId : 'N/A'));
         if (r) {
             r.status = 'approved';
             r.approvedAt = processedAt;
