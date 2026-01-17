@@ -1068,12 +1068,15 @@ function renderMessages() {
     const c = document.getElementById('messagesContent');
     const all = [...state.messages.map(m => ({ ...m, type: 'message' })), ...state.swapRequests.filter(r => r.status === 'pending').map(r => ({ ...r, type: 'swap' }))].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (!all.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center">メッセージなし</p>'; return; }
-    c.innerHTML = '';
+
+    // ヘッダーに全削除ボタンを追加
+    c.innerHTML = '<div style="text-align:right;margin-bottom:12px;"><button class="btn btn-danger btn-sm" onclick="clearAllMessages()">🗑️ 全てのメッセージを削除</button></div>';
+
     all.forEach(m => {
         const card = document.createElement('div'); card.className = 'message-card' + (!m.read ? ' unread' : '');
         if (m.type === 'message') {
-            card.innerHTML = `<div class="message-header"><span class="message-from">${m.from}</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.title}</strong><br>${m.content}</div>`;
-            card.onclick = () => { m.read = true; saveToFirebase('messages', state.messages); updateMessageBar(); renderMessages(); };
+            card.innerHTML = `<div class="message-header"><span class="message-from">${m.from}</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.title}</strong><br>${m.content}</div><div class="message-actions"><button class="btn btn-danger btn-sm" onclick="deleteMessage('${m.id}')">削除</button></div>`;
+            card.onclick = (e) => { if (e.target.tagName !== 'BUTTON') { m.read = true; saveToFirebase('messages', state.messages); updateMessageBar(); renderMessages(); } };
         } else {
             // シフト情報を取得（固定シフトの場合も対応）
             let shiftInfo = null;
@@ -1098,6 +1101,25 @@ function renderMessages() {
         }
         c.appendChild(card);
     });
+}
+
+// メッセージ削除
+function deleteMessage(id) {
+    state.messages = state.messages.filter(m => m.id !== id);
+    saveToFirebase('messages', state.messages);
+    updateMessageBar();
+    renderMessages();
+}
+
+// 全メッセージ削除
+function clearAllMessages() {
+    if (confirm('全てのメッセージを削除しますか？')) {
+        state.messages = [];
+        saveToFirebase('messages', state.messages);
+        updateMessageBar();
+        renderMessages();
+        alert('全てのメッセージを削除しました。');
+    }
 }
 
 function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); }
