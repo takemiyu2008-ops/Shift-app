@@ -1486,6 +1486,11 @@ body {
    印刷用スタイル
    ======================================== */
 @media print {
+    @page {
+        size: A4 landscape;
+        margin: 5mm;
+    }
+
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -1495,7 +1500,10 @@ body {
     body {
         background: white !important;
         color: #1a1a1a !important;
-        font-size: 10pt;
+        font-size: 8pt;
+        transform: scale(0.85);
+        transform-origin: top left;
+        width: 118%;
     }
 
     .app-container {
@@ -1513,41 +1521,42 @@ body {
     .message-bar,
     .shift-bar .delete-btn,
     .shift-popover,
-    .modal-overlay {
+    .modal-overlay,
+    .legend {
         display: none !important;
     }
 
     .header {
         background: white !important;
         border: 1px solid #ddd !important;
-        margin-bottom: 12px;
-        padding: 12px !important;
+        margin-bottom: 8px;
+        padding: 8px !important;
     }
 
     .header-title {
         color: #1a1a1a !important;
         -webkit-text-fill-color: #1a1a1a !important;
-        font-size: 16pt !important;
+        font-size: 14pt !important;
     }
 
     .date-nav {
         justify-content: center !important;
         background: white !important;
         border: 1px solid #ddd !important;
-        margin-bottom: 12px;
-        padding: 8px !important;
+        margin-bottom: 8px;
+        padding: 6px !important;
     }
 
     .current-period {
         color: #1a1a1a !important;
-        font-size: 12pt !important;
+        font-size: 10pt !important;
     }
 
     .gantt-container {
         background: white !important;
         border: 1px solid #333 !important;
         overflow: visible !important;
-        page-break-inside: avoid;
+        max-height: none !important;
     }
 
     .gantt-header,
@@ -1563,14 +1572,19 @@ body {
     .gantt-date-label {
         background: #f5f5f5 !important;
         color: #1a1a1a !important;
+        width: 80px !important;
+        min-width: 80px !important;
+        padding: 8px !important;
     }
 
     .date-number {
         color: #1a1a1a !important;
+        font-size: 1rem !important;
     }
 
     .date-day {
         color: #666 !important;
+        font-size: 0.7rem !important;
     }
 
     .date-day.sunday {
@@ -1581,29 +1595,36 @@ body {
         color: #2563eb !important;
     }
 
-    .shift-bar {
-        border: 1px solid rgba(0, 0, 0, 0.3) !important;
-        box-shadow: none !important;
+    .gantt-row {
+        min-height: 50px !important;
     }
 
-    .shift-bar .shift-time {
-        display: inline !important;
-    }
-
-    .legend {
-        background: white !important;
-        border: 1px solid #ddd !important;
-        page-break-inside: avoid;
-        margin-top: 12px;
-    }
-
-    .legend-title {
-        color: #1a1a1a !important;
+    .gantt-timeline {
+        min-height: 50px !important;
     }
 
     .time-cell,
     .hour-cell {
+        min-width: 30px !important;
         border-color: #ccc !important;
+    }
+
+    .time-cell {
+        font-size: 0.6rem !important;
+        padding: 4px 2px !important;
+    }
+
+    .shift-bar {
+        border: 1px solid rgba(0, 0, 0, 0.3) !important;
+        box-shadow: none !important;
+        font-size: 0.7rem !important;
+        min-height: 20px !important;
+        height: 20px !important;
+    }
+
+    .shift-bar .shift-time {
+        display: inline !important;
+        font-size: 0.6rem !important;
     }
 }
 
