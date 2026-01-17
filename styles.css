@@ -1500,10 +1500,7 @@ body {
     body {
         background: white !important;
         color: #1a1a1a !important;
-        font-size: 8pt;
-        transform: scale(0.85);
-        transform-origin: top left;
-        width: 118%;
+        font-size: 9pt;
     }
 
     .app-container {
@@ -1529,22 +1526,22 @@ body {
     .header {
         background: white !important;
         border: 1px solid #ddd !important;
-        margin-bottom: 8px;
-        padding: 8px !important;
+        margin-bottom: 6px;
+        padding: 6px !important;
     }
 
     .header-title {
         color: #1a1a1a !important;
         -webkit-text-fill-color: #1a1a1a !important;
-        font-size: 14pt !important;
+        font-size: 12pt !important;
     }
 
     .date-nav {
         justify-content: center !important;
         background: white !important;
         border: 1px solid #ddd !important;
-        margin-bottom: 8px;
-        padding: 6px !important;
+        margin-bottom: 6px;
+        padding: 4px !important;
     }
 
     .current-period {
@@ -1559,7 +1556,19 @@ body {
         max-height: none !important;
     }
 
-    .gantt-header,
+    .gantt-header {
+        position: relative !important;
+        min-width: auto !important;
+    }
+
+    .gantt-label-header {
+        position: relative !important;
+        width: 60px !important;
+        min-width: 60px !important;
+        padding: 6px !important;
+        font-size: 0.7rem !important;
+    }
+
     .gantt-row {
         min-width: auto !important;
     }
@@ -1570,21 +1579,22 @@ body {
     }
 
     .gantt-date-label {
+        position: relative !important;
         background: #f5f5f5 !important;
         color: #1a1a1a !important;
-        width: 80px !important;
-        min-width: 80px !important;
-        padding: 8px !important;
+        width: 60px !important;
+        min-width: 60px !important;
+        padding: 4px !important;
     }
 
     .date-number {
         color: #1a1a1a !important;
-        font-size: 1rem !important;
+        font-size: 0.9rem !important;
     }
 
     .date-day {
         color: #666 !important;
-        font-size: 0.7rem !important;
+        font-size: 0.65rem !important;
     }
 
     .date-day.sunday {
@@ -1596,35 +1606,35 @@ body {
     }
 
     .gantt-row {
-        min-height: 50px !important;
+        min-height: 40px !important;
     }
 
     .gantt-timeline {
-        min-height: 50px !important;
+        min-height: 40px !important;
     }
 
     .time-cell,
     .hour-cell {
-        min-width: 30px !important;
+        min-width: 28px !important;
         border-color: #ccc !important;
     }
 
     .time-cell {
-        font-size: 0.6rem !important;
-        padding: 4px 2px !important;
+        font-size: 0.55rem !important;
+        padding: 4px 1px !important;
     }
 
     .shift-bar {
         border: 1px solid rgba(0, 0, 0, 0.3) !important;
         box-shadow: none !important;
-        font-size: 0.7rem !important;
-        min-height: 20px !important;
-        height: 20px !important;
+        font-size: 0.65rem !important;
+        min-height: 18px !important;
+        height: 18px !important;
     }
 
     .shift-bar .shift-time {
         display: inline !important;
-        font-size: 0.6rem !important;
+        font-size: 0.55rem !important;
     }
 }
 
