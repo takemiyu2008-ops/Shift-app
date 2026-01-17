@@ -690,10 +690,15 @@ function sendBroadcast(title, content) {
 
 // 承認・却下
 function approveRequest(type, id) {
+    const processedAt = new Date().toISOString();
+    const processedBy = '管理者'; // 現在は管理者のみが承認可能
+
     if (type === 'change') {
         const r = state.changeRequests.find(x => x.id === id);
         if (r) {
             r.status = 'approved';
+            r.approvedAt = processedAt;
+            r.processedBy = processedBy;
             const s = state.shifts.find(x => x.id === r.originalShiftId);
             if (s) {
                 // 変更前の情報を保存
@@ -701,7 +706,7 @@ function approveRequest(type, id) {
                     previousDate: s.date,
                     previousStartHour: s.startHour,
                     previousEndHour: s.endHour,
-                    changedAt: new Date().toISOString(),
+                    changedAt: processedAt,
                     reason: r.reason
                 };
                 // 新しい情報に更新
@@ -714,18 +719,25 @@ function approveRequest(type, id) {
         }
     } else if (type === 'leave') {
         const r = state.leaveRequests.find(x => x.id === id);
-        if (r) { r.status = 'approved'; saveToFirebase('leaveRequests', state.leaveRequests); }
+        if (r) {
+            r.status = 'approved';
+            r.approvedAt = processedAt;
+            r.processedBy = processedBy;
+            saveToFirebase('leaveRequests', state.leaveRequests);
+        }
     } else if (type === 'swap') {
         const r = state.swapRequests.find(x => x.id === id);
         if (r) {
             r.status = 'approved';
+            r.approvedAt = processedAt;
+            r.processedBy = processedBy;
             const s = state.shifts.find(x => x.id === r.shiftId);
             if (s) {
                 // 交代前の情報を保存
                 s.swapHistory = {
                     previousName: s.name,
                     newName: r.targetEmployee,
-                    swappedAt: new Date().toISOString(),
+                    swappedAt: processedAt,
                     message: r.message
                 };
                 // 新しい担当者に更新
@@ -738,9 +750,17 @@ function approveRequest(type, id) {
     render(); renderAdminPanel(); updateMessageBar();
 }
 function rejectRequest(type, id) {
+    const processedAt = new Date().toISOString();
+    const processedBy = '管理者';
+
     const arr = type === 'change' ? state.changeRequests : type === 'leave' ? state.leaveRequests : state.swapRequests;
     const r = arr.find(x => x.id === id);
-    if (r) { r.status = 'rejected'; saveToFirebase(type === 'change' ? 'changeRequests' : type === 'leave' ? 'leaveRequests' : 'swapRequests', arr); }
+    if (r) {
+        r.status = 'rejected';
+        r.rejectedAt = processedAt;
+        r.processedBy = processedBy;
+        saveToFirebase(type === 'change' ? 'changeRequests' : type === 'leave' ? 'leaveRequests' : 'swapRequests', arr);
+    }
     renderAdminPanel(); updateMessageBar();
 }
 
@@ -827,7 +847,136 @@ function renderAdminPanel() {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
     } else if (state.activeAdminTab === 'settings') {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button></div>`;
+    } else if (state.activeAdminTab === 'history') {
+        renderRequestHistory(c);
     }
+}
+
+// 履歴表示関数
+function renderRequestHistory(container) {
+    // 処理済みの申請を全て取得
+    const changeHistory = state.changeRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
+    const swapHistory = state.swapRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
+    const leaveHistory = state.leaveRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
+
+    // 全ての履歴を一つの配列にまとめ、処理日時で降順ソート
+    const allHistory = [
+        ...changeHistory.map(r => ({ ...r, type: 'change', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
+        ...swapHistory.map(r => ({ ...r, type: 'swap', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
+        ...leaveHistory.map(r => ({ ...r, type: 'leave', processedAt: r.approvedAt || r.rejectedAt || r.createdAt }))
+    ].sort((a, b) => new Date(b.processedAt) - new Date(a.processedAt));
+
+    if (!allHistory.length) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">処理済みの申請履歴はありません</p>';
+        return;
+    }
+
+    // フィルタボタンを追加
+    container.innerHTML = `
+        <div class="history-filters" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm history-filter-btn active" data-filter="all">すべて (${allHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="change">シフト変更 (${changeHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="swap">シフト交代 (${swapHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="leave">有給申請 (${leaveHistory.length})</button>
+        </div>
+        <div id="historyList"></div>
+    `;
+
+    const listEl = document.getElementById('historyList');
+
+    // フィルタボタンのイベント
+    container.querySelectorAll('.history-filter-btn').forEach(btn => {
+        btn.onclick = () => {
+            container.querySelectorAll('.history-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderHistoryItems(listEl, allHistory, btn.dataset.filter);
+        };
+    });
+
+    // 初期表示
+    renderHistoryItems(listEl, allHistory, 'all');
+}
+
+// 履歴アイテムのレンダリング
+function renderHistoryItems(container, allHistory, filter) {
+    const filtered = filter === 'all' ? allHistory : allHistory.filter(h => h.type === filter);
+
+    if (!filtered.length) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">該当する履歴はありません</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    filtered.forEach(h => {
+        const card = document.createElement('div');
+        card.className = `request-card history-card ${h.status}`;
+
+        // ステータスバッジ
+        const statusBadge = h.status === 'approved'
+            ? '<span class="status-badge approved">✅ 承認済み</span>'
+            : '<span class="status-badge rejected">❌ 却下</span>';
+
+        // 処理日時
+        const processedAtStr = h.approvedAt || h.rejectedAt
+            ? formatDateTime(h.approvedAt || h.rejectedAt)
+            : '不明';
+
+        // 申請日時
+        const createdAtStr = h.createdAt ? formatDateTime(h.createdAt) : '不明';
+
+        // 処理者
+        const processedByStr = h.processedBy || '管理者';
+
+        let content = '';
+
+        if (h.type === 'change') {
+            content = `
+                <div class="request-info">
+                    <h4>🔄 シフト変更申請 ${statusBadge}</h4>
+                    <p><strong>申請者:</strong> ${h.applicant || '不明'}</p>
+                    <p><strong>変更後:</strong> ${h.newDate} ${h.newStartHour}:00-${h.newEndHour}:00</p>
+                    <p><strong>理由:</strong> ${h.reason}</p>
+                    <div class="history-meta">
+                        <p>📅 申請日時: ${createdAtStr}</p>
+                        <p>✍️ 処理日時: ${processedAtStr}</p>
+                        <p>👤 処理者: ${processedByStr}</p>
+                    </div>
+                </div>
+            `;
+        } else if (h.type === 'swap') {
+            content = `
+                <div class="request-info">
+                    <h4>🤝 シフト交代依頼 ${statusBadge}</h4>
+                    <p><strong>申請者:</strong> ${h.applicant || '不明'}</p>
+                    <p><strong>交代:</strong> ${h.fromEmployee} → ${h.targetEmployee}</p>
+                    <p><strong>メッセージ:</strong> ${h.message}</p>
+                    <div class="history-meta">
+                        <p>📅 申請日時: ${createdAtStr}</p>
+                        <p>✍️ 処理日時: ${processedAtStr}</p>
+                        <p>👤 処理者: ${processedByStr}</p>
+                    </div>
+                </div>
+            `;
+        } else if (h.type === 'leave') {
+            content = `
+                <div class="request-info">
+                    <h4>🏖️ 有給申請 ${statusBadge}</h4>
+                    <p><strong>申請者:</strong> ${h.name || '不明'}</p>
+                    <p><strong>期間:</strong> ${h.startDate} 〜 ${h.endDate}</p>
+                    <p><strong>理由:</strong> ${h.reason}</p>
+                    <div class="history-meta">
+                        <p>📅 申請日時: ${createdAtStr}</p>
+                        <p>✍️ 処理日時: ${processedAtStr}</p>
+                        <p>👤 処理者: ${processedByStr}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        card.innerHTML = content;
+        container.appendChild(card);
+    });
 }
 
 // メッセージ表示

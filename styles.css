@@ -457,6 +457,66 @@ body {
     color: var(--danger);
 }
 
+/* 履歴タブ */
+.history-card {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.history-card.approved {
+    border-left: 4px solid var(--success);
+}
+
+.history-card.rejected {
+    border-left: 4px solid var(--danger);
+}
+
+.history-card .request-info h4 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.history-card .status-badge {
+    font-size: 0.8rem;
+    padding: 4px 12px;
+}
+
+.history-card .status-badge.approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success);
+}
+
+.history-card .status-badge.rejected {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger);
+}
+
+.history-meta {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.history-meta p {
+    margin-bottom: 4px;
+}
+
+.history-filter-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.history-filter-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
 /* ========================================
    日付ナビゲーション
    ======================================== */
