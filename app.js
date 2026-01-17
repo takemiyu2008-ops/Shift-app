@@ -664,11 +664,29 @@ function addSwapRequest(d) {
     state.swapRequests.push(r);
     saveToFirebase('swapRequests', state.swapRequests);
 
+    // シフト情報を取得（固定シフトの場合も対応）
+    let shiftInfo = null;
+    if (d.shiftId && d.shiftId.startsWith('fx-')) {
+        // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+        const parts = d.shiftId.split('-');
+        const originalId = parts[1];
+        const dateStr = parts.slice(2).join('-');
+        const fixed = state.fixedShifts.find(f => f.id === originalId);
+        if (fixed) {
+            shiftInfo = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour, name: fixed.name };
+        }
+    } else {
+        const shift = state.shifts.find(s => s.id === d.shiftId);
+        if (shift) {
+            shiftInfo = { date: shift.date, startHour: shift.startHour, endHour: shift.endHour, name: shift.name };
+        }
+    }
+
     // 交代相手と管理者にメッセージを送信
-    const shift = state.shifts.find(s => s.id === d.shiftId);
-    if (shift) {
+    if (shiftInfo) {
         const title = '🤝 シフト交代依頼';
-        const content = `${d.applicant}さんからシフト交代依頼がありました。\nシフト: ${shift.date} ${shift.startHour}:00-${shift.endHour}:00\n現在の担当: ${shift.name}\n交代先: ${d.targetEmployee}\nメッセージ: ${d.message}`;
+        const timeDisplay = `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}`;
+        const content = `${d.applicant}さんから${d.targetEmployee}さんへシフト交代依頼がありました。\nシフト: ${shiftInfo.date} ${timeDisplay}\n現在の担当: ${shiftInfo.name}\n交代先: ${d.targetEmployee}\nメッセージ: ${d.message}`;
 
         // 交代相手に通知
         state.messages.push({ id: Date.now().toString() + '_target', to: d.targetEmployee, from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
