@@ -759,8 +759,7 @@ function approveRequest(type, id) {
             r.processedBy = processedBy;
 
             // シフト情報を取得して更新（固定シフトの場合も対応）
-            console.log('Approving swap request:', r);
-            console.log('shiftId:', r.shiftId);
+            let updated = false;
 
             if (r.shiftId && r.shiftId.startsWith('fx-')) {
                 // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
@@ -768,9 +767,7 @@ function approveRequest(type, id) {
                 const parts = r.shiftId.split('-');
                 const originalId = parts[1];
                 const dateStr = parts.slice(2).join('-');
-                console.log('Fixed shift - originalId:', originalId, 'dateStr:', dateStr);
                 const fixed = state.fixedShifts.find(f => f.id === originalId);
-                console.log('Found fixed shift:', fixed);
                 if (fixed) {
                     // 固定シフトを元に新しい通常シフトを作成
                     const newShift = {
@@ -789,12 +786,11 @@ function approveRequest(type, id) {
                         }
                     };
                     state.shifts.push(newShift);
-                    console.log('Created new shift:', newShift);
+                    updated = true;
                 }
             } else if (r.shiftId) {
                 // 通常シフトの場合
                 const s = state.shifts.find(x => x.id === r.shiftId);
-                console.log('Normal shift found:', s);
                 if (s) {
                     // 交代前の情報を保存
                     s.swapHistory = {
@@ -805,13 +801,17 @@ function approveRequest(type, id) {
                     };
                     // 新しい担当者に更新
                     s.name = r.targetEmployee;
-                    console.log('Updated shift:', s);
+                    updated = true;
                 }
-            } else {
-                console.log('No shiftId found in swap request!');
             }
             saveToFirebase('shifts', state.shifts);
             saveToFirebase('swapRequests', state.swapRequests);
+
+            if (updated) {
+                alert('シフト交代を承認しました。\\n' + r.fromEmployee + ' → ' + r.targetEmployee + '\\nシフト表が更新されました。');
+            } else {
+                alert('承認しましたが、シフト表の更新に失敗しました。\\nshiftId: ' + (r.shiftId || '未設定'));
+            }
         }
     }
     render(); renderAdminPanel(); updateMessageBar();
