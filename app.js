@@ -818,9 +818,26 @@ function renderAdminPanel() {
         const reqs = state.swapRequests.filter(r => r.status === 'pending');
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
         reqs.forEach(r => {
-            const s = state.shifts.find(x => x.id === r.shiftId);
+            // シフト情報を取得（固定シフトの場合も対応）
+            let shiftInfo = null;
+            if (r.shiftId && r.shiftId.startsWith('fx-')) {
+                const parts = r.shiftId.split('-');
+                const originalId = parts[1];
+                const dateStr = parts.slice(2).join('-');
+                const fixed = state.fixedShifts.find(f => f.id === originalId);
+                if (fixed) {
+                    shiftInfo = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour };
+                }
+            } else {
+                const s = state.shifts.find(x => x.id === r.shiftId);
+                if (s) {
+                    shiftInfo = { date: s.date, startHour: s.startHour, endHour: s.endHour };
+                }
+            }
+            const dateDisplay = shiftInfo?.date || '?';
+            const timeDisplay = shiftInfo ? `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}` : '?:00-?:00';
             const card = document.createElement('div'); card.className = 'request-card';
-            card.innerHTML = `<div class="request-info"><h4>🤝 シフト交換依頼</h4><p>申請者: ${r.applicant || '不明'}</p><p>シフト: ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00</p><p>現在の担当: ${r.fromEmployee} → 交代先: ${r.targetEmployee}</p><p>メッセージ: ${r.message}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>🤝 シフト交換依頼</h4><p>申請者: ${r.applicant || '不明'}</p><p>シフト: ${dateDisplay} ${timeDisplay}</p><p>現在の担当: ${r.fromEmployee} → 交代先: ${r.targetEmployee}</p><p>メッセージ: ${r.message}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'leaveRequests') {
@@ -991,8 +1008,26 @@ function renderMessages() {
             card.innerHTML = `<div class="message-header"><span class="message-from">${m.from}</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.title}</strong><br>${m.content}</div>`;
             card.onclick = () => { m.read = true; saveToFirebase('messages', state.messages); updateMessageBar(); renderMessages(); };
         } else {
-            const s = state.shifts.find(x => x.id === m.shiftId);
-            card.innerHTML = `<div class="message-header"><span class="message-from">🤝 シフト交代依頼</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.fromEmployee}</strong>さんからの依頼<br>シフト: ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00<br>${m.message}</div><div class="message-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${m.id}')">交代する</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${m.id}')">お断り</button></div>`;
+            // シフト情報を取得（固定シフトの場合も対応）
+            let shiftInfo = null;
+            if (m.shiftId && m.shiftId.startsWith('fx-')) {
+                // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+                const parts = m.shiftId.split('-');
+                const originalId = parts[1];
+                const dateStr = parts.slice(2).join('-');
+                const fixed = state.fixedShifts.find(f => f.id === originalId);
+                if (fixed) {
+                    shiftInfo = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour };
+                }
+            } else {
+                const s = state.shifts.find(x => x.id === m.shiftId);
+                if (s) {
+                    shiftInfo = { date: s.date, startHour: s.startHour, endHour: s.endHour };
+                }
+            }
+            const dateDisplay = shiftInfo?.date || '?';
+            const timeDisplay = shiftInfo ? `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}` : '?:00-?:00';
+            card.innerHTML = `<div class="message-header"><span class="message-from">🤝 シフト交代依頼</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.fromEmployee}</strong>さんからの依頼<br>シフト: ${dateDisplay} ${timeDisplay}<br>${m.message}</div><div class="message-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${m.id}')">交代する</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${m.id}')">お断り</button></div>`;
         }
         c.appendChild(card);
     });
