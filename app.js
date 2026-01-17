@@ -251,9 +251,20 @@ function renderGanttBody() {
         const overnight = state.shifts.filter(s => s.date === prevStr && s.overnight).map(s => ({
             ...s, id: `on-${s.id}`, date: dateStr, startHour: 0, endHour: s.endHour, isOvernightContinuation: true
         }));
+
+        // 固定シフト（ただし、同じ日・同じ時間帯に通常シフトがある場合は除外）
         const fixed = state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).map(f => ({
             ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
-        }));
+        })).filter(f => {
+            // 同じ日・同じ固定シフトから交代された通常シフトがあるか確認
+            return !dayShifts.some(s =>
+                s.swapHistory &&
+                s.startHour === f.startHour &&
+                s.endHour === f.endHour &&
+                s.swapHistory.previousName === f.name
+            );
+        });
+
         const prevDow = (dayOfWeek + 6) % 7;
         const fixedOvernight = state.fixedShifts.filter(f => f.dayOfWeek === prevDow && f.overnight).map(f => ({
             ...f, id: `fxo-${f.id}-${dateStr}`, date: dateStr, startHour: 0, endHour: f.endHour, isFixed: true, isOvernightContinuation: true
@@ -749,17 +760,48 @@ function approveRequest(type, id) {
             r.status = 'approved';
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
-            const s = state.shifts.find(x => x.id === r.shiftId);
-            if (s) {
-                // 交代前の情報を保存
-                s.swapHistory = {
-                    previousName: s.name,
-                    newName: r.targetEmployee,
-                    swappedAt: processedAt,
-                    message: r.message
-                };
-                // 新しい担当者に更新
-                s.name = r.targetEmployee;
+
+            // シフト情報を取得して更新（固定シフトの場合も対応）
+            if (r.shiftId && r.shiftId.startsWith('fx-')) {
+                // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+                // 新しい通常シフトを作成して担当者を変更
+                const parts = r.shiftId.split('-');
+                const originalId = parts[1];
+                const dateStr = parts.slice(2).join('-');
+                const fixed = state.fixedShifts.find(f => f.id === originalId);
+                if (fixed) {
+                    // 固定シフトを元に新しい通常シフトを作成
+                    const newShift = {
+                        id: Date.now().toString(),
+                        date: dateStr,
+                        name: r.targetEmployee,
+                        startHour: fixed.startHour,
+                        endHour: fixed.endHour,
+                        color: fixed.color,
+                        overnight: fixed.overnight || false,
+                        swapHistory: {
+                            previousName: fixed.name,
+                            newName: r.targetEmployee,
+                            swappedAt: processedAt,
+                            message: r.message
+                        }
+                    };
+                    state.shifts.push(newShift);
+                }
+            } else {
+                // 通常シフトの場合
+                const s = state.shifts.find(x => x.id === r.shiftId);
+                if (s) {
+                    // 交代前の情報を保存
+                    s.swapHistory = {
+                        previousName: s.name,
+                        newName: r.targetEmployee,
+                        swappedAt: processedAt,
+                        message: r.message
+                    };
+                    // 新しい担当者に更新
+                    s.name = r.targetEmployee;
+                }
             }
             saveToFirebase('shifts', state.shifts);
             saveToFirebase('swapRequests', state.swapRequests);
