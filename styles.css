@@ -645,7 +645,7 @@ body {
     display: flex;
     align-items: center;
     padding: 0 8px;
-    font-size: 0.8rem;
+    font-size: 1.1rem;
     font-weight: 500;
     color: white;
     cursor: pointer;
@@ -1189,7 +1189,7 @@ body {
     }
 
     .shift-bar {
-        font-size: 0.7rem;
+        font-size: 1rem;
         padding: 0 6px;
         min-height: 28px;
         touch-action: manipulation;

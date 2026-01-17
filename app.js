@@ -898,12 +898,30 @@ function openEditShiftModal(s) {
 function openChangeModal() {
     const sel = document.getElementById('changeShiftSelect');
     sel.innerHTML = '<option value="">選択してください</option>';
+
+    // 通常シフトを追加
     state.shifts.forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
         o.textContent = `${s.name} - ${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
         sel.appendChild(o);
     });
+
+    // 現在の週の固定シフトも追加
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(state.currentWeekStart);
+        d.setDate(d.getDate() + i);
+        const dateStr = formatDate(d);
+        const dayOfWeek = d.getDay();
+        state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).forEach(f => {
+            const virtualId = `fx-${f.id}-${dateStr}`;
+            const o = document.createElement('option');
+            o.value = virtualId;
+            o.textContent = `${f.name} - ${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
+            sel.appendChild(o);
+        });
+    }
+
     document.getElementById('changeDate').value = formatDate(new Date());
     document.getElementById('changeStart').value = 9;
     document.getElementById('changeEnd').value = 17;
@@ -913,12 +931,30 @@ function openChangeModal() {
 function openSwapModal() {
     const sel = document.getElementById('swapShiftSelect');
     sel.innerHTML = '<option value="">選択してください</option>';
+
+    // 通常シフトを追加
     state.shifts.forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
         o.textContent = `${s.name} - ${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
         sel.appendChild(o);
     });
+
+    // 現在の週の固定シフトも追加
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(state.currentWeekStart);
+        d.setDate(d.getDate() + i);
+        const dateStr = formatDate(d);
+        const dayOfWeek = d.getDay();
+        state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).forEach(f => {
+            const virtualId = `fx-${f.id}-${dateStr}`;
+            const o = document.createElement('option');
+            o.value = virtualId;
+            o.textContent = `${f.name} - ${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
+            sel.appendChild(o);
+        });
+    }
+
     openModal(document.getElementById('swapModalOverlay'));
 }
 
@@ -972,7 +1008,32 @@ function initEventListeners() {
     document.getElementById('changeModalClose').onclick = () => closeModal(document.getElementById('changeModalOverlay'));
     document.getElementById('changeCancelBtn').onclick = () => closeModal(document.getElementById('changeModalOverlay'));
     document.getElementById('changeModalOverlay').onclick = e => { if (e.target.id === 'changeModalOverlay') closeModal(document.getElementById('changeModalOverlay')); };
-    document.getElementById('changeShiftSelect').onchange = e => { const s = state.shifts.find(x => x.id === e.target.value); if (s) { document.getElementById('changeDate').value = s.date; document.getElementById('changeStart').value = s.startHour; document.getElementById('changeEnd').value = s.endHour; } };
+    document.getElementById('changeShiftSelect').onchange = e => {
+        const sid = e.target.value;
+        let shiftData = null;
+
+        if (sid.startsWith('fx-')) {
+            // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+            const parts = sid.split('-');
+            const originalId = parts[1];
+            const dateStr = parts.slice(2).join('-'); // 日付部分を結合
+            const fixed = state.fixedShifts.find(f => f.id === originalId);
+            if (fixed) {
+                shiftData = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour };
+            }
+        } else {
+            const s = state.shifts.find(x => x.id === sid);
+            if (s) {
+                shiftData = { date: s.date, startHour: s.startHour, endHour: s.endHour };
+            }
+        }
+
+        if (shiftData) {
+            document.getElementById('changeDate').value = shiftData.date;
+            document.getElementById('changeStart').value = shiftData.startHour;
+            document.getElementById('changeEnd').value = shiftData.endHour;
+        }
+    };
 
     document.getElementById('shiftSwapBtn').onclick = openSwapModal;
     document.getElementById('swapModalClose').onclick = () => closeModal(document.getElementById('swapModalOverlay'));
@@ -1045,8 +1106,20 @@ function initEventListeners() {
         e.preventDefault();
         const applicant = document.getElementById('swapApplicant').value;
         const sid = document.getElementById('swapShiftSelect').value;
-        const s = state.shifts.find(x => x.id === sid);
-        addSwapRequest({ applicant, shiftId: sid, fromEmployee: s.name, targetEmployee: document.getElementById('swapTargetEmployee').value, message: document.getElementById('swapMessage').value.trim() });
+
+        // 固定シフトの場合はIDから元のシフト情報を取得
+        let shiftName;
+        if (sid.startsWith('fx-')) {
+            const parts = sid.split('-');
+            const originalId = parts[1];
+            const fixed = state.fixedShifts.find(f => f.id === originalId);
+            shiftName = fixed ? fixed.name : '不明';
+        } else {
+            const s = state.shifts.find(x => x.id === sid);
+            shiftName = s ? s.name : '不明';
+        }
+
+        addSwapRequest({ applicant, shiftId: sid, fromEmployee: shiftName, targetEmployee: document.getElementById('swapTargetEmployee').value, message: document.getElementById('swapMessage').value.trim() });
         closeModal(document.getElementById('swapModalOverlay'));
         document.getElementById('swapForm').reset();
         alert('シフト交代依頼を送信しました');
