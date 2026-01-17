@@ -693,7 +693,7 @@ function addSwapRequest(d) {
         }
     }
 
-    // 交代相手と管理者にメッセージを送信
+    // 交代相手にメッセージを送信（管理者は管理者パネルで確認できるため通知しない）
     if (shiftInfo) {
         const title = '🤝 シフト交代依頼';
         const timeDisplay = `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}`;
@@ -701,9 +701,6 @@ function addSwapRequest(d) {
 
         // 交代相手に通知
         state.messages.push({ id: Date.now().toString() + '_target', to: d.targetEmployee, from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
-
-        // 管理者に通知
-        state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
 
         saveToFirebase('messages', state.messages);
     }
@@ -762,13 +759,18 @@ function approveRequest(type, id) {
             r.processedBy = processedBy;
 
             // シフト情報を取得して更新（固定シフトの場合も対応）
+            console.log('Approving swap request:', r);
+            console.log('shiftId:', r.shiftId);
+
             if (r.shiftId && r.shiftId.startsWith('fx-')) {
                 // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
                 // 新しい通常シフトを作成して担当者を変更
                 const parts = r.shiftId.split('-');
                 const originalId = parts[1];
                 const dateStr = parts.slice(2).join('-');
+                console.log('Fixed shift - originalId:', originalId, 'dateStr:', dateStr);
                 const fixed = state.fixedShifts.find(f => f.id === originalId);
+                console.log('Found fixed shift:', fixed);
                 if (fixed) {
                     // 固定シフトを元に新しい通常シフトを作成
                     const newShift = {
@@ -787,10 +789,12 @@ function approveRequest(type, id) {
                         }
                     };
                     state.shifts.push(newShift);
+                    console.log('Created new shift:', newShift);
                 }
-            } else {
+            } else if (r.shiftId) {
                 // 通常シフトの場合
                 const s = state.shifts.find(x => x.id === r.shiftId);
+                console.log('Normal shift found:', s);
                 if (s) {
                     // 交代前の情報を保存
                     s.swapHistory = {
@@ -801,7 +805,10 @@ function approveRequest(type, id) {
                     };
                     // 新しい担当者に更新
                     s.name = r.targetEmployee;
+                    console.log('Updated shift:', s);
                 }
+            } else {
+                console.log('No shiftId found in swap request!');
             }
             saveToFirebase('shifts', state.shifts);
             saveToFirebase('swapRequests', state.swapRequests);
