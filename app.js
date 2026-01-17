@@ -897,30 +897,10 @@ function openEditShiftModal(s) {
 
 function openChangeModal() {
     const sel = document.getElementById('changeShiftSelect');
-    sel.innerHTML = '<option value="">選択してください</option>';
+    sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
 
-    // 通常シフトを追加
-    state.shifts.forEach(s => {
-        const o = document.createElement('option');
-        o.value = s.id;
-        o.textContent = `${s.name} - ${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
-        sel.appendChild(o);
-    });
-
-    // 現在の週の固定シフトも追加
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(state.currentWeekStart);
-        d.setDate(d.getDate() + i);
-        const dateStr = formatDate(d);
-        const dayOfWeek = d.getDay();
-        state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).forEach(f => {
-            const virtualId = `fx-${f.id}-${dateStr}`;
-            const o = document.createElement('option');
-            o.value = virtualId;
-            o.textContent = `${f.name} - ${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
-            sel.appendChild(o);
-        });
-    }
+    // 申請者を選択時にシフトをフィルタリング
+    document.getElementById('changeApplicant').value = '';
 
     document.getElementById('changeDate').value = formatDate(new Date());
     document.getElementById('changeStart').value = 9;
@@ -928,34 +908,82 @@ function openChangeModal() {
     openModal(document.getElementById('changeModalOverlay'));
 }
 
-function openSwapModal() {
-    const sel = document.getElementById('swapShiftSelect');
+// 申請者に該当するシフトのみをドロップダウンに表示
+function updateChangeShiftOptions(applicantName) {
+    const sel = document.getElementById('changeShiftSelect');
     sel.innerHTML = '<option value="">選択してください</option>';
 
-    // 通常シフトを追加
-    state.shifts.forEach(s => {
+    if (!applicantName) {
+        sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+        return;
+    }
+
+    // 通常シフトを追加（申請者のみ）
+    state.shifts.filter(s => s.name === applicantName).forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
-        o.textContent = `${s.name} - ${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+        o.textContent = `${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
         sel.appendChild(o);
     });
 
-    // 現在の週の固定シフトも追加
+    // 現在の週の固定シフトも追加（申請者のみ）
     for (let i = 0; i < 7; i++) {
         const d = new Date(state.currentWeekStart);
         d.setDate(d.getDate() + i);
         const dateStr = formatDate(d);
         const dayOfWeek = d.getDay();
-        state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).forEach(f => {
+        state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek && f.name === applicantName).forEach(f => {
             const virtualId = `fx-${f.id}-${dateStr}`;
             const o = document.createElement('option');
             o.value = virtualId;
-            o.textContent = `${f.name} - ${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
+            o.textContent = `${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
             sel.appendChild(o);
         });
     }
+}
+
+function openSwapModal() {
+    const sel = document.getElementById('swapShiftSelect');
+    sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+
+    // 申請者を選択時にシフトをフィルタリング
+    document.getElementById('swapApplicant').value = '';
 
     openModal(document.getElementById('swapModalOverlay'));
+}
+
+// 申請者に該当するシフトのみをドロップダウンに表示（交代依頼用）
+function updateSwapShiftOptions(applicantName) {
+    const sel = document.getElementById('swapShiftSelect');
+    sel.innerHTML = '<option value="">選択してください</option>';
+
+    if (!applicantName) {
+        sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+        return;
+    }
+
+    // 通常シフトを追加（申請者のみ）
+    state.shifts.filter(s => s.name === applicantName).forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = `${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+        sel.appendChild(o);
+    });
+
+    // 現在の週の固定シフトも追加（申請者のみ）
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(state.currentWeekStart);
+        d.setDate(d.getDate() + i);
+        const dateStr = formatDate(d);
+        const dayOfWeek = d.getDay();
+        state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek && f.name === applicantName).forEach(f => {
+            const virtualId = `fx-${f.id}-${dateStr}`;
+            const o = document.createElement('option');
+            o.value = virtualId;
+            o.textContent = `${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
+            sel.appendChild(o);
+        });
+    }
 }
 
 // 時刻選択肢（30分単位）
@@ -1035,10 +1063,20 @@ function initEventListeners() {
         }
     };
 
+    // 申請者選択時にシフトドロップダウンを更新
+    document.getElementById('changeApplicant').onchange = e => {
+        updateChangeShiftOptions(e.target.value);
+    };
+
     document.getElementById('shiftSwapBtn').onclick = openSwapModal;
     document.getElementById('swapModalClose').onclick = () => closeModal(document.getElementById('swapModalOverlay'));
     document.getElementById('swapCancelBtn').onclick = () => closeModal(document.getElementById('swapModalOverlay'));
     document.getElementById('swapModalOverlay').onclick = e => { if (e.target.id === 'swapModalOverlay') closeModal(document.getElementById('swapModalOverlay')); };
+
+    // 申請者選択時にシフトドロップダウンを更新（交代依頼用）
+    document.getElementById('swapApplicant').onchange = e => {
+        updateSwapShiftOptions(e.target.value);
+    };
 
     document.getElementById('requestLeaveBtn').onclick = () => { document.getElementById('leaveStartDate').value = formatDate(new Date()); document.getElementById('leaveEndDate').value = formatDate(new Date()); openModal(document.getElementById('leaveModalOverlay')); };
     document.getElementById('leaveModalClose').onclick = () => closeModal(document.getElementById('leaveModalOverlay'));
