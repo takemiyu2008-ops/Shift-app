@@ -716,7 +716,6 @@ function sendBroadcast(title, content) {
 
 // 承認・却下
 function approveRequest(type, id) {
-    alert('approveRequest called: type=' + type + ', id=' + id);
     const processedAt = new Date().toISOString();
     const processedBy = '管理者'; // 現在は管理者のみが承認可能
 
@@ -754,7 +753,6 @@ function approveRequest(type, id) {
         }
     } else if (type === 'swap') {
         const r = state.swapRequests.find(x => x.id === id);
-        alert('swap request found: ' + (r ? 'yes' : 'no') + ', shiftId: ' + (r ? r.shiftId : 'N/A'));
         if (r) {
             r.status = 'approved';
             r.approvedAt = processedAt;
