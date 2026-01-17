@@ -1500,7 +1500,6 @@ body {
     body {
         background: white !important;
         color: #1a1a1a !important;
-        font-size: 9pt;
     }
 
     .app-container {
@@ -1556,21 +1555,13 @@ body {
         max-height: none !important;
     }
 
+    /* 印刷時はstickyを解除 */
     .gantt-header {
         position: relative !important;
-        min-width: auto !important;
     }
 
     .gantt-label-header {
         position: relative !important;
-        width: 60px !important;
-        min-width: 60px !important;
-        padding: 6px !important;
-        font-size: 0.7rem !important;
-    }
-
-    .gantt-row {
-        min-width: auto !important;
     }
 
     .gantt-body {
@@ -1582,19 +1573,14 @@ body {
         position: relative !important;
         background: #f5f5f5 !important;
         color: #1a1a1a !important;
-        width: 60px !important;
-        min-width: 60px !important;
-        padding: 4px !important;
     }
 
     .date-number {
         color: #1a1a1a !important;
-        font-size: 0.9rem !important;
     }
 
     .date-day {
         color: #666 !important;
-        font-size: 0.65rem !important;
     }
 
     .date-day.sunday {
@@ -1605,36 +1591,18 @@ body {
         color: #2563eb !important;
     }
 
-    .gantt-row {
-        min-height: 40px !important;
-    }
-
-    .gantt-timeline {
-        min-height: 40px !important;
-    }
-
     .time-cell,
     .hour-cell {
-        min-width: 28px !important;
         border-color: #ccc !important;
-    }
-
-    .time-cell {
-        font-size: 0.55rem !important;
-        padding: 4px 1px !important;
     }
 
     .shift-bar {
         border: 1px solid rgba(0, 0, 0, 0.3) !important;
         box-shadow: none !important;
-        font-size: 0.65rem !important;
-        min-height: 18px !important;
-        height: 18px !important;
     }
 
     .shift-bar .shift-time {
         display: inline !important;
-        font-size: 0.55rem !important;
     }
 }
 
