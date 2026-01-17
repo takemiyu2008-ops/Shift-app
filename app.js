@@ -716,6 +716,7 @@ function sendBroadcast(title, content) {
 
 // 承認・却下
 function approveRequest(type, id) {
+    alert('approveRequest called: type=' + type + ', id=' + id);
     const processedAt = new Date().toISOString();
     const processedBy = '管理者'; // 現在は管理者のみが承認可能
 
