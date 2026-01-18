@@ -846,6 +846,50 @@ body {
     border: 2px dashed var(--success);
 }
 
+/* 休日バー */
+.holiday-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: white;
+    background: repeating-linear-gradient(45deg,
+            rgba(59, 130, 246, 0.3),
+            rgba(59, 130, 246, 0.3) 10px,
+            rgba(59, 130, 246, 0.5) 10px,
+            rgba(59, 130, 246, 0.5) 20px);
+    border: 2px dashed var(--info);
+}
+
+/* ラジオボタングループ */
+.radio-group {
+    display: flex;
+    gap: 24px;
+    margin-top: 8px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.radio-label input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+
 /* ========================================
    凡例
    ======================================== */

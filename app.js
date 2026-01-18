@@ -29,6 +29,7 @@ const state = {
     fixedShifts: [],
     changeRequests: [],
     leaveRequests: [],
+    holidayRequests: [],
     employees: [],
     messages: [],
     swapRequests: [],
@@ -110,7 +111,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'employees', 'messages', 'swapRequests'];
+    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -131,7 +132,7 @@ function saveToFirebase(key, data) {
 
 // 従業員セレクト更新
 function updateEmployeeSelects() {
-    ['shiftName', 'leaveName', 'swapTargetEmployee', 'changeApplicant', 'swapApplicant'].forEach(id => {
+    ['shiftName', 'leaveName', 'holidayName', 'holidaySwapPartner', 'swapTargetEmployee', 'changeApplicant', 'swapApplicant'].forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
         sel.innerHTML = '<option value="">選択してください</option>';
@@ -280,6 +281,7 @@ function renderGanttBody() {
 
         // 有給
         const leaves = state.leaveRequests.filter(l => l.status === 'approved' && dateStr >= l.startDate && dateStr <= l.endDate);
+        let barCount = leaves.length;
         leaves.forEach((l, idx) => {
             const bar = document.createElement('div');
             bar.className = 'leave-bar';
@@ -287,8 +289,21 @@ function renderGanttBody() {
             bar.style.height = `${perLvl - 4}px`;
             bar.textContent = `🏖️ ${l.name} 有給`;
             timeline.appendChild(bar);
-            timeline.style.minHeight = `${baseH + (maxLvl + 2 + idx) * perLvl}px`;
         });
+
+        // 休日
+        const holidays = state.holidayRequests.filter(h => h.status === 'approved' && dateStr >= h.startDate && dateStr <= h.endDate);
+        holidays.forEach((h, idx) => {
+            const bar = document.createElement('div');
+            bar.className = 'holiday-bar';
+            bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
+            bar.style.height = `${perLvl - 4}px`;
+            bar.textContent = `🏠 ${h.name} 休日`;
+            timeline.appendChild(bar);
+        });
+        barCount += holidays.length;
+
+        timeline.style.minHeight = `${baseH + (maxLvl + 1 + barCount) * perLvl}px`;
 
         row.appendChild(timeline);
         body.appendChild(row);
@@ -707,6 +722,20 @@ function addSwapRequest(d) {
 }
 function addEmployee(d) { const e = { id: Date.now().toString(), ...d }; state.employees.push(e); saveToFirebase('employees', state.employees); }
 function deleteEmployee(id) { state.employees = state.employees.filter(e => e.id !== id); saveToFirebase('employees', state.employees); }
+function addHolidayRequest(d) {
+    const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
+    state.holidayRequests.push(r);
+    saveToFirebase('holidayRequests', state.holidayRequests);
+
+    // 管理者に通知
+    const title = '🏠 休日申請';
+    let content = `${d.name}さんから休日申請がありました。\n期間: ${d.startDate} 〜 ${d.endDate}\n理由: ${d.reason}`;
+    if (d.swapRequested && d.swapPartner) {
+        content += `\nシフト交代: ${d.swapPartner}さんと交代`;
+    }
+    state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: d.name, title, content, createdAt: new Date().toISOString(), read: false });
+    saveToFirebase('messages', state.messages);
+}
 function sendBroadcast(title, content) {
     state.employees.forEach(e => {
         state.messages.push({ id: Date.now().toString() + e.id, to: e.name, from: '管理者', title, content, createdAt: new Date().toISOString(), read: false });
@@ -813,6 +842,15 @@ function approveRequest(type, id) {
                 alert('承認しましたが、シフト表の更新に失敗しました。\\nshiftId: ' + (r.shiftId || '未設定'));
             }
         }
+    } else if (type === 'holiday') {
+        const r = state.holidayRequests.find(x => x.id === id);
+        if (r) {
+            r.status = 'approved';
+            r.approvedAt = processedAt;
+            r.processedBy = processedBy;
+            saveToFirebase('holidayRequests', state.holidayRequests);
+            alert('休日申請を承認しました。');
+        }
     }
     render(); renderAdminPanel(); updateMessageBar();
 }
@@ -820,13 +858,26 @@ function rejectRequest(type, id) {
     const processedAt = new Date().toISOString();
     const processedBy = '管理者';
 
-    const arr = type === 'change' ? state.changeRequests : type === 'leave' ? state.leaveRequests : state.swapRequests;
+    let arr, refName;
+    if (type === 'change') {
+        arr = state.changeRequests;
+        refName = 'changeRequests';
+    } else if (type === 'leave') {
+        arr = state.leaveRequests;
+        refName = 'leaveRequests';
+    } else if (type === 'holiday') {
+        arr = state.holidayRequests;
+        refName = 'holidayRequests';
+    } else {
+        arr = state.swapRequests;
+        refName = 'swapRequests';
+    }
     const r = arr.find(x => x.id === id);
     if (r) {
         r.status = 'rejected';
         r.rejectedAt = processedAt;
         r.processedBy = processedBy;
-        saveToFirebase(type === 'change' ? 'changeRequests' : type === 'leave' ? 'leaveRequests' : 'swapRequests', arr);
+        saveToFirebase(refName, arr);
     }
     renderAdminPanel(); updateMessageBar();
 }
@@ -847,6 +898,7 @@ function updateAdminBadges() {
     const changeCount = state.changeRequests.filter(r => r.status === 'pending').length;
     const swapCount = state.swapRequests.filter(r => r.status === 'pending').length;
     const leaveCount = state.leaveRequests.filter(r => r.status === 'pending').length;
+    const holidayCount = state.holidayRequests.filter(r => r.status === 'pending').length;
 
     document.querySelectorAll('.admin-tab').forEach(tab => {
         // 既存のバッジを削除
@@ -857,6 +909,7 @@ function updateAdminBadges() {
         if (tab.dataset.tab === 'shiftChanges') count = changeCount;
         else if (tab.dataset.tab === 'shiftSwaps') count = swapCount;
         else if (tab.dataset.tab === 'leaveRequests') count = leaveCount;
+        else if (tab.dataset.tab === 'holidayRequests') count = holidayCount;
 
         if (count > 0) {
             const badge = document.createElement('span');
@@ -915,6 +968,15 @@ function renderAdminPanel() {
             card.innerHTML = `<div class="request-info"><h4>${r.name} - 有給申請</h4><p>期間: ${r.startDate} 〜 ${r.endDate}</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('leave','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('leave','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
+    } else if (state.activeAdminTab === 'holidayRequests') {
+        const reqs = state.holidayRequests.filter(r => r.status === 'pending');
+        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
+        reqs.forEach(r => {
+            const card = document.createElement('div'); card.className = 'request-card';
+            let swapInfo = r.swapRequested && r.swapPartner ? `<p>シフト交代: ${r.swapPartner}さんと交代</p>` : '<p>シフト交代: なし</p>';
+            card.innerHTML = `<div class="request-info"><h4>🏠 ${r.name} - 休日申請</h4><p>期間: ${r.startDate} 〜 ${r.endDate}</p>${swapInfo}<p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('holiday','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('holiday','${r.id}')">却下</button></div>`;
+            c.appendChild(card);
+        });
     } else if (state.activeAdminTab === 'employees') {
         c.innerHTML = `<div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openModal(document.getElementById('employeeModalOverlay'))">+ 従業員追加</button></div><div class="employee-list" id="employeeList"></div>`;
         const list = document.getElementById('employeeList');
@@ -942,12 +1004,14 @@ function renderRequestHistory(container) {
     const changeHistory = state.changeRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
     const swapHistory = state.swapRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
     const leaveHistory = state.leaveRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
+    const holidayHistory = state.holidayRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
 
     // 全ての履歴を一つの配列にまとめ、処理日時で降順ソート
     const allHistory = [
         ...changeHistory.map(r => ({ ...r, type: 'change', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
         ...swapHistory.map(r => ({ ...r, type: 'swap', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
-        ...leaveHistory.map(r => ({ ...r, type: 'leave', processedAt: r.approvedAt || r.rejectedAt || r.createdAt }))
+        ...leaveHistory.map(r => ({ ...r, type: 'leave', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
+        ...holidayHistory.map(r => ({ ...r, type: 'holiday', processedAt: r.approvedAt || r.rejectedAt || r.createdAt }))
     ].sort((a, b) => new Date(b.processedAt) - new Date(a.processedAt));
 
     if (!allHistory.length) {
@@ -962,6 +1026,7 @@ function renderRequestHistory(container) {
             <button class="btn btn-sm history-filter-btn" data-filter="change">シフト変更 (${changeHistory.length})</button>
             <button class="btn btn-sm history-filter-btn" data-filter="swap">シフト交代 (${swapHistory.length})</button>
             <button class="btn btn-sm history-filter-btn" data-filter="leave">有給申請 (${leaveHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="holiday">休日申請 (${holidayHistory.length})</button>
         </div>
         <div id="historyList"></div>
     `;
@@ -1048,6 +1113,22 @@ function renderHistoryItems(container, allHistory, filter) {
                     <h4>🏖️ 有給申請 ${statusBadge}</h4>
                     <p><strong>申請者:</strong> ${h.name || '不明'}</p>
                     <p><strong>期間:</strong> ${h.startDate} 〜 ${h.endDate}</p>
+                    <p><strong>理由:</strong> ${h.reason}</p>
+                    <div class="history-meta">
+                        <p>📅 申請日時: ${createdAtStr}</p>
+                        <p>✍️ 処理日時: ${processedAtStr}</p>
+                        <p>👤 処理者: ${processedByStr}</p>
+                    </div>
+                </div>
+            `;
+        } else if (h.type === 'holiday') {
+            let swapInfo = h.swapRequested && h.swapPartner ? `<p><strong>シフト交代:</strong> ${h.swapPartner}さんと交代</p>` : '';
+            content = `
+                <div class="request-info">
+                    <h4>🏠 休日申請 ${statusBadge}</h4>
+                    <p><strong>申請者:</strong> ${h.name || '不明'}</p>
+                    <p><strong>期間:</strong> ${h.startDate} 〜 ${h.endDate}</p>
+                    ${swapInfo}
                     <p><strong>理由:</strong> ${h.reason}</p>
                     <div class="history-meta">
                         <p>📅 申請日時: ${createdAtStr}</p>
@@ -1356,6 +1437,29 @@ function initEventListeners() {
     document.getElementById('leaveCancelBtn').onclick = () => closeModal(document.getElementById('leaveModalOverlay'));
     document.getElementById('leaveModalOverlay').onclick = e => { if (e.target.id === 'leaveModalOverlay') closeModal(document.getElementById('leaveModalOverlay')); };
 
+    // 休日申請モーダル
+    document.getElementById('requestHolidayBtn').onclick = () => {
+        document.getElementById('holidayStartDate').value = formatDate(new Date());
+        document.getElementById('holidayEndDate').value = formatDate(new Date());
+        document.getElementById('holidaySwapPartnerGroup').style.display = 'none';
+        document.querySelectorAll('input[name="holidaySwapRequested"]').forEach(r => {
+            if (r.value === 'no') r.checked = true;
+        });
+        openModal(document.getElementById('holidayModalOverlay'));
+    };
+    document.getElementById('holidayModalClose').onclick = () => closeModal(document.getElementById('holidayModalOverlay'));
+    document.getElementById('holidayCancelBtn').onclick = () => closeModal(document.getElementById('holidayModalOverlay'));
+    document.getElementById('holidayModalOverlay').onclick = e => { if (e.target.id === 'holidayModalOverlay') closeModal(document.getElementById('holidayModalOverlay')); };
+
+    // シフト交代の有無でフィールドの表示切り替え
+    document.querySelectorAll('input[name="holidaySwapRequested"]').forEach(radio => {
+        radio.onchange = () => {
+            const isYes = document.querySelector('input[name="holidaySwapRequested"]:checked').value === 'yes';
+            document.getElementById('holidaySwapPartnerGroup').style.display = isYes ? 'block' : 'none';
+        };
+    });
+
+
     document.getElementById('pinModalClose').onclick = () => closeModal(document.getElementById('pinModalOverlay'));
     document.getElementById('pinCancelBtn').onclick = () => closeModal(document.getElementById('pinModalOverlay'));
     document.getElementById('pinModalOverlay').onclick = e => { if (e.target.id === 'pinModalOverlay') closeModal(document.getElementById('pinModalOverlay')); };
@@ -1444,6 +1548,25 @@ function initEventListeners() {
         closeModal(document.getElementById('leaveModalOverlay'));
         document.getElementById('leaveForm').reset();
         alert('有給申請を送信しました');
+    };
+
+    document.getElementById('holidayForm').onsubmit = e => {
+        e.preventDefault();
+        const swapRequested = document.querySelector('input[name="holidaySwapRequested"]:checked').value === 'yes';
+        const d = {
+            name: document.getElementById('holidayName').value,
+            startDate: document.getElementById('holidayStartDate').value,
+            endDate: document.getElementById('holidayEndDate').value,
+            swapRequested: swapRequested,
+            swapPartner: swapRequested ? document.getElementById('holidaySwapPartner').value : null,
+            reason: document.getElementById('holidayReason').value.trim()
+        };
+        if (d.startDate > d.endDate) { alert('終了日は開始日以降に'); return; }
+        if (d.swapRequested && !d.swapPartner) { alert('シフト交代相手を選択してください'); return; }
+        addHolidayRequest(d);
+        closeModal(document.getElementById('holidayModalOverlay'));
+        document.getElementById('holidayForm').reset();
+        alert('休日申請を送信しました');
     };
 
     document.onkeydown = e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => closeModal(m)); };
