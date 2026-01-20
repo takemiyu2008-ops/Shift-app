@@ -239,8 +239,12 @@ function renderGanttBody() {
         // 基本の日付表示
         let labelHTML = `<span class="date-number">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
 
-        // この日のイベントを取得
-        const dayEvents = state.dailyEvents.filter(e => e.date === dateStr);
+        // この日のイベントを取得（期間内にある日付を含むイベント）
+        const dayEvents = state.dailyEvents.filter(e => {
+            const startDate = e.startDate || e.date; // 後方互換性
+            const endDate = e.endDate || e.date;
+            return dateStr >= startDate && dateStr <= endDate;
+        });
         if (dayEvents.length > 0) {
             const eventIcons = getEventTypeIcons();
             let iconsHTML = '<div class="event-icons">';
@@ -1074,7 +1078,7 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'dailyEvents') {
         // 店舗スケジュール管理
         const icons = getEventTypeIcons();
-        const typeNames = { sale: 'セール', notice: '連絡事項', training: '研修', inventory: '棚卸し', other: 'その他' };
+        const typeNames = { sale: 'セール', notice: '連絡事項', training: '研修', inventory: '棚卸', other: 'その他' };
 
         c.innerHTML = `
             <div class="daily-events-header">
@@ -1086,8 +1090,12 @@ function renderAdminPanel() {
 
         const list = document.getElementById('dailyEventsList');
 
-        // 日付順にソート（近い日付から）
-        const sortedEvents = [...state.dailyEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+        // 開始日順にソート（近い日付から）
+        const sortedEvents = [...state.dailyEvents].sort((a, b) => {
+            const aDate = a.startDate || a.date;
+            const bDate = b.startDate || b.date;
+            return new Date(aDate) - new Date(bDate);
+        });
 
         if (sortedEvents.length === 0) {
             list.innerHTML = '<p class="no-events-message">登録されているイベントはありません</p>';
@@ -1095,9 +1103,19 @@ function renderAdminPanel() {
             sortedEvents.forEach(e => {
                 const icon = icons[e.type] || icons.other;
                 const typeName = typeNames[e.type] || 'その他';
-                const dateObj = new Date(e.date);
+                const startDate = e.startDate || e.date;
+                const endDate = e.endDate || e.date;
+                const startObj = new Date(startDate);
+                const endObj = new Date(endDate);
                 const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-                const dateDisplay = `${dateObj.getMonth() + 1}/${dateObj.getDate()}（${dayNames[dateObj.getDay()]}）`;
+
+                // 期間表示（同じ日なら1日のみ、違う日なら期間表示）
+                let dateDisplay;
+                if (startDate === endDate) {
+                    dateDisplay = `${startObj.getMonth() + 1}/${startObj.getDate()}（${dayNames[startObj.getDay()]}）`;
+                } else {
+                    dateDisplay = `${startObj.getMonth() + 1}/${startObj.getDate()} 〜 ${endObj.getMonth() + 1}/${endObj.getDate()}`;
+                }
 
                 const card = document.createElement('div');
                 card.className = 'daily-event-card';
@@ -2175,7 +2193,7 @@ function getEventTypeName(type) {
         sale: 'セール',
         notice: '連絡事項',
         training: '研修',
-        inventory: '棚卸し',
+        inventory: '棚卸',
         other: 'その他'
     };
     return names[type] || 'その他';
@@ -2303,9 +2321,11 @@ function confirmDeleteEvent(id) {
 // イベント追加モーダルを開く
 function openEventModal(date = null) {
     const overlay = document.getElementById('eventModalOverlay');
+    const today = formatDate(new Date());
     document.getElementById('eventModalTitle').textContent = '📅 イベント追加';
     document.getElementById('editEventId').value = '';
-    document.getElementById('eventDate').value = date || formatDate(new Date());
+    document.getElementById('eventStartDate').value = date || today;
+    document.getElementById('eventEndDate').value = date || today;
     document.getElementById('eventType').value = 'notice';
     document.getElementById('eventTitle').value = '';
     document.getElementById('eventDescription').value = '';
@@ -2322,7 +2342,9 @@ function openEditEventModal(id) {
     const overlay = document.getElementById('eventModalOverlay');
     document.getElementById('eventModalTitle').textContent = '📅 イベント編集';
     document.getElementById('editEventId').value = id;
-    document.getElementById('eventDate').value = event.date;
+    // 後方互換性: 旧データはdateのみの場合
+    document.getElementById('eventStartDate').value = event.startDate || event.date;
+    document.getElementById('eventEndDate').value = event.endDate || event.date;
     document.getElementById('eventType').value = event.type;
     document.getElementById('eventTitle').value = event.title;
     document.getElementById('eventDescription').value = event.description || '';
@@ -2353,7 +2375,8 @@ function initEventModal() {
             e.preventDefault();
             const id = document.getElementById('editEventId').value;
             const data = {
-                date: document.getElementById('eventDate').value,
+                startDate: document.getElementById('eventStartDate').value,
+                endDate: document.getElementById('eventEndDate').value,
                 type: document.getElementById('eventType').value,
                 title: document.getElementById('eventTitle').value,
                 description: document.getElementById('eventDescription').value
