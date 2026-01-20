@@ -251,10 +251,20 @@ function renderGanttBody() {
         const weather = state.weatherData[dateStr];
         if (weather) {
             const weatherInfo = getWeatherInfo(weather.weatherCode);
+
+            // 昨年比較用の差分計算
+            let lastYearHtml = '';
+            if (weather.lastYearTempMax !== null && weather.lastYearTempMin !== null) {
+                const diffMax = weather.tempMax - weather.lastYearTempMax;
+                const diffSign = diffMax >= 0 ? '+' : '';
+                const diffClass = diffMax >= 0 ? 'temp-diff-plus' : 'temp-diff-minus';
+                lastYearHtml = `<div class="weather-last-year">昨年 <span class="temp-max">${weather.lastYearTempMax}°</span>/<span class="temp-min">${weather.lastYearTempMin}°</span> <span class="${diffClass}">(${diffSign}${diffMax}°)</span></div>`;
+            }
+
             labelHTML += `<div class="weather-info" title="${weatherInfo.desc}">
                 <span class="weather-icon">${weatherInfo.icon}</span>
                 <span class="weather-temp"><span class="temp-max">${weather.tempMax}°</span>/<span class="temp-min">${weather.tempMin}°</span></span>
-            </div>`;
+            </div>${lastYearHtml}`;
         }
 
         // この日のイベントを取得（期間内にある日付を含むイベント）
@@ -2478,7 +2488,7 @@ function getWeatherInfo(weatherCode) {
     return weatherMap[weatherCode] || { icon: '❓', desc: '不明' };
 }
 
-// 週間天気予報を取得
+// 週間天気予報を取得（今年＋昨年比較）
 async function fetchWeatherData() {
     try {
         // 表示している週の日付範囲を計算
@@ -2487,22 +2497,63 @@ async function fetchWeatherData() {
         endDate.setDate(endDate.getDate() + 6);
         const endDateStr = formatDate(endDate);
 
-        // Open-Meteo APIを呼び出し（無料・APIキー不要）
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${STORE_LOCATION.latitude}&longitude=${STORE_LOCATION.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Tokyo&start_date=${startDate}&end_date=${endDateStr}`;
+        // 昨年の同じ期間を計算
+        const lastYearStart = new Date(state.currentWeekStart);
+        lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
+        const lastYearEnd = new Date(endDate);
+        lastYearEnd.setFullYear(lastYearEnd.getFullYear() - 1);
+        const lastYearStartStr = formatDate(lastYearStart);
+        const lastYearEndStr = formatDate(lastYearEnd);
 
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('天気データの取得に失敗しました');
+        // 今年の天気予報を取得
+        const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${STORE_LOCATION.latitude}&longitude=${STORE_LOCATION.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Tokyo&start_date=${startDate}&end_date=${endDateStr}`;
 
-        const data = await response.json();
+        // 昨年の過去データを取得（Open-Meteo Archive API）
+        const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${STORE_LOCATION.latitude}&longitude=${STORE_LOCATION.longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=Asia/Tokyo&start_date=${lastYearStartStr}&end_date=${lastYearEndStr}`;
+
+        // 両方のAPIを並列で呼び出し
+        const [forecastRes, archiveRes] = await Promise.all([
+            fetch(forecastUrl),
+            fetch(archiveUrl)
+        ]);
+
+        if (!forecastRes.ok) throw new Error('天気データの取得に失敗しました');
+
+        const forecastData = await forecastRes.json();
+
+        // 昨年データを日付マップに整理
+        const lastYearData = {};
+        if (archiveRes.ok) {
+            const archiveData = await archiveRes.json();
+            if (archiveData.daily && archiveData.daily.time) {
+                archiveData.daily.time.forEach((date, index) => {
+                    lastYearData[date] = {
+                        tempMax: Math.round(archiveData.daily.temperature_2m_max[index]),
+                        tempMin: Math.round(archiveData.daily.temperature_2m_min[index])
+                    };
+                });
+            }
+        }
 
         // 日付別に天気データを整理
         state.weatherData = {};
-        if (data.daily && data.daily.time) {
-            data.daily.time.forEach((date, index) => {
+        if (forecastData.daily && forecastData.daily.time) {
+            forecastData.daily.time.forEach((date, index) => {
+                // 今年の日付から昨年の対応日付を計算
+                const currentDate = new Date(date);
+                const lastYearDate = new Date(currentDate);
+                lastYearDate.setFullYear(lastYearDate.getFullYear() - 1);
+                const lastYearDateStr = formatDate(lastYearDate);
+
+                const lastYear = lastYearData[lastYearDateStr];
+
                 state.weatherData[date] = {
-                    weatherCode: data.daily.weather_code[index],
-                    tempMax: Math.round(data.daily.temperature_2m_max[index]),
-                    tempMin: Math.round(data.daily.temperature_2m_min[index])
+                    weatherCode: forecastData.daily.weather_code[index],
+                    tempMax: Math.round(forecastData.daily.temperature_2m_max[index]),
+                    tempMin: Math.round(forecastData.daily.temperature_2m_min[index]),
+                    // 昨年データ
+                    lastYearTempMax: lastYear ? lastYear.tempMax : null,
+                    lastYearTempMin: lastYear ? lastYear.tempMin : null
                 };
             });
         }

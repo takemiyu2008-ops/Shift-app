@@ -2095,3 +2095,26 @@ body {
 .temp-min {
     color: #3b82f6;
 }
+
+/* 昨年比較表示 */
+.weather-last-year {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    opacity: 0.9;
+}
+
+.weather-last-year .temp-max,
+.weather-last-year .temp-min {
+    font-size: 0.65rem;
+}
+
+.temp-diff-plus {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.temp-diff-minus {
+    color: #22c55e;
+    font-weight: 600;
+}
