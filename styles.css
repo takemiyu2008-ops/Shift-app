@@ -2395,6 +2395,9 @@ body {
     color: var(--text-secondary);
     line-height: 1.5;
     margin-bottom: 8px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .advice-card-meta {
