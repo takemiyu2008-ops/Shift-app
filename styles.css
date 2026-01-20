@@ -71,6 +71,7 @@ body {
     color: var(--text-primary);
     min-height: 100vh;
     line-height: 1.6;
+    overflow-x: hidden;
 }
 
 /* ========================================
@@ -80,6 +81,7 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 24px;
+    overflow-x: hidden;
 }
 
 /* ========================================
