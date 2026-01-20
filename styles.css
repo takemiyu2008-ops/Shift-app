@@ -2087,3 +2087,11 @@ body {
     font-weight: 600;
     color: var(--text-primary);
 }
+
+.temp-max {
+    color: #ef4444;
+}
+
+.temp-min {
+    color: #3b82f6;
+}

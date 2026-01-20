@@ -251,9 +251,9 @@ function renderGanttBody() {
         const weather = state.weatherData[dateStr];
         if (weather) {
             const weatherInfo = getWeatherInfo(weather.weatherCode);
-            labelHTML += `<div class="weather-info" title="${weatherInfo.desc} ${weather.tempMax}°/${weather.tempMin}°">
+            labelHTML += `<div class="weather-info" title="${weatherInfo.desc}">
                 <span class="weather-icon">${weatherInfo.icon}</span>
-                <span class="weather-temp">${weather.tempMax}°</span>
+                <span class="weather-temp"><span class="temp-max">${weather.tempMax}°</span>/<span class="temp-min">${weather.tempMin}°</span></span>
             </div>`;
         }
 
