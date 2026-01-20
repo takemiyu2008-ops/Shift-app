@@ -1058,6 +1058,10 @@ body {
     font-family: inherit;
     transition: border-color var(--transition-fast);
     resize: vertical;
+    /* タッチデバイスでの入力を有効にする */
+    touch-action: auto;
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 .form-group input:focus,
