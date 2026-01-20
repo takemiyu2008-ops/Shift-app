@@ -2560,8 +2560,348 @@ async function fetchWeatherData() {
 
         // 天気データが更新されたら再描画
         render();
+        // 発注アドバイザーを更新
+        renderOrderAdvisor();
         console.log('天気データを取得しました:', state.weatherData);
     } catch (error) {
         console.error('天気データ取得エラー:', error);
+    }
+}
+
+// ========================================
+// 発注アドバイザー機能
+// ========================================
+
+// 商品カテゴリの定義
+const PRODUCT_CATEGORIES = [
+    { id: 'onigiri', name: 'おにぎり', icon: '🍙' },
+    { id: 'bento', name: '弁当', icon: '🍱' },
+    { id: 'sandwich', name: 'サンドイッチ', icon: '🥪' },
+    { id: 'cold_noodle', name: '調理麺(冷)', icon: '🍜' },
+    { id: 'hot_noodle', name: '調理麺(温)', icon: '🍲' },
+    { id: 'gratin', name: 'グラタン・ドリア', icon: '🧀' },
+    { id: 'spaghetti', name: 'スパゲティ', icon: '🍝' },
+    { id: 'salad', name: 'サラダ', icon: '🥗' },
+    { id: 'sozai', name: '惣菜', icon: '🍳' },
+    { id: 'pastry', name: 'ペストリー', icon: '🥐' },
+    { id: 'dessert', name: 'デザート', icon: '🍰' }
+];
+
+// 天気・気温に基づく発注アドバイスを生成
+function generateOrderAdvice(weatherData) {
+    if (!weatherData) return null;
+
+    const { weatherCode, tempMax, tempMin, lastYearTempMax, lastYearTempMin } = weatherData;
+    const avgTemp = (tempMax + tempMin) / 2;
+    const weatherInfo = getWeatherInfo(weatherCode);
+
+    // 天気の状態を判定
+    const isRainy = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(weatherCode);
+    const isSnowy = [71, 73, 75, 77, 85, 86].includes(weatherCode);
+    const isSunny = [0, 1].includes(weatherCode);
+    const isCloudy = [2, 3].includes(weatherCode);
+
+    // 昨年との気温差
+    const tempDiff = lastYearTempMax !== null ? tempMax - lastYearTempMax : null;
+
+    // 各カテゴリのアドバイスを生成
+    const advice = PRODUCT_CATEGORIES.map(category => {
+        let trend = 0; // -2〜+2 の範囲
+        let reasons = [];
+
+        // 気温による影響
+        if (avgTemp >= 28) {
+            // 猛暑日
+            switch (category.id) {
+                case 'cold_noodle':
+                    trend += 2;
+                    reasons.push('猛暑で冷たい麺類の需要増');
+                    break;
+                case 'salad':
+                    trend += 2;
+                    reasons.push('暑さでさっぱり需要増');
+                    break;
+                case 'dessert':
+                    trend += 2;
+                    reasons.push('冷たいデザート需要増');
+                    break;
+                case 'hot_noodle':
+                    trend -= 2;
+                    reasons.push('暑さで温かい麺類の需要減');
+                    break;
+                case 'gratin':
+                    trend -= 2;
+                    reasons.push('暑さで温かい料理の需要減');
+                    break;
+                case 'spaghetti':
+                    trend -= 1;
+                    reasons.push('暑さで温かい料理の需要やや減');
+                    break;
+            }
+        } else if (avgTemp >= 25) {
+            // 夏日
+            switch (category.id) {
+                case 'cold_noodle':
+                    trend += 1;
+                    reasons.push('暑さで冷たい麺類の需要増');
+                    break;
+                case 'salad':
+                    trend += 1;
+                    reasons.push('暑さでさっぱり需要増');
+                    break;
+                case 'dessert':
+                    trend += 1;
+                    reasons.push('冷たいデザート需要増');
+                    break;
+                case 'hot_noodle':
+                    trend -= 1;
+                    reasons.push('暑さで温かい麺類の需要減');
+                    break;
+                case 'gratin':
+                    trend -= 1;
+                    reasons.push('暑さで温かい料理の需要減');
+                    break;
+            }
+        } else if (avgTemp <= 5) {
+            // 厳冬
+            switch (category.id) {
+                case 'hot_noodle':
+                    trend += 2;
+                    reasons.push('寒さで温かい麺類の需要増');
+                    break;
+                case 'gratin':
+                    trend += 2;
+                    reasons.push('寒さで温かい料理の需要増');
+                    break;
+                case 'sozai':
+                    trend += 1;
+                    reasons.push('温かい惣菜の需要増');
+                    break;
+                case 'cold_noodle':
+                    trend -= 2;
+                    reasons.push('寒さで冷たい麺類の需要減');
+                    break;
+                case 'salad':
+                    trend -= 1;
+                    reasons.push('寒さで冷たい食品の需要減');
+                    break;
+            }
+        } else if (avgTemp <= 10) {
+            // 寒い日
+            switch (category.id) {
+                case 'hot_noodle':
+                    trend += 1;
+                    reasons.push('寒さで温かい麺類の需要増');
+                    break;
+                case 'gratin':
+                    trend += 1;
+                    reasons.push('寒さで温かい料理の需要増');
+                    break;
+                case 'cold_noodle':
+                    trend -= 1;
+                    reasons.push('寒さで冷たい麺類の需要減');
+                    break;
+            }
+        }
+
+        // 天気による影響
+        if (isRainy) {
+            switch (category.id) {
+                case 'bento':
+                    trend += 1;
+                    reasons.push('雨天で自宅需要増');
+                    break;
+                case 'sozai':
+                    trend += 1;
+                    reasons.push('雨天で巣ごもり需要増');
+                    break;
+                case 'sandwich':
+                    trend -= 1;
+                    reasons.push('雨天で外出減少');
+                    break;
+            }
+        } else if (isSnowy) {
+            // 雪の日は全体的に来店減少
+            if (!['bento', 'sozai', 'hot_noodle', 'gratin'].includes(category.id)) {
+                trend -= 1;
+                reasons.push('雪天で来店減少');
+            }
+        } else if (isSunny) {
+            switch (category.id) {
+                case 'sandwich':
+                    trend += 1;
+                    reasons.push('行楽需要増');
+                    break;
+                case 'onigiri':
+                    trend += 1;
+                    reasons.push('外出・行楽需要増');
+                    break;
+            }
+        }
+
+        // 曜日による影響（週末は行楽需要）
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            if (['onigiri', 'sandwich', 'bento'].includes(category.id) && isSunny) {
+                trend += 1;
+                if (!reasons.some(r => r.includes('行楽'))) {
+                    reasons.push('週末行楽需要');
+                }
+            }
+        }
+
+        // 昨年比較による調整
+        if (tempDiff !== null && Math.abs(tempDiff) >= 5) {
+            if (tempDiff > 0) {
+                // 昨年より暑い
+                if (['cold_noodle', 'salad', 'dessert'].includes(category.id)) {
+                    trend += 1;
+                    reasons.push(`昨年より${tempDiff}°C高い`);
+                }
+            } else {
+                // 昨年より寒い
+                if (['hot_noodle', 'gratin', 'sozai'].includes(category.id)) {
+                    trend += 1;
+                    reasons.push(`昨年より${Math.abs(tempDiff)}°C低い`);
+                }
+            }
+        }
+
+        // trendを-2〜+2に制限
+        trend = Math.max(-2, Math.min(2, trend));
+
+        return {
+            ...category,
+            trend,
+            reasons: reasons.length > 0 ? reasons : ['通常通り']
+        };
+    });
+
+    // 注意事項を生成
+    const notes = [];
+    if (isSnowy) {
+        notes.push('雪天のため来店客数の大幅減少が予想されます。廃棄リスクを考慮し、発注量を控えめに。');
+    }
+    if (isRainy) {
+        notes.push('雨天のため来店客数がやや減少する可能性があります。');
+    }
+    if (tempDiff !== null && tempDiff >= 5) {
+        notes.push(`昨年同期より${tempDiff}°C高いため、季節を先取りした商品構成を検討。`);
+    }
+    if (tempDiff !== null && tempDiff <= -5) {
+        notes.push(`昨年同期より${Math.abs(tempDiff)}°C低いため、季節商品の切り替えを遅らせることを検討。`);
+    }
+
+    return {
+        weather: weatherInfo,
+        tempMax,
+        tempMin,
+        tempDiff,
+        categories: advice,
+        notes
+    };
+}
+
+// 発注アドバイザーを描画
+function renderOrderAdvisor() {
+    const container = document.getElementById('orderAdvisor');
+    const content = document.getElementById('advisorContent');
+    if (!container || !content) return;
+
+    // 今日の天気データを取得
+    const today = formatDate(new Date());
+    const todayWeather = state.weatherData[today];
+
+    if (!todayWeather) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const advice = generateOrderAdvice(todayWeather);
+    if (!advice) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // 天気サマリー
+    let html = `
+        <div class="advisor-weather-summary">
+            <div class="weather-summary-item">
+                <span class="weather-summary-label">天気:</span>
+                <span class="weather-summary-value">${advice.weather.icon} ${advice.weather.desc}</span>
+            </div>
+            <div class="weather-summary-item">
+                <span class="weather-summary-label">気温:</span>
+                <span class="weather-summary-value">
+                    <span style="color: #ef4444;">${advice.tempMax}°</span>/<span style="color: #60a5fa;">${advice.tempMin}°</span>
+                </span>
+            </div>
+            ${advice.tempDiff !== null ? `
+            <div class="weather-summary-item">
+                <span class="weather-summary-label">昨年比:</span>
+                <span class="weather-summary-value ${advice.tempDiff > 0 ? 'temp-diff-plus' : 'temp-diff-minus'}">
+                    ${advice.tempDiff > 0 ? '+' : ''}${advice.tempDiff}°C
+                </span>
+            </div>
+            ` : ''}
+        </div>
+    `;
+
+    // カテゴリカード
+    html += '<div class="advisor-grid">';
+    advice.categories.forEach(cat => {
+        const trendClass = cat.trend > 0 ? 'increase' : (cat.trend < 0 ? 'decrease' : '');
+        const trendArrow = cat.trend > 0 ? '↑' : (cat.trend < 0 ? '↓' : '→');
+        const trendText = cat.trend > 0 ? '増加' : (cat.trend < 0 ? '減少' : '通常');
+        const trendColorClass = cat.trend > 0 ? 'up' : (cat.trend < 0 ? 'down' : 'neutral');
+
+        html += `
+            <div class="advisor-card ${trendClass}" title="${cat.reasons.join('、')}">
+                <span class="advisor-card-icon">${cat.icon}</span>
+                <span class="advisor-card-name">${cat.name}</span>
+                <span class="advisor-card-trend ${trendColorClass}">
+                    ${trendArrow} ${trendText}
+                </span>
+                <span class="advisor-card-reason">${cat.reasons[0] || ''}</span>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    // 注意事項
+    if (advice.notes.length > 0) {
+        html += `
+            <div class="advisor-notes">
+                <div class="advisor-notes-title">
+                    <span>⚠️</span>
+                    <span>注意事項</span>
+                </div>
+                <ul class="advisor-notes-list">
+                    ${advice.notes.map(note => `<li>${note}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    content.innerHTML = html;
+
+    // トグル機能の初期化
+    initAdvisorToggle();
+}
+
+// アドバイザーのトグル機能を初期化
+function initAdvisorToggle() {
+    const header = document.querySelector('.advisor-header');
+    const toggle = document.getElementById('advisorToggle');
+    const content = document.getElementById('advisorContent');
+
+    if (header && toggle && content) {
+        header.onclick = () => {
+            toggle.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        };
     }
 }

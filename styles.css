@@ -2118,3 +2118,230 @@ body {
     color: #22c55e;
     font-weight: 600;
 }
+
+/* ========================================
+   発注アドバイザーセクション
+   ======================================== */
+.order-advisor {
+    margin-bottom: 16px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.advisor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.advisor-icon {
+    font-size: 1.3rem;
+}
+
+.advisor-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.advisor-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.advisor-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+.advisor-content {
+    padding: 16px;
+}
+
+.advisor-content.collapsed {
+    display: none;
+}
+
+/* 天気サマリー */
+.advisor-weather-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.weather-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.weather-summary-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.weather-summary-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* アドバイスグリッド */
+.advisor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.advisor-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.advisor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.advisor-card.increase {
+    border-color: rgba(16, 185, 129, 0.5);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.advisor-card.decrease {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.advisor-card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 6px;
+}
+
+.advisor-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+.advisor-card-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.advisor-card-trend.up {
+    color: var(--success);
+}
+
+.advisor-card-trend.down {
+    color: var(--danger);
+}
+
+.advisor-card-trend.neutral {
+    color: var(--text-secondary);
+}
+
+.advisor-card-reason {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 4px;
+}
+
+/* 注意事項 */
+.advisor-notes {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+}
+
+.advisor-notes-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--warning);
+    margin-bottom: 8px;
+}
+
+.advisor-notes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.advisor-notes-list li {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+}
+
+.advisor-notes-list li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--warning);
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .advisor-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .advisor-card {
+        padding: 10px 8px;
+    }
+
+    .advisor-card-icon {
+        font-size: 1.5rem;
+    }
+
+    .advisor-card-name {
+        font-size: 0.75rem;
+    }
+
+    .advisor-weather-summary {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* 印刷時は非表示 */
+@media print {
+    .order-advisor {
+        display: none !important;
+    }
+}
