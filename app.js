@@ -34,6 +34,7 @@ const state = {
     messages: [],
     swapRequests: [],
     dailyEvents: [],
+    nonDailyAdvice: [], // 非デイリー発注アドバイス
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
@@ -120,12 +121,13 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents'];
+    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
             state[key] = data ? Object.values(data) : [];
             if (key === 'employees') updateEmployeeSelects();
+            if (key === 'nonDailyAdvice') renderNonDailyAdvisor();
             render();
             if (state.isAdmin) renderAdminPanel();
             updateMessageBar();
@@ -1164,6 +1166,9 @@ function renderAdminPanel() {
                 list.appendChild(card);
             });
         }
+    } else if (state.activeAdminTab === 'nonDailyAdvice') {
+        // 非デイリーアドバイス管理
+        renderNonDailyAdminPanel(c);
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -2904,4 +2909,262 @@ function initAdvisorToggle() {
             content.classList.toggle('collapsed');
         };
     }
+}
+
+// ========================================
+// 非デイリー発注アドバイザー機能
+// ========================================
+
+// 非デイリー商品カテゴリ
+const NON_DAILY_CATEGORIES = {
+    snacks: { name: 'お菓子', icon: '🍪' },
+    drinks: { name: 'ドリンク', icon: '🥤' },
+    ice: { name: 'アイス', icon: '🍦' },
+    misc: { name: '雑貨', icon: '🧴' },
+    processed: { name: '加工食品', icon: '🥫' },
+    other: { name: 'その他', icon: '📦' }
+};
+
+// 非デイリーアドバイザーを描画
+function renderNonDailyAdvisor() {
+    const container = document.getElementById('nonDailyAdvisor');
+    const content = document.getElementById('nonDailyContent');
+    if (!container || !content) return;
+
+    // アドバイスがあれば表示
+    if (state.nonDailyAdvice.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // 更新日時順にソート
+    const sortedAdvice = [...state.nonDailyAdvice].sort((a, b) =>
+        new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+
+    let html = '<div class="non-daily-advice-grid">';
+
+    sortedAdvice.forEach(advice => {
+        const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.other;
+        const updatedDate = new Date(advice.updatedAt);
+        const dateStr = `${updatedDate.getMonth() + 1}/${updatedDate.getDate()}`;
+
+        html += `
+            <div class="non-daily-advice-card" data-category="${advice.category}">
+                <span class="advice-card-icon">${category.icon}</span>
+                <div class="advice-card-body">
+                    <div class="advice-card-title">${advice.title}</div>
+                    <div class="advice-card-content">${advice.content.replace(/\n/g, '<br>')}</div>
+                    <div class="advice-card-meta">
+                        <span class="advice-card-category">${category.name}</span>
+                        ${advice.source ? `<span class="advice-card-source">📱 ${advice.source}</span>` : ''}
+                        <span class="advice-card-date">🕐 ${dateStr}</span>
+                    </div>
+                    ${state.isAdmin ? `
+                    <div class="advice-card-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="editNonDailyAdvice('${advice.id}')">✏️ 編集</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">🗑️ 削除</button>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    content.innerHTML = html;
+
+    // トグル機能の初期化
+    initNonDailyToggle();
+}
+
+// 非デイリーアドバイザーのトグル機能を初期化
+function initNonDailyToggle() {
+    const container = document.getElementById('nonDailyAdvisor');
+    if (!container) return;
+
+    const header = container.querySelector('.advisor-header');
+    const toggle = document.getElementById('nonDailyToggle');
+    const content = document.getElementById('nonDailyContent');
+
+    if (header && toggle && content) {
+        header.onclick = () => {
+            toggle.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        };
+    }
+}
+
+// 非デイリーアドバイスを追加
+function addNonDailyAdvice(data) {
+    const advice = {
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ...data
+    };
+    state.nonDailyAdvice.push(advice);
+    saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+}
+
+// 非デイリーアドバイスを更新
+function updateNonDailyAdvice(id, data) {
+    const index = state.nonDailyAdvice.findIndex(a => a.id === id);
+    if (index >= 0) {
+        state.nonDailyAdvice[index] = {
+            ...state.nonDailyAdvice[index],
+            ...data,
+            updatedAt: new Date().toISOString()
+        };
+        saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+    }
+}
+
+// 非デイリーアドバイスを削除
+function deleteNonDailyAdvice(id) {
+    if (confirm('このアドバイスを削除しますか？')) {
+        state.nonDailyAdvice = state.nonDailyAdvice.filter(a => a.id !== id);
+        saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+        renderNonDailyAdvisor();
+        if (state.isAdmin) renderAdminPanel();
+    }
+}
+
+// 非デイリーアドバイス編集（プロンプト使用）
+function editNonDailyAdvice(id) {
+    const advice = state.nonDailyAdvice.find(a => a.id === id);
+    if (!advice) return;
+
+    const newTitle = prompt('タイトルを入力:', advice.title);
+    if (newTitle === null) return;
+
+    const newContent = prompt('内容を入力:', advice.content);
+    if (newContent === null) return;
+
+    updateNonDailyAdvice(id, { title: newTitle, content: newContent });
+    renderNonDailyAdvisor();
+    if (state.isAdmin) renderAdminPanel();
+}
+
+// 管理者パネル用: 非デイリーアドバイス一覧を表示
+function renderNonDailyAdminPanel(container) {
+    let html = `
+        <div class="daily-events-header">
+            <h3>📈 非デイリー発注アドバイス管理</h3>
+            <button class="btn btn-primary btn-sm" onclick="openNonDailyAdviceForm()">+ アドバイス追加</button>
+        </div>
+    `;
+
+    if (state.nonDailyAdvice.length === 0) {
+        html += '<p class="no-events-message">アドバイスはありません</p>';
+    } else {
+        html += '<div class="daily-events-list">';
+        const sorted = [...state.nonDailyAdvice].sort((a, b) =>
+            new Date(b.updatedAt) - new Date(a.updatedAt)
+        );
+        sorted.forEach(advice => {
+            const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.other;
+            const updatedDate = new Date(advice.updatedAt);
+            const dateStr = `${updatedDate.getFullYear()}/${updatedDate.getMonth() + 1}/${updatedDate.getDate()}`;
+            html += `
+                <div class="daily-event-card">
+                    <div class="event-info">
+                        <div class="event-header">
+                            <span class="event-type-icon">${category.icon}</span>
+                            <span class="event-title">${advice.title}</span>
+                            <span class="event-date">${dateStr}</span>
+                        </div>
+                        <div class="event-description">${advice.content.substring(0, 100)}${advice.content.length > 100 ? '...' : ''}</div>
+                        ${advice.source ? `<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">情報源: ${advice.source}</p>` : ''}
+                    </div>
+                    <div class="event-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="openNonDailyAdviceForm('${advice.id}')">編集</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">削除</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+// 非デイリーアドバイス入力フォームを開く
+function openNonDailyAdviceForm(editId = null) {
+    const advice = editId ? state.nonDailyAdvice.find(a => a.id === editId) : null;
+    const isEdit = !!advice;
+
+    const categoryOptions = Object.entries(NON_DAILY_CATEGORIES)
+        .map(([key, val]) => `<option value="${key}" ${advice?.category === key ? 'selected' : ''}>${val.icon} ${val.name}</option>`)
+        .join('');
+
+    const formHtml = `
+        <div class="modal-overlay active" id="nonDailyFormOverlay" onclick="if(event.target===this)closeNonDailyAdviceForm()">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">📈 ${isEdit ? 'アドバイス編集' : 'アドバイス追加'}</h2>
+                    <button class="modal-close" onclick="closeNonDailyAdviceForm()">×</button>
+                </div>
+                <form id="nonDailyAdviceForm" class="modal-body" onsubmit="submitNonDailyAdviceForm(event, '${editId || ''}')">
+                    <div class="form-group">
+                        <label for="ndCategory">カテゴリ</label>
+                        <select id="ndCategory" required>${categoryOptions}</select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ndTitle">タイトル</label>
+                        <input type="text" id="ndTitle" placeholder="例：話題のポテトチップス新商品" value="${advice?.title || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="ndContent">内容</label>
+                        <textarea id="ndContent" placeholder="例：SNSで話題のXX味が人気。売り場での目立つ陳列を推奨。" rows="4" required>${advice?.content || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="ndSource">情報源（任意）</label>
+                        <input type="text" id="ndSource" placeholder="例：ChatGPT / X / Instagram" value="${advice?.source || ''}">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeNonDailyAdviceForm()">キャンセル</button>
+                        <button type="submit" class="btn btn-primary">${isEdit ? '保存' : '追加'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // フォームを追加
+    const div = document.createElement('div');
+    div.id = 'nonDailyFormContainer';
+    div.innerHTML = formHtml;
+    document.body.appendChild(div);
+}
+
+// 非デイリーアドバイスフォームを閉じる
+function closeNonDailyAdviceForm() {
+    const container = document.getElementById('nonDailyFormContainer');
+    if (container) container.remove();
+}
+
+// 非デイリーアドバイスフォームを送信
+function submitNonDailyAdviceForm(event, editId) {
+    event.preventDefault();
+
+    const data = {
+        category: document.getElementById('ndCategory').value,
+        title: document.getElementById('ndTitle').value,
+        content: document.getElementById('ndContent').value,
+        source: document.getElementById('ndSource').value || null
+    };
+
+    if (editId) {
+        updateNonDailyAdvice(editId, data);
+    } else {
+        addNonDailyAdvice(data);
+    }
+
+    closeNonDailyAdviceForm();
+    renderNonDailyAdvisor();
+    if (state.isAdmin) renderAdminPanel();
 }
