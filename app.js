@@ -33,6 +33,7 @@ const state = {
     employees: [],
     messages: [],
     swapRequests: [],
+    dailyEvents: [],
     selectedColor: '#6366f1',
     isAdmin: false,
     activeAdminTab: 'shiftChanges',
@@ -111,7 +112,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests'];
+    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -234,7 +235,38 @@ function renderGanttBody() {
 
         const label = document.createElement('div');
         label.className = 'gantt-date-label';
-        label.innerHTML = `<span class="date-number">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
+
+        // 基本の日付表示
+        let labelHTML = `<span class="date-number">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
+
+        // この日のイベントを取得
+        const dayEvents = state.dailyEvents.filter(e => e.date === dateStr);
+        if (dayEvents.length > 0) {
+            const eventIcons = getEventTypeIcons();
+            let iconsHTML = '<div class="event-icons">';
+            dayEvents.forEach(e => {
+                const icon = eventIcons[e.type] || eventIcons.other;
+                iconsHTML += `<span class="event-icon ${e.type}" data-date="${dateStr}" title="${e.title}">${icon}</span>`;
+            });
+            iconsHTML += '</div>';
+            labelHTML += iconsHTML;
+        }
+
+        label.innerHTML = labelHTML;
+
+        // イベントアイコンにクリックイベントを追加
+        label.querySelectorAll('.event-icon').forEach(icon => {
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showEventPopover(dateStr, e);
+            });
+            icon.addEventListener('touchend', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                showEventPopover(dateStr, e);
+            }, { passive: false });
+        });
+
         row.appendChild(label);
 
         const timeline = document.createElement('div');
@@ -1039,6 +1071,53 @@ function renderAdminPanel() {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
     } else if (state.activeAdminTab === 'settings') {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button></div>`;
+    } else if (state.activeAdminTab === 'dailyEvents') {
+        // 店舗スケジュール管理
+        const icons = getEventTypeIcons();
+        const typeNames = { sale: 'セール', notice: '連絡事項', training: '研修', inventory: '棚卸し', other: 'その他' };
+
+        c.innerHTML = `
+            <div class="daily-events-header">
+                <h3>📅 店舗スケジュール管理</h3>
+                <button class="btn btn-primary btn-sm" onclick="openEventModal()">+ イベント追加</button>
+            </div>
+            <div class="daily-events-list" id="dailyEventsList"></div>
+        `;
+
+        const list = document.getElementById('dailyEventsList');
+
+        // 日付順にソート（近い日付から）
+        const sortedEvents = [...state.dailyEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (sortedEvents.length === 0) {
+            list.innerHTML = '<p class="no-events-message">登録されているイベントはありません</p>';
+        } else {
+            sortedEvents.forEach(e => {
+                const icon = icons[e.type] || icons.other;
+                const typeName = typeNames[e.type] || 'その他';
+                const dateObj = new Date(e.date);
+                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                const dateDisplay = `${dateObj.getMonth() + 1}/${dateObj.getDate()}（${dayNames[dateObj.getDay()]}）`;
+
+                const card = document.createElement('div');
+                card.className = 'daily-event-card';
+                card.innerHTML = `
+                    <div class="event-info">
+                        <div class="event-header">
+                            <span class="event-date">${dateDisplay}</span>
+                            <span class="event-type-icon">${icon}</span>
+                            <span class="event-title">${e.title}</span>
+                        </div>
+                        ${e.description ? `<div class="event-description">${e.description}</div>` : ''}
+                    </div>
+                    <div class="event-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="openEditEventModal('${e.id}')">✏️ 編集</button>
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteEvent('${e.id}')">🗑️ 削除</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -2060,6 +2139,7 @@ function init() {
     initZoomControls();
     initPdfExport();
     initPopoverEvents();
+    initEventModal();
     loadData();
     render();
 
@@ -2074,4 +2154,239 @@ function init() {
     });
 }
 
+// ========================================
+// イベント（店舗スケジュール）関連の関数
+// ========================================
+
+// イベントタイプとアイコンのマッピング
+function getEventTypeIcons() {
+    return {
+        sale: '🏷️',
+        notice: '📢',
+        training: '📚',
+        inventory: '📦',
+        other: '📌'
+    };
+}
+
+// イベントタイプ名を取得
+function getEventTypeName(type) {
+    const names = {
+        sale: 'セール',
+        notice: '連絡事項',
+        training: '研修',
+        inventory: '棚卸し',
+        other: 'その他'
+    };
+    return names[type] || 'その他';
+}
+
+// イベント追加
+function addDailyEvent(data) {
+    const event = {
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        ...data
+    };
+    state.dailyEvents.push(event);
+    saveToFirebase('dailyEvents', state.dailyEvents);
+}
+
+// イベント更新
+function updateDailyEvent(id, data) {
+    const index = state.dailyEvents.findIndex(e => e.id === id);
+    if (index >= 0) {
+        state.dailyEvents[index] = { ...state.dailyEvents[index], ...data };
+        saveToFirebase('dailyEvents', state.dailyEvents);
+    }
+}
+
+// イベント削除
+function deleteDailyEvent(id) {
+    state.dailyEvents = state.dailyEvents.filter(e => e.id !== id);
+    saveToFirebase('dailyEvents', state.dailyEvents);
+}
+
+// イベント詳細ポップオーバーを表示
+function showEventPopover(dateStr, event) {
+    const popover = document.getElementById('eventPopover');
+    const body = document.getElementById('eventPopoverBody');
+
+    const dayEvents = state.dailyEvents.filter(e => e.date === dateStr);
+    if (dayEvents.length === 0) return;
+
+    // 日付を表示用にフォーマット
+    const dateObj = new Date(dateStr);
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dateDisplay = `${dateObj.getMonth() + 1}月${dateObj.getDate()}日（${dayNames[dateObj.getDay()]}）`;
+
+    document.getElementById('eventPopoverTitle').textContent = `📅 ${dateDisplay}`;
+
+    const icons = getEventTypeIcons();
+
+    // イベント一覧を生成
+    let html = '';
+    dayEvents.forEach(e => {
+        const icon = icons[e.type] || icons.other;
+        html += `
+            <div class="event-list-item">
+                <div class="event-item-header">
+                    <span class="event-item-icon">${icon}</span>
+                    <span class="event-item-title">${e.title}</span>
+                </div>
+                ${e.description ? `<div class="event-item-description">${e.description.replace(/\n/g, '<br>')}</div>` : ''}
+                ${state.isAdmin ? `
+                <div class="event-item-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="openEditEventModal('${e.id}')">✏️ 編集</button>
+                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEvent('${e.id}')">🗑️ 削除</button>
+                </div>` : ''}
+            </div>
+        `;
+    });
+
+    body.innerHTML = html;
+
+    // ポップオーバーの位置を計算
+    const popoverWidth = 320;
+    const popoverHeight = 250;
+    let left, top;
+
+    if (event.target) {
+        const rect = event.target.getBoundingClientRect();
+        left = rect.right + 10;
+        top = rect.top;
+
+        // 右にはみ出す場合は左に配置
+        if (left + popoverWidth > window.innerWidth - 10) {
+            left = rect.left - popoverWidth - 10;
+        }
+    } else if (event.clientX !== undefined) {
+        left = event.clientX;
+        top = event.clientY;
+    } else {
+        left = (window.innerWidth - popoverWidth) / 2;
+        top = (window.innerHeight - popoverHeight) / 2;
+    }
+
+    // はみ出し調整
+    if (left < 10) left = 10;
+    if (left + popoverWidth > window.innerWidth - 10) {
+        left = window.innerWidth - popoverWidth - 10;
+    }
+    if (top < 10) top = 10;
+    if (top + popoverHeight > window.innerHeight - 10) {
+        top = window.innerHeight - popoverHeight - 10;
+    }
+
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+    popover.classList.add('show');
+}
+
+// イベントポップオーバーを閉じる
+function closeEventPopover() {
+    const popover = document.getElementById('eventPopover');
+    popover.classList.remove('show');
+}
+
+// イベント削除確認
+function confirmDeleteEvent(id) {
+    const event = state.dailyEvents.find(e => e.id === id);
+    if (event && confirm(`「${event.title}」を削除しますか？`)) {
+        deleteDailyEvent(id);
+        closeEventPopover();
+        render();
+        if (state.isAdmin) renderAdminPanel();
+    }
+}
+
+// イベント追加モーダルを開く
+function openEventModal(date = null) {
+    const overlay = document.getElementById('eventModalOverlay');
+    document.getElementById('eventModalTitle').textContent = '📅 イベント追加';
+    document.getElementById('editEventId').value = '';
+    document.getElementById('eventDate').value = date || formatDate(new Date());
+    document.getElementById('eventType').value = 'notice';
+    document.getElementById('eventTitle').value = '';
+    document.getElementById('eventDescription').value = '';
+    document.getElementById('eventSubmitBtn').textContent = '追加';
+    overlay.classList.add('active');
+}
+
+// イベント編集モーダルを開く
+function openEditEventModal(id) {
+    closeEventPopover();
+    const event = state.dailyEvents.find(e => e.id === id);
+    if (!event) return;
+
+    const overlay = document.getElementById('eventModalOverlay');
+    document.getElementById('eventModalTitle').textContent = '📅 イベント編集';
+    document.getElementById('editEventId').value = id;
+    document.getElementById('eventDate').value = event.date;
+    document.getElementById('eventType').value = event.type;
+    document.getElementById('eventTitle').value = event.title;
+    document.getElementById('eventDescription').value = event.description || '';
+    document.getElementById('eventSubmitBtn').textContent = '保存';
+    overlay.classList.add('active');
+}
+
+// イベントモーダルを閉じる
+function closeEventModal() {
+    document.getElementById('eventModalOverlay').classList.remove('active');
+}
+
+// イベントモーダルの初期化
+function initEventModal() {
+    const overlay = document.getElementById('eventModalOverlay');
+    const closeBtn = document.getElementById('eventModalClose');
+    const cancelBtn = document.getElementById('eventCancelBtn');
+    const form = document.getElementById('eventForm');
+
+    if (closeBtn) closeBtn.addEventListener('click', closeEventModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeEventModal);
+    if (overlay) overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeEventModal();
+    });
+
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editEventId').value;
+            const data = {
+                date: document.getElementById('eventDate').value,
+                type: document.getElementById('eventType').value,
+                title: document.getElementById('eventTitle').value,
+                description: document.getElementById('eventDescription').value
+            };
+
+            if (id) {
+                updateDailyEvent(id, data);
+            } else {
+                addDailyEvent(data);
+            }
+
+            closeEventModal();
+            render();
+            if (state.isAdmin) renderAdminPanel();
+        });
+    }
+
+    // イベントポップオーバーの閉じるボタン
+    const popoverClose = document.getElementById('eventPopoverClose');
+    if (popoverClose) {
+        popoverClose.addEventListener('click', closeEventPopover);
+    }
+
+    // ポップオーバー外クリックで閉じる
+    document.addEventListener('click', (e) => {
+        const popover = document.getElementById('eventPopover');
+        if (popover && popover.classList.contains('show')) {
+            if (!popover.contains(e.target) && !e.target.closest('.event-icon')) {
+                closeEventPopover();
+            }
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', init);
+
