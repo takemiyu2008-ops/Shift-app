@@ -42,7 +42,9 @@ const state = {
     editingShiftId: null,
     isConnected: false,
     zoomLevel: 100,
-    currentPopoverShift: null
+    currentPopoverShift: null,
+    eventTypeFilter: 'all', // 店舗スケジュールのタイプフィルター
+    nonDailyFilter: 'all' // 非デイリーアドバイスのカテゴリフィルター
 };
 
 // 店舗の位置情報（千葉県千葉市）
@@ -1108,20 +1110,33 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'dailyEvents') {
         // 店舗スケジュール管理
         const icons = getEventTypeIcons();
-        const typeNames = { sale: 'セール', notice: '連絡事項', training: '研修', inventory: '棚卸', other: 'その他' };
+        const typeNames = { sale: 'セール', notice: '連絡事項', training: '研修', inventory: '棚卸', delivery: '特発納品', other: 'その他' };
+
+        // 現在のフィルター状態を取得（初期値は'all'）
+        const currentFilter = state.eventTypeFilter || 'all';
 
         c.innerHTML = `
             <div class="daily-events-header">
                 <h3>📅 店舗スケジュール管理</h3>
                 <button class="btn btn-primary btn-sm" onclick="openEventModal()">+ イベント追加</button>
             </div>
+            <div class="filter-tabs" id="eventFilterTabs">
+                <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="filterEventsByType('all')">すべて</button>
+                ${Object.entries(typeNames).map(([key, name]) =>
+            `<button class="filter-tab ${currentFilter === key ? 'active' : ''}" data-filter="${key}" onclick="filterEventsByType('${key}')">${icons[key]} ${name}</button>`
+        ).join('')}
+            </div>
             <div class="daily-events-list" id="dailyEventsList"></div>
         `;
 
         const list = document.getElementById('dailyEventsList');
 
-        // 開始日順にソート（近い日付から）
-        const sortedEvents = [...state.dailyEvents].sort((a, b) => {
+        // フィルタリングして開始日順にソート
+        let filteredEvents = [...state.dailyEvents];
+        if (currentFilter !== 'all') {
+            filteredEvents = filteredEvents.filter(e => e.type === currentFilter);
+        }
+        const sortedEvents = filteredEvents.sort((a, b) => {
             const aDate = a.startDate || a.date;
             const bDate = b.startDate || b.date;
             return new Date(aDate) - new Date(bDate);
@@ -2219,6 +2234,7 @@ function getEventTypeIcons() {
         notice: '📢',
         training: '📚',
         inventory: '📦',
+        delivery: '🚚',
         other: '📌'
     };
 }
@@ -2230,6 +2246,7 @@ function getEventTypeName(type) {
         notice: '連絡事項',
         training: '研修',
         inventory: '棚卸',
+        delivery: '特発納品',
         other: 'その他'
     };
     return names[type] || 'その他';
@@ -2939,39 +2956,62 @@ function renderNonDailyAdvisor() {
 
     container.style.display = 'block';
 
+    // 現在のフィルター状態を取得
+    const currentFilter = state.nonDailyFilter || 'all';
+
+    // フィルタリング
+    let filteredAdvice = [...state.nonDailyAdvice];
+    if (currentFilter !== 'all') {
+        filteredAdvice = filteredAdvice.filter(a => a.category === currentFilter);
+    }
+
     // 更新日時順にソート
-    const sortedAdvice = [...state.nonDailyAdvice].sort((a, b) =>
+    const sortedAdvice = filteredAdvice.sort((a, b) =>
         new Date(b.updatedAt) - new Date(a.updatedAt)
     );
 
-    let html = '<div class="non-daily-advice-grid">';
+    // フィルタータブを構築
+    let html = `
+        <div class="filter-tabs non-daily-filter-tabs">
+            <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="filterNonDailyByCategory('all')">すべて</button>
+            ${Object.entries(NON_DAILY_CATEGORIES).map(([key, cat]) =>
+        `<button class="filter-tab ${currentFilter === key ? 'active' : ''}" onclick="filterNonDailyByCategory('${key}')">${cat.icon} ${cat.name}</button>`
+    ).join('')}
+        </div>
+    `;
 
-    sortedAdvice.forEach(advice => {
-        const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.other;
-        const updatedDate = new Date(advice.updatedAt);
-        const dateStr = `${updatedDate.getMonth() + 1}/${updatedDate.getDate()}`;
+    html += '<div class="non-daily-advice-grid">';
 
-        html += `
-            <div class="non-daily-advice-card" data-category="${advice.category}">
-                <span class="advice-card-icon">${category.icon}</span>
-                <div class="advice-card-body">
-                    <div class="advice-card-title">${advice.title}</div>
-                    <div class="advice-card-content">${advice.content.replace(/\n/g, '<br>')}</div>
-                    <div class="advice-card-meta">
-                        <span class="advice-card-category">${category.name}</span>
-                        ${advice.source ? `<span class="advice-card-source">📱 ${advice.source}</span>` : ''}
-                        <span class="advice-card-date">🕐 ${dateStr}</span>
+    if (sortedAdvice.length === 0) {
+        html += '<p class="no-advice-message">該当するアドバイスはありません</p>';
+    } else {
+        sortedAdvice.forEach(advice => {
+            const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.other;
+            const updatedDate = new Date(advice.updatedAt);
+            const dateStr = `${updatedDate.getMonth() + 1}/${updatedDate.getDate()}`;
+
+            html += `
+                <div class="non-daily-advice-card" data-category="${advice.category}">
+                    <span class="advice-card-icon">${category.icon}</span>
+                    <div class="advice-card-body">
+                        <div class="advice-card-title">${advice.title}</div>
+                        <div class="advice-card-content">${advice.content.replace(/\n/g, '<br>')}</div>
+                        <div class="advice-card-meta">
+                            <span class="advice-card-category">${category.name}</span>
+                            ${advice.source ? `<span class="advice-card-source">📱 ${advice.source}</span>` : ''}
+                            <span class="advice-card-date">🕐 ${dateStr}</span>
+                        </div>
+                        ${state.isAdmin ? `
+                        <div class="advice-card-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="editNonDailyAdvice('${advice.id}')">✏️ 編集</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">🗑️ 削除</button>
+                        </div>
+                        ` : ''}
                     </div>
-                    ${state.isAdmin ? `
-                    <div class="advice-card-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="editNonDailyAdvice('${advice.id}')">✏️ 編集</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">🗑️ 削除</button>
-                    </div>
-                    ` : ''}
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    }
 
     html += '</div>';
     content.innerHTML = html;
@@ -3167,4 +3207,16 @@ function submitNonDailyAdviceForm(event, editId) {
     closeNonDailyAdviceForm();
     renderNonDailyAdvisor();
     if (state.isAdmin) renderAdminPanel();
+}
+
+// イベントタイプでフィルタリング
+function filterEventsByType(type) {
+    state.eventTypeFilter = type;
+    renderAdminPanel();
+}
+
+// 非デイリーアドバイスをカテゴリでフィルタリング
+function filterNonDailyByCategory(category) {
+    state.nonDailyFilter = category;
+    renderNonDailyAdvisor();
 }
