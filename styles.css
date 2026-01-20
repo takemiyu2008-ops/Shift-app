@@ -1288,8 +1288,8 @@ body {
 
     .gantt-label-header,
     .gantt-date-label {
-        width: 60px;
-        min-width: 60px;
+        width: 85px;
+        min-width: 85px;
         padding: 8px;
         position: sticky;
         left: 0;
