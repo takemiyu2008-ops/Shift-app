@@ -1394,7 +1394,7 @@ function clearAllMessages() {
     }
 }
 
-function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); }
+function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList(); }
 
 // モーダル操作
 function openModal(o) { o.classList.add('active'); }
@@ -3028,6 +3028,106 @@ function initNonDailyToggle() {
     const header = container.querySelector('.advisor-header');
     const toggle = document.getElementById('nonDailyToggle');
     const content = document.getElementById('nonDailyContent');
+
+    if (header && toggle && content) {
+        header.onclick = () => {
+            toggle.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        };
+    }
+}
+
+// ========================================
+// 店舗スケジュール一覧
+// ========================================
+
+// 店舗スケジュール一覧を描画
+function renderScheduleList() {
+    const container = document.getElementById('scheduleListSection');
+    const content = document.getElementById('scheduleListContent');
+    if (!container || !content) return;
+
+    // 現在表示中の週の日付範囲を取得
+    const startDate = formatDate(state.currentWeekStart);
+    const endDate = new Date(state.currentWeekStart);
+    endDate.setDate(endDate.getDate() + 6);
+    const endDateStr = formatDate(endDate);
+
+    // 今週のイベントをフィルタリング
+    const weekEvents = state.dailyEvents.filter(event => {
+        const eventStart = event.startDate || event.date;
+        const eventEnd = event.endDate || event.date;
+        // イベント期間が今週の範囲と重なるかをチェック
+        return eventEnd >= startDate && eventStart <= endDateStr;
+    });
+
+    // イベントがなければ非表示
+    if (weekEvents.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // イベントを開始日でソート
+    weekEvents.sort((a, b) => {
+        const dateA = a.startDate || a.date;
+        const dateB = b.startDate || b.date;
+        return dateA.localeCompare(dateB);
+    });
+
+    const icons = getEventTypeIcons();
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+    let html = '<div class="schedule-list-grid">';
+
+    weekEvents.forEach(event => {
+        const icon = icons[event.type] || icons.other;
+        const typeName = getEventTypeName(event.type);
+
+        // 日付表示を作成
+        const startDateObj = new Date(event.startDate || event.date);
+        const endDateObj = new Date(event.endDate || event.date);
+
+        let dateDisplay;
+        if ((event.startDate || event.date) === (event.endDate || event.date)) {
+            // 1日のみ
+            dateDisplay = `${startDateObj.getMonth() + 1}/${startDateObj.getDate()}（${dayNames[startDateObj.getDay()]}）`;
+        } else {
+            // 期間
+            dateDisplay = `${startDateObj.getMonth() + 1}/${startDateObj.getDate()}（${dayNames[startDateObj.getDay()]}）〜 ${endDateObj.getMonth() + 1}/${endDateObj.getDate()}（${dayNames[endDateObj.getDay()]}）`;
+        }
+
+        html += `
+            <div class="schedule-list-item" data-type="${event.type}">
+                <div class="schedule-item-icon">${icon}</div>
+                <div class="schedule-item-body">
+                    <div class="schedule-item-date">${dateDisplay}</div>
+                    <div class="schedule-item-title">
+                        ${event.title}
+                        <span class="schedule-item-type">${typeName}</span>
+                    </div>
+                    ${event.description ? `<div class="schedule-item-description">${event.description.replace(/\n/g, '<br>')}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    content.innerHTML = html;
+
+    // トグル機能の初期化
+    initScheduleToggle();
+}
+
+// 店舗スケジュール一覧のトグル機能を初期化
+function initScheduleToggle() {
+    const container = document.getElementById('scheduleListSection');
+    if (!container) return;
+
+    const header = container.querySelector('.advisor-header');
+    const toggle = document.getElementById('scheduleToggle');
+    const content = document.getElementById('scheduleListContent');
 
     if (header && toggle && content) {
         header.onclick = () => {

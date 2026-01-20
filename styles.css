@@ -2469,6 +2469,108 @@ body {
     font-style: italic;
 }
 
+/* ========================================
+   店舗スケジュール一覧
+   ======================================== */
+.schedule-list-section .advisor-header {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.15));
+}
+
+.schedule-list-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.schedule-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.schedule-list-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.schedule-item-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+    width: 40px;
+    text-align: center;
+}
+
+.schedule-item-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-item-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.schedule-item-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.schedule-item-description {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.schedule-item-type {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+
+/* イベントタイプ別のボーダー色 */
+.schedule-list-item[data-type="sale"] {
+    border-left: 3px solid #ec4899;
+}
+
+.schedule-list-item[data-type="notice"] {
+    border-left: 3px solid #3b82f6;
+}
+
+.schedule-list-item[data-type="training"] {
+    border-left: 3px solid #8b5cf6;
+}
+
+.schedule-list-item[data-type="inventory"] {
+    border-left: 3px solid #10b981;
+}
+
+.schedule-list-item[data-type="delivery"] {
+    border-left: 3px solid #f59e0b;
+}
+
+.schedule-list-item[data-type="other"] {
+    border-left: 3px solid #6b7280;
+}
+
+.no-schedule-message {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* 管理者用アクションボタン */
 .advice-card-actions {
     display: flex;
