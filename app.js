@@ -34,6 +34,7 @@ const state = {
     messages: [],
     swapRequests: [],
     dailyEvents: [],
+    weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
     activeAdminTab: 'shiftChanges',
@@ -41,6 +42,13 @@ const state = {
     isConnected: false,
     zoomLevel: 100,
     currentPopoverShift: null
+};
+
+// 店舗の位置情報（千葉県千葉市）
+const STORE_LOCATION = {
+    latitude: 35.6074,
+    longitude: 140.1065,
+    name: '千葉市'
 };
 
 // 接続状態の監視
@@ -238,6 +246,16 @@ function renderGanttBody() {
 
         // 基本の日付表示
         let labelHTML = `<span class="date-number">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
+
+        // 天気予報を追加
+        const weather = state.weatherData[dateStr];
+        if (weather) {
+            const weatherInfo = getWeatherInfo(weather.weatherCode);
+            labelHTML += `<div class="weather-info" title="${weatherInfo.desc} ${weather.tempMax}°/${weather.tempMin}°">
+                <span class="weather-icon">${weatherInfo.icon}</span>
+                <span class="weather-temp">${weather.tempMax}°</span>
+            </div>`;
+        }
 
         // この日のイベントを取得（期間内にある日付を含むイベント）
         const dayEvents = state.dailyEvents.filter(e => {
@@ -965,8 +983,8 @@ function rejectRequest(type, id) {
 }
 
 // ナビ
-function goToPrevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); render(); }
-function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); render(); }
+function goToPrevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); render(); fetchWeatherData(); }
+function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); render(); fetchWeatherData(); }
 
 // 認証
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
@@ -2161,6 +2179,9 @@ function init() {
     loadData();
     render();
 
+    // 天気データを取得
+    fetchWeatherData();
+
     // ウィンドウリサイズ時にシフトバーを再描画
     let resizeTimeout;
     window.addEventListener('resize', () => {
@@ -2418,3 +2439,78 @@ function initEventModal() {
 
 document.addEventListener('DOMContentLoaded', init);
 
+// ========================================
+// 天気予報関連の関数
+// ========================================
+
+// 天気コードからアイコンと説明を取得
+function getWeatherInfo(weatherCode) {
+    const weatherMap = {
+        0: { icon: '☀️', desc: '快晴' },
+        1: { icon: '🌤️', desc: '晴れ' },
+        2: { icon: '⛅', desc: '曇りがち' },
+        3: { icon: '☁️', desc: '曇り' },
+        45: { icon: '🌫️', desc: '霧' },
+        48: { icon: '🌫️', desc: '着氷霧' },
+        51: { icon: '🌧️', desc: '弱い霧雨' },
+        53: { icon: '🌧️', desc: '霧雨' },
+        55: { icon: '🌧️', desc: '強い霧雨' },
+        56: { icon: '🌧️', desc: '着氷霧雨' },
+        57: { icon: '🌧️', desc: '強い着氷霧雨' },
+        61: { icon: '🌧️', desc: '弱い雨' },
+        63: { icon: '🌧️', desc: '雨' },
+        65: { icon: '🌧️', desc: '強い雨' },
+        66: { icon: '🌧️', desc: '着氷性の雨' },
+        67: { icon: '🌧️', desc: '強い着氷性の雨' },
+        71: { icon: '❄️', desc: '弱い雪' },
+        73: { icon: '❄️', desc: '雪' },
+        75: { icon: '❄️', desc: '強い雪' },
+        77: { icon: '🌨️', desc: '霧雪' },
+        80: { icon: '🌦️', desc: 'にわか雨' },
+        81: { icon: '🌧️', desc: '強いにわか雨' },
+        82: { icon: '⛈️', desc: '激しいにわか雨' },
+        85: { icon: '🌨️', desc: 'にわか雪' },
+        86: { icon: '❄️', desc: '強いにわか雪' },
+        95: { icon: '⛈️', desc: '雷雨' },
+        96: { icon: '⛈️', desc: '雷雨（雹）' },
+        99: { icon: '⛈️', desc: '激しい雷雨（雹）' }
+    };
+    return weatherMap[weatherCode] || { icon: '❓', desc: '不明' };
+}
+
+// 週間天気予報を取得
+async function fetchWeatherData() {
+    try {
+        // 表示している週の日付範囲を計算
+        const startDate = formatDate(state.currentWeekStart);
+        const endDate = new Date(state.currentWeekStart);
+        endDate.setDate(endDate.getDate() + 6);
+        const endDateStr = formatDate(endDate);
+
+        // Open-Meteo APIを呼び出し（無料・APIキー不要）
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${STORE_LOCATION.latitude}&longitude=${STORE_LOCATION.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Tokyo&start_date=${startDate}&end_date=${endDateStr}`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('天気データの取得に失敗しました');
+
+        const data = await response.json();
+
+        // 日付別に天気データを整理
+        state.weatherData = {};
+        if (data.daily && data.daily.time) {
+            data.daily.time.forEach((date, index) => {
+                state.weatherData[date] = {
+                    weatherCode: data.daily.weather_code[index],
+                    tempMax: Math.round(data.daily.temperature_2m_max[index]),
+                    tempMin: Math.round(data.daily.temperature_2m_min[index])
+                };
+            });
+        }
+
+        // 天気データが更新されたら再描画
+        render();
+        console.log('天気データを取得しました:', state.weatherData);
+    } catch (error) {
+        console.error('天気データ取得エラー:', error);
+    }
+}
