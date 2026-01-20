@@ -2230,7 +2230,12 @@ function showEventPopover(dateStr, event) {
     const popover = document.getElementById('eventPopover');
     const body = document.getElementById('eventPopoverBody');
 
-    const dayEvents = state.dailyEvents.filter(e => e.date === dateStr);
+    // 期間内にある日付を含むイベントを取得
+    const dayEvents = state.dailyEvents.filter(e => {
+        const startDate = e.startDate || e.date; // 後方互換性
+        const endDate = e.endDate || e.date;
+        return dateStr >= startDate && dateStr <= endDate;
+    });
     if (dayEvents.length === 0) return;
 
     // 日付を表示用にフォーマット
