@@ -1277,6 +1277,8 @@ body {
     /* ガントチャート改善 */
     .gantt-container {
         overflow-x: auto;
+        overflow-y: visible;
+        max-height: none;
         -webkit-overflow-scrolling: touch;
     }
 
