@@ -2697,3 +2697,471 @@ body {
 .legend {
     display: none !important;
 }
+
+/* ========================================
+   拡張発注アドバイザー
+   ======================================== */
+.advisor-extended {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 上部パネル（天気＋購買行動分析） */
+.advisor-top-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.advisor-weather-panel {
+    background: linear-gradient(135deg, #1a1f2e, #232b3b);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.weather-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.weather-icon-large {
+    font-size: 3rem;
+}
+
+.weather-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.weather-desc {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.weather-temps {
+    font-size: 1.2rem;
+}
+
+.temp-high {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.temp-low {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.weather-diff {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.weather-diff.plus {
+    color: #ef4444;
+}
+
+.weather-diff.minus {
+    color: #60a5fa;
+}
+
+.advisor-behavior-panel {
+    background: linear-gradient(135deg, #1a1f2e, #232b3b);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.behavior-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.behavior-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.behavior-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.behavior-label {
+    color: var(--text-secondary);
+}
+
+.behavior-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.behavior-value.plus {
+    color: #ef4444;
+}
+
+.behavior-value.minus {
+    color: #60a5fa;
+}
+
+/* カテゴリチップ */
+.category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.category-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: #232b3b;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.category-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.category-chip.selected {
+    border-color: #4a9eff;
+    background: rgba(74, 158, 255, 0.15);
+}
+
+.category-chip.positive {
+    border-color: rgba(34, 197, 94, 0.5);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.category-chip.negative {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.category-chip.positive.selected {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: #22c55e;
+}
+
+.category-chip.negative.selected {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+}
+
+.chip-icon {
+    font-size: 1.2rem;
+}
+
+.chip-name {
+    font-weight: 500;
+}
+
+.chip-percent {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.category-chip.positive .chip-percent {
+    color: #22c55e;
+}
+
+.category-chip.negative .chip-percent {
+    color: #ef4444;
+}
+
+.category-chip.neutral .chip-percent {
+    color: var(--text-muted);
+}
+
+/* カテゴリ詳細パネル */
+.category-detail-panel {
+    background: linear-gradient(135deg, #1a1f2e, #232b3b);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-icon {
+    font-size: 2rem;
+}
+
+.detail-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.detail-percent {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-left: auto;
+}
+
+.detail-percent.positive {
+    color: #22c55e;
+}
+
+.detail-percent.negative {
+    color: #ef4444;
+}
+
+.detail-percent.neutral {
+    color: var(--text-muted);
+}
+
+/* サブカテゴリ */
+.detail-subcategories {
+    margin-bottom: 16px;
+}
+
+.subcategory-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.subcategory-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+.subcategory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+}
+
+.subcategory-name {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.subcategory-percent {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.subcategory-percent.positive {
+    color: #22c55e;
+}
+
+.subcategory-percent.negative {
+    color: #ef4444;
+}
+
+.subcategory-percent.neutral {
+    color: var(--text-muted);
+}
+
+/* 日次チェックリスト */
+.daily-checklist {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.checklist-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.checklist-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.checklist-row:last-child {
+    margin-bottom: 0;
+}
+
+.checklist-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    min-width: 80px;
+}
+
+.checklist-options {
+    display: flex;
+    gap: 8px;
+}
+
+.checklist-btn {
+    padding: 6px 14px;
+    background: #232b3b;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.checklist-btn:hover {
+    background: #334155;
+    color: var(--text-primary);
+}
+
+.checklist-btn.selected {
+    background: #4a9eff;
+    border-color: #4a9eff;
+    color: white;
+}
+
+/* メモ */
+.category-memo {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    padding: 16px;
+}
+
+.memo-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.memo-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.memo-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: #0f1419;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.memo-input:focus {
+    outline: none;
+    border-color: #4a9eff;
+}
+
+.memo-save-btn {
+    padding: 10px 20px;
+    background: #4a9eff;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.memo-save-btn:hover {
+    background: #3b8ae8;
+}
+
+.quick-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.quick-tag-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.quick-tag {
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.quick-tag:hover {
+    background: rgba(74, 158, 255, 0.1);
+    border-color: #4a9eff;
+    color: #4a9eff;
+}
+
+/* レスポンシブ - 拡張アドバイザー */
+@media (max-width: 768px) {
+    .advisor-top-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .category-chips {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .category-chip {
+        flex-shrink: 0;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    .subcategory-list {
+        grid-template-columns: 1fr;
+    }
+
+    .checklist-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .checklist-options {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .memo-input-row {
+        flex-direction: column;
+    }
+
+    .memo-save-btn {
+        width: 100%;
+    }
+}

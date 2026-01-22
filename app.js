@@ -44,7 +44,10 @@ const state = {
     zoomLevel: 100,
     currentPopoverShift: null,
     eventTypeFilter: 'all', // 店舗スケジュールのタイプフィルター
-    nonDailyFilter: 'all' // 非デイリーアドバイスのカテゴリフィルター
+    nonDailyFilter: 'all', // 非デイリーアドバイスのカテゴリフィルター
+    dailyChecklist: {}, // カテゴリ別日次チェックリスト
+    categoryMemos: [], // カテゴリ別メモ
+    selectedAdvisorCategory: null // 選択中のアドバイザーカテゴリ
 };
 
 // 店舗の位置情報（千葉県千葉市）
@@ -123,7 +126,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice'];
+    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -134,6 +137,10 @@ function loadData() {
             if (state.isAdmin) renderAdminPanel();
             updateMessageBar();
         });
+    });
+    // dailyChecklistはオブジェクト形式で管理
+    database.ref('dailyChecklist').on('value', snap => {
+        state.dailyChecklist = snap.val() || {};
     });
 }
 
@@ -2582,8 +2589,8 @@ async function fetchWeatherData() {
 
         // 天気データが更新されたら再描画
         render();
-        // 発注アドバイザーを更新
-        renderOrderAdvisor();
+        // 拡張版発注アドバイザーを更新
+        renderOrderAdvisorExtended();
         console.log('天気データを取得しました:', state.weatherData);
     } catch (error) {
         console.error('天気データ取得エラー:', error);
@@ -2591,10 +2598,79 @@ async function fetchWeatherData() {
 }
 
 // ========================================
-// 発注アドバイザー機能
+// 発注アドバイザー機能（拡張版）
 // ========================================
 
-// 商品カテゴリの定義
+// 8カテゴリの定義（サブカテゴリ付き）
+const ORDER_CATEGORIES = [
+    {
+        id: 'rice', name: '米飯', icon: '🍙', stable: true,
+        subcategories: [
+            { id: 'bento', name: '弁当', tempEffect: 'slight_warm' },
+            { id: 'onigiri', name: 'おにぎり', tempEffect: 'neutral' },
+            { id: 'sushi', name: '寿司類', tempEffect: 'neutral' }
+        ]
+    },
+    {
+        id: 'bread', name: '調理パン', icon: '🥐',
+        subcategories: [
+            { id: 'savory_warm', name: '惣菜パン（温）', tempEffect: 'warm' },
+            { id: 'sandwich_cold', name: 'サンド類（冷）', tempEffect: 'cold' },
+            { id: 'sweet_bread', name: '菓子パン', tempEffect: 'neutral' }
+        ]
+    },
+    {
+        id: 'noodles', name: '麺類その他', icon: '🍜', highImpact: true,
+        subcategories: [
+            { id: 'ramen', name: 'ラーメン（温）', tempEffect: 'hot_strong' },
+            { id: 'udon_soba', name: 'うどん・そば（温）', tempEffect: 'hot_strong' },
+            { id: 'cup_noodle', name: 'カップ麺', tempEffect: 'warm' },
+            { id: 'cold_noodle', name: '冷やし麺', tempEffect: 'cold_strong' }
+        ]
+    },
+    {
+        id: 'dessert', name: 'デザート', icon: '🍰',
+        subcategories: [
+            { id: 'ice', name: 'アイス', tempEffect: 'cold_strong' },
+            { id: 'jelly', name: 'ゼリー・プリン', tempEffect: 'cold' },
+            { id: 'cream_puff', name: 'シュークリーム系', tempEffect: 'slight_cold' }
+        ]
+    },
+    {
+        id: 'pastry', name: 'ペストリー', icon: '🥧', stable: true,
+        subcategories: [
+            { id: 'baked', name: '焼き菓子', tempEffect: 'neutral' },
+            { id: 'donut', name: 'ドーナツ', tempEffect: 'neutral' },
+            { id: 'tart', name: 'タルト', tempEffect: 'neutral' }
+        ]
+    },
+    {
+        id: 'salad', name: 'サラダ・惣菜', icon: '🥗',
+        subcategories: [
+            { id: 'salad', name: 'サラダ', tempEffect: 'cold' },
+            { id: 'hot_deli', name: '温惣菜（グラタン等）', tempEffect: 'hot_strong' },
+            { id: 'chilled_deli', name: 'チルド惣菜', tempEffect: 'slight_cold' }
+        ]
+    },
+    {
+        id: 'delica', name: '7Pデリカ', icon: '🍱',
+        subcategories: [
+            { id: 'oden', name: 'おでん', tempEffect: 'hot_max' },
+            { id: 'nikuman', name: '中華まん', tempEffect: 'hot_max' },
+            { id: 'fryer', name: 'フライヤー商品', tempEffect: 'warm' }
+        ]
+    },
+    {
+        id: 'milk', name: '牛乳乳飲料', icon: '🥛', stable: true,
+        subcategories: [
+            { id: 'milk', name: '牛乳', tempEffect: 'neutral' },
+            { id: 'yogurt', name: 'ヨーグルト', tempEffect: 'neutral' },
+            { id: 'coffee', name: 'コーヒー飲料', tempEffect: 'neutral' }
+        ]
+    }
+];
+
+// 旧カテゴリ（互換性のため保持）
 const PRODUCT_CATEGORIES = [
     { id: 'onigiri', name: 'おにぎり', icon: '🍙' },
     { id: 'bento', name: '弁当', icon: '🍱' },
@@ -2608,6 +2684,204 @@ const PRODUCT_CATEGORIES = [
     { id: 'pastry', name: 'ペストリー', icon: '🥐' },
     { id: 'dessert', name: 'デザート', icon: '🍰' }
 ];
+
+// 気温帯の判定
+function getTemperatureZone(temp) {
+    if (temp <= 0) return { zone: 'extreme_cold', label: '極寒', effect: 'hot_max', color: '#3b82f6' };
+    if (temp <= 5) return { zone: 'severe_cold', label: '厳寒', effect: 'hot_high', color: '#60a5fa' };
+    if (temp <= 10) return { zone: 'cold', label: '寒い', effect: 'hot_mid', color: '#93c5fd' };
+    if (temp <= 15) return { zone: 'cool', label: '涼しい', effect: 'slight_hot', color: '#a5b4fc' };
+    if (temp <= 20) return { zone: 'comfortable', label: '快適', effect: 'neutral', color: '#c4b5fd' };
+    if (temp <= 25) return { zone: 'warm', label: '暖かい', effect: 'slight_cold', color: '#fcd34d' };
+    if (temp <= 30) return { zone: 'hot', label: '暑い', effect: 'cold_mid', color: '#fb923c' };
+    return { zone: 'extreme_hot', label: '猛暑', effect: 'cold_max', color: '#ef4444' };
+}
+
+// tempEffectに基づいて推奨値（%）を計算
+function calculateTempEffectPercentage(tempEffect, tempZone) {
+    const effectMatrix = {
+        // 温かい商品への影響
+        hot_max: { extreme_cold: 35, severe_cold: 30, cold: 25, cool: 15, comfortable: 0, warm: -10, hot: -20, extreme_hot: -30 },
+        hot_strong: { extreme_cold: 30, severe_cold: 25, cold: 20, cool: 10, comfortable: 0, warm: -15, hot: -25, extreme_hot: -35 },
+        warm: { extreme_cold: 15, severe_cold: 12, cold: 10, cool: 5, comfortable: 0, warm: -5, hot: -10, extreme_hot: -15 },
+        slight_warm: { extreme_cold: 10, severe_cold: 8, cold: 5, cool: 3, comfortable: 0, warm: -3, hot: -5, extreme_hot: -8 },
+        // 中立
+        neutral: { extreme_cold: 0, severe_cold: 0, cold: 0, cool: 0, comfortable: 0, warm: 0, hot: 0, extreme_hot: 0 },
+        // 冷たい商品への影響
+        slight_cold: { extreme_cold: -8, severe_cold: -5, cold: -3, cool: 0, comfortable: 0, warm: 3, hot: 5, extreme_hot: 8 },
+        cold: { extreme_cold: -15, severe_cold: -12, cold: -10, cool: -5, comfortable: 0, warm: 5, hot: 10, extreme_hot: 15 },
+        cold_strong: { extreme_cold: -40, severe_cold: -35, cold: -25, cool: -15, comfortable: 0, warm: 10, hot: 20, extreme_hot: 30 }
+    };
+
+    return effectMatrix[tempEffect]?.[tempZone.zone] || 0;
+}
+
+// カテゴリ別アドバイス計算
+function calculateCategoryAdvice(category, weatherData, dayOfWeek) {
+    if (!weatherData) return null;
+
+    const { tempMax, tempMin, lastYearTempMax } = weatherData;
+    const avgTemp = (tempMax + tempMin) / 2;
+    const tempZone = getTemperatureZone(avgTemp);
+
+    // 昨年比を計算
+    const lastYearDiff = lastYearTempMax !== null ? tempMax - lastYearTempMax : null;
+
+    // サブカテゴリ別の推奨値を計算
+    const subcategoryAdvice = category.subcategories.map(sub => {
+        let percentage = calculateTempEffectPercentage(sub.tempEffect, tempZone);
+
+        // 昨年比による調整（±5°C以上の差がある場合）
+        if (lastYearDiff !== null && Math.abs(lastYearDiff) >= 5) {
+            const isHotProduct = ['hot_max', 'hot_strong', 'warm', 'slight_warm'].includes(sub.tempEffect);
+            const isColdProduct = ['cold_strong', 'cold', 'slight_cold'].includes(sub.tempEffect);
+
+            if (lastYearDiff < 0 && isHotProduct) {
+                percentage += Math.min(10, Math.abs(lastYearDiff));
+            } else if (lastYearDiff > 0 && isColdProduct) {
+                percentage += Math.min(10, lastYearDiff);
+            }
+        }
+
+        return {
+            ...sub,
+            percentage: Math.round(percentage)
+        };
+    });
+
+    // カテゴリ全体の推奨値（サブカテゴリの平均）
+    const avgPercentage = Math.round(
+        subcategoryAdvice.reduce((sum, sub) => sum + sub.percentage, 0) / subcategoryAdvice.length
+    );
+
+    return {
+        ...category,
+        percentage: avgPercentage,
+        subcategoryAdvice,
+        tempZone
+    };
+}
+
+// 全カテゴリのアドバイス生成
+function generateAllCategoryAdvice(weatherData) {
+    if (!weatherData) return null;
+
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+
+    const { weatherCode, tempMax, tempMin, lastYearTempMax, lastYearTempMin } = weatherData;
+    const avgTemp = (tempMax + tempMin) / 2;
+    const tempZone = getTemperatureZone(avgTemp);
+    const weatherInfo = getWeatherInfo(weatherCode);
+    const lastYearDiff = lastYearTempMax !== null ? tempMax - lastYearTempMax : null;
+
+    const categories = ORDER_CATEGORIES.map(cat =>
+        calculateCategoryAdvice(cat, weatherData, dayOfWeek)
+    );
+
+    return {
+        weather: weatherInfo,
+        tempMax,
+        tempMin,
+        avgTemp,
+        tempZone,
+        lastYearDiff,
+        dayOfWeek,
+        dayName: dayNames[dayOfWeek],
+        categories
+    };
+}
+
+// 日次チェックリスト保存
+function saveDailyChecklist(categoryId, date, data) {
+    const key = `${date}-${categoryId}`;
+    const checklistData = {
+        id: key,
+        date,
+        categoryId,
+        ...data,
+        updatedAt: new Date().toISOString()
+    };
+
+    database.ref(`dailyChecklist/${key}`).set(checklistData);
+    state.dailyChecklist[key] = checklistData;
+}
+
+// カテゴリメモ保存
+function saveCategoryMemo(categoryId, date, content, tags = []) {
+    const id = Date.now().toString();
+    const memoData = {
+        id,
+        date,
+        categoryId,
+        content,
+        tags,
+        createdAt: new Date().toISOString()
+    };
+
+    state.categoryMemos.push(memoData);
+    saveToFirebase('categoryMemos', state.categoryMemos);
+}
+
+// 蓄積データからの傾向計算
+function calculateTrends(categoryId, days = 7) {
+    const today = new Date();
+    const trends = {
+        avgWaste: null,
+        avgShortage: null,
+        avgSales: null,
+        memoCount: 0,
+        commonTags: []
+    };
+
+    const wasteScores = [];
+    const shortageScores = [];
+    const salesScores = [];
+    const tagCounts = {};
+
+    for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = formatDate(date);
+        const key = `${dateStr}-${categoryId}`;
+
+        const checklist = state.dailyChecklist[key];
+        if (checklist) {
+            const wasteScore = { high: 3, normal: 2, low: 1 }[checklist.waste] || 2;
+            const shortageScore = { yes: 3, few: 2, none: 1 }[checklist.shortage] || 1;
+            const salesScore = { good: 3, normal: 2, poor: 1 }[checklist.sales] || 2;
+
+            wasteScores.push(wasteScore);
+            shortageScores.push(shortageScore);
+            salesScores.push(salesScore);
+        }
+    }
+
+    // メモとタグの集計
+    state.categoryMemos
+        .filter(m => m.categoryId === categoryId)
+        .forEach(m => {
+            trends.memoCount++;
+            m.tags?.forEach(tag => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+            });
+        });
+
+    if (wasteScores.length > 0) {
+        trends.avgWaste = wasteScores.reduce((a, b) => a + b, 0) / wasteScores.length;
+        trends.avgShortage = shortageScores.reduce((a, b) => a + b, 0) / shortageScores.length;
+        trends.avgSales = salesScores.reduce((a, b) => a + b, 0) / salesScores.length;
+    }
+
+    // よく使われるタグ上位3つ
+    trends.commonTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([tag]) => tag);
+
+    return trends;
+}
 
 // 天気・気温に基づく発注アドバイスを生成
 function generateOrderAdvice(weatherData) {
@@ -2926,6 +3200,253 @@ function initAdvisorToggle() {
             content.classList.toggle('collapsed');
         };
     }
+}
+
+// 拡張版発注アドバイザーを描画
+function renderOrderAdvisorExtended() {
+    const container = document.getElementById('orderAdvisor');
+    const content = document.getElementById('advisorContent');
+    if (!container || !content) return;
+
+    // 今日の天気データを取得
+    const today = formatDate(new Date());
+    const todayWeather = state.weatherData[today];
+
+    if (!todayWeather) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const advice = generateAllCategoryAdvice(todayWeather);
+    if (!advice) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // 天気・購買行動パネル
+    let html = `
+        <div class="advisor-extended">
+            <div class="advisor-top-panel">
+                <div class="advisor-weather-panel">
+                    <div class="weather-main">
+                        <span class="weather-icon-large">${advice.weather.icon}</span>
+                        <div class="weather-details">
+                            <span class="weather-desc">${advice.weather.desc}</span>
+                            <span class="weather-temps">
+                                <span class="temp-high">${advice.tempMax}°</span> / 
+                                <span class="temp-low">${advice.tempMin}°</span>
+                            </span>
+                            ${advice.lastYearDiff !== null ? `
+                            <span class="weather-diff ${advice.lastYearDiff >= 0 ? 'plus' : 'minus'}">
+                                昨年比${advice.lastYearDiff >= 0 ? '+' : ''}${advice.lastYearDiff}°C
+                            </span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="advisor-behavior-panel">
+                    <div class="behavior-title">🧠 購買行動への影響分析</div>
+                    <div class="behavior-items">
+                        <div class="behavior-item">
+                            <span class="behavior-label">気温帯の影響:</span>
+                            <span class="behavior-value" style="color: ${advice.tempZone.color}">${advice.avgTemp.toFixed(0)}°C（${advice.tempZone.label}）</span>
+                        </div>
+                        ${advice.lastYearDiff !== null ? `
+                        <div class="behavior-item">
+                            <span class="behavior-label">昨年比の影響:</span>
+                            <span class="behavior-value ${advice.lastYearDiff >= 0 ? 'plus' : 'minus'}">${advice.lastYearDiff >= 0 ? '+' : ''}${advice.lastYearDiff}°C</span>
+                        </div>` : ''}
+                        <div class="behavior-item">
+                            <span class="behavior-label">曜日の影響:</span>
+                            <span class="behavior-value">${advice.dayName}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    `;
+
+    // カテゴリチップ
+    html += '<div class="category-chips">';
+    advice.categories.forEach(cat => {
+        const percentClass = cat.percentage > 0 ? 'positive' : (cat.percentage < 0 ? 'negative' : 'neutral');
+        const percentSign = cat.percentage > 0 ? '+' : '';
+        const isSelected = state.selectedAdvisorCategory === cat.id;
+
+        html += `
+            <button class="category-chip ${percentClass} ${isSelected ? 'selected' : ''}" 
+                    data-category-id="${cat.id}"
+                    onclick="selectAdvisorCategory('${cat.id}')">
+                <span class="chip-icon">${cat.icon}</span>
+                <span class="chip-name">${cat.name}</span>
+                <span class="chip-percent">${percentSign}${cat.percentage}%</span>
+            </button>
+        `;
+    });
+    html += '</div>';
+
+    // 選択中カテゴリの詳細パネル
+    const selectedCat = advice.categories.find(c => c.id === state.selectedAdvisorCategory);
+    if (selectedCat) {
+        const percentSign = selectedCat.percentage > 0 ? '+' : '';
+        const percentClass = selectedCat.percentage > 0 ? 'positive' : (selectedCat.percentage < 0 ? 'negative' : 'neutral');
+
+        html += `
+            <div class="category-detail-panel">
+                <div class="detail-header">
+                    <span class="detail-icon">${selectedCat.icon}</span>
+                    <span class="detail-name">${selectedCat.name}</span>
+                    <span class="detail-percent ${percentClass}">${percentSign}${selectedCat.percentage}%</span>
+                </div>
+                <div class="detail-subcategories">
+                    <div class="subcategory-title">サブカテゴリ:</div>
+                    <div class="subcategory-list">
+        `;
+
+        selectedCat.subcategoryAdvice.forEach(sub => {
+            const subPercentSign = sub.percentage > 0 ? '+' : '';
+            const subPercentClass = sub.percentage > 0 ? 'positive' : (sub.percentage < 0 ? 'negative' : 'neutral');
+            html += `
+                <div class="subcategory-item">
+                    <span class="subcategory-name">・${sub.name}</span>
+                    <span class="subcategory-percent ${subPercentClass}">${subPercentSign}${sub.percentage}%</span>
+                </div>
+            `;
+        });
+
+        html += `
+                    </div>
+                </div>
+        `;
+
+        // 日次チェック
+        const checklistKey = `${today}-${selectedCat.id}`;
+        const existingChecklist = state.dailyChecklist[checklistKey] || {};
+
+        html += `
+                <div class="daily-checklist">
+                    <div class="checklist-title">✅ 今日の振り返りチェック</div>
+                    <div class="checklist-row">
+                        <span class="checklist-label">廃棄量:</span>
+                        <div class="checklist-options">
+                            <button class="checklist-btn ${existingChecklist.waste === 'high' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'high')">多い</button>
+                            <button class="checklist-btn ${existingChecklist.waste === 'normal' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'normal')">普通</button>
+                            <button class="checklist-btn ${existingChecklist.waste === 'low' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'low')">少ない</button>
+                        </div>
+                    </div>
+                    <div class="checklist-row">
+                        <span class="checklist-label">欠品:</span>
+                        <div class="checklist-options">
+                            <button class="checklist-btn ${existingChecklist.shortage === 'yes' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'yes')">あった</button>
+                            <button class="checklist-btn ${existingChecklist.shortage === 'few' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'few')">少し</button>
+                            <button class="checklist-btn ${existingChecklist.shortage === 'none' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'none')">なし</button>
+                        </div>
+                    </div>
+                    <div class="checklist-row">
+                        <span class="checklist-label">売れ行き:</span>
+                        <div class="checklist-options">
+                            <button class="checklist-btn ${existingChecklist.sales === 'good' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'good')">好調</button>
+                            <button class="checklist-btn ${existingChecklist.sales === 'normal' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'normal')">普通</button>
+                            <button class="checklist-btn ${existingChecklist.sales === 'poor' ? 'selected' : ''}" 
+                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'poor')">不調</button>
+                        </div>
+                    </div>
+                </div>
+        `;
+
+        // メモ入力
+        html += `
+                <div class="category-memo">
+                    <div class="memo-title">📝 メモ</div>
+                    <div class="memo-input-row">
+                        <input type="text" id="categoryMemoInput" class="memo-input" 
+                               placeholder="気づいたことをメモ..." />
+                        <button class="memo-save-btn" onclick="saveCurrentMemo('${selectedCat.id}')">保存</button>
+                    </div>
+                    <div class="quick-tags">
+                        <span class="quick-tag-label">クイックタグ:</span>
+        `;
+
+        // カテゴリに応じたクイックタグ
+        const quickTags = getQuickTagsForCategory(selectedCat.id);
+        quickTags.forEach(tag => {
+            html += `<button class="quick-tag" onclick="addQuickTag('${selectedCat.id}', '${tag}')">${tag}</button>`;
+        });
+
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    html += '</div>';
+    content.innerHTML = html;
+
+    // トグル機能の初期化
+    initAdvisorToggle();
+}
+
+// カテゴリ選択
+function selectAdvisorCategory(categoryId) {
+    state.selectedAdvisorCategory = state.selectedAdvisorCategory === categoryId ? null : categoryId;
+    renderOrderAdvisorExtended();
+}
+
+// チェックリスト更新
+function updateChecklist(categoryId, field, value) {
+    const today = formatDate(new Date());
+    const key = `${today}-${categoryId}`;
+    const existing = state.dailyChecklist[key] || {};
+
+    saveDailyChecklist(categoryId, today, {
+        ...existing,
+        [field]: value
+    });
+
+    renderOrderAdvisorExtended();
+}
+
+// 現在のメモを保存
+function saveCurrentMemo(categoryId) {
+    const input = document.getElementById('categoryMemoInput');
+    if (!input || !input.value.trim()) return;
+
+    const today = formatDate(new Date());
+    saveCategoryMemo(categoryId, today, input.value.trim());
+    input.value = '';
+
+    alert('メモを保存しました');
+}
+
+// クイックタグを追加
+function addQuickTag(categoryId, tag) {
+    const today = formatDate(new Date());
+    saveCategoryMemo(categoryId, today, tag, [tag]);
+    alert(`"${tag}" を保存しました`);
+}
+
+// カテゴリ別クイックタグ取得
+function getQuickTagsForCategory(categoryId) {
+    const tagMap = {
+        rice: ['弁当好調', '弁当廃棄多', 'おにぎり欠品'],
+        bread: ['サンド好調', '惣菜パン人気', 'パン全体廃棄'],
+        noodles: ['ラーメン絶好調', '冷やし麺廃棄', 'カップ麺欠品'],
+        dessert: ['アイス好調', 'デザート廃棄', 'プリン欠品'],
+        pastry: ['ドーナツ人気', '焼き菓子廃棄', 'タルト好調'],
+        salad: ['サラダ好調', 'グラタン人気', '惣菜廃棄'],
+        delica: ['おでん絶好調', '中華まん人気', 'フライヤー欠品'],
+        milk: ['牛乳安定', 'コーヒー人気', 'ヨーグルト廃棄']
+    };
+    return tagMap[categoryId] || ['好調', '廃棄', '欠品'];
 }
 
 // ========================================
