@@ -3318,7 +3318,7 @@ function renderOrderAdvisorExtended() {
 
     // 今日の天気データを取得
     const today = formatDate(new Date());
-    scm - history - item: /Users/shinoharatakeshi / work / git % E6 % 94 % BE % E9 % 80 % 81 / shift - app ?% 7B % 22repositoryId % 22 % 3A % 22scm0 % 22 % 2C % 22historyItemId % 22 % 3A % 226bfcd0192386ae2cab39a93754623e6af6854f12 % 22 % 2C % 22historyItemParentId % 22 % 3A % 2275e381ccbd55eff005b3abcf795283307a628ad0 % 22 % 2C % 22historyItemDisplayId % 22 % 3A % 226bfcd01 % 22 % 7D    const todayWeather = state.weatherData[today];
+    const todayWeather = state.weatherData[today];
 
     if (!todayWeather) {
         container.style.display = 'none';
