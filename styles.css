@@ -3165,3 +3165,110 @@ body {
         width: 100%;
     }
 }
+
+/* ========================================
+   発注・スケジュール情報グループ
+   ======================================== */
+.advisor-group {
+    margin-bottom: 16px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.advisor-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+
+.advisor-group-header:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+}
+
+.advisor-group-icon {
+    font-size: 1.5rem;
+}
+
+.advisor-group-title {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.advisor-group-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.advisor-group-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.advisor-group-toggle.collapsed {
+    transform: rotate(0deg);
+}
+
+.advisor-group-toggle:not(.collapsed) {
+    transform: rotate(180deg);
+}
+
+.advisor-group-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.advisor-group-content.collapsed {
+    max-height: 0;
+}
+
+/* グループ内のセクション */
+.advisor-group-content .order-advisor {
+    margin-bottom: 0;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.advisor-group-content .order-advisor:last-child {
+    border-bottom: none;
+}
+
+/* グループ内のセクション用微調整 */
+.advisor-group-content .advisor-header {
+    border-radius: 0;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .advisor-group-header {
+        padding: 14px 16px;
+    }
+
+    .advisor-group-icon {
+        font-size: 1.3rem;
+    }
+
+    .advisor-group-title {
+        font-size: 1rem;
+    }
+}

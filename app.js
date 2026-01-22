@@ -2213,6 +2213,7 @@ function init() {
     initPdfExport();
     initPopoverEvents();
     initEventModal();
+    initAdvisorGroupToggle(); // グループトグルを初期化
     loadData();
     render();
 
@@ -3198,6 +3199,23 @@ function initAdvisorToggle() {
         header.onclick = () => {
             toggle.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
+        };
+    }
+
+    // グループトグルの初期化
+    initAdvisorGroupToggle();
+}
+
+// 発注・スケジュール情報グループのトグル
+function initAdvisorGroupToggle() {
+    const groupHeader = document.getElementById('advisorGroupHeader');
+    const groupToggle = document.getElementById('advisorGroupToggle');
+    const groupContent = document.getElementById('advisorGroupContent');
+
+    if (groupHeader && groupToggle && groupContent) {
+        groupHeader.onclick = () => {
+            groupToggle.classList.toggle('collapsed');
+            groupContent.classList.toggle('collapsed');
         };
     }
 }

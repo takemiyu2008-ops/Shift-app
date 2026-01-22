@@ -121,39 +121,49 @@
             </div>
         </div>
 
-        <!-- 発注アドバイスセクション -->
-        <div class="order-advisor" id="orderAdvisor" style="display: none;">
-            <div class="advisor-header">
-                <span class="advisor-icon">📊</span>
-                <span class="advisor-title">デイリー発注アドバイス（毎日更新）</span>
-                <button class="advisor-toggle collapsed" id="advisorToggle">▼</button>
+        <!-- 発注・スケジュール情報グループ -->
+        <div class="advisor-group" id="advisorGroup">
+            <div class="advisor-group-header" id="advisorGroupHeader">
+                <span class="advisor-group-icon">📋</span>
+                <span class="advisor-group-title">発注・スケジュール情報</span>
+                <button class="advisor-group-toggle" id="advisorGroupToggle">▼</button>
             </div>
-            <div class="advisor-content collapsed" id="advisorContent">
-                <!-- JSで動的に生成 -->
-            </div>
-        </div>
+            <div class="advisor-group-content collapsed" id="advisorGroupContent">
+                <!-- デイリー発注アドバイス -->
+                <div class="order-advisor" id="orderAdvisor" style="display: none;">
+                    <div class="advisor-header">
+                        <span class="advisor-icon">📊</span>
+                        <span class="advisor-title">デイリー発注アドバイス（毎日更新）</span>
+                        <button class="advisor-toggle collapsed" id="advisorToggle">▼</button>
+                    </div>
+                    <div class="advisor-content collapsed" id="advisorContent">
+                        <!-- JSで動的に生成 -->
+                    </div>
+                </div>
 
-        <!-- 非デイリー発注アドバイスセクション -->
-        <div class="order-advisor non-daily-advisor" id="nonDailyAdvisor" style="display: none;">
-            <div class="advisor-header">
-                <span class="advisor-icon">📈</span>
-                <span class="advisor-title">非デイリー発注アドバイス（毎週月曜更新）</span>
-                <button class="advisor-toggle collapsed" id="nonDailyToggle">▼</button>
-            </div>
-            <div class="advisor-content collapsed" id="nonDailyContent">
-                <!-- JSで動的に生成 -->
-            </div>
-        </div>
+                <!-- 非デイリー発注アドバイス -->
+                <div class="order-advisor non-daily-advisor" id="nonDailyAdvisor" style="display: none;">
+                    <div class="advisor-header">
+                        <span class="advisor-icon">📈</span>
+                        <span class="advisor-title">非デイリー発注アドバイス（毎週月曜更新）</span>
+                        <button class="advisor-toggle collapsed" id="nonDailyToggle">▼</button>
+                    </div>
+                    <div class="advisor-content collapsed" id="nonDailyContent">
+                        <!-- JSで動的に生成 -->
+                    </div>
+                </div>
 
-        <!-- 店舗スケジュール一覧セクション -->
-        <div class="order-advisor schedule-list-section" id="scheduleListSection" style="display: none;">
-            <div class="advisor-header">
-                <span class="advisor-icon">📅</span>
-                <span class="advisor-title">店舗スケジュール一覧</span>
-                <button class="advisor-toggle collapsed" id="scheduleToggle">▼</button>
-            </div>
-            <div class="advisor-content collapsed" id="scheduleListContent">
-                <!-- JSで動的に生成 -->
+                <!-- 店舗スケジュール一覧 -->
+                <div class="order-advisor schedule-list-section" id="scheduleListSection" style="display: none;">
+                    <div class="advisor-header">
+                        <span class="advisor-icon">📅</span>
+                        <span class="advisor-title">店舗スケジュール一覧</span>
+                        <button class="advisor-toggle collapsed" id="scheduleToggle">▼</button>
+                    </div>
+                    <div class="advisor-content collapsed" id="scheduleListContent">
+                        <!-- JSで動的に生成 -->
+                    </div>
+                </div>
             </div>
         </div>
 
