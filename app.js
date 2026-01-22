@@ -843,6 +843,59 @@ function addSwapRequest(d) {
 }
 function addEmployee(d) { const e = { id: Date.now().toString(), ...d }; state.employees.push(e); saveToFirebase('employees', state.employees); }
 function deleteEmployee(id) { state.employees = state.employees.filter(e => e.id !== id); saveToFirebase('employees', state.employees); }
+function updateEmployee(id, d) {
+    const i = state.employees.findIndex(e => e.id === id);
+    if (i >= 0) {
+        state.employees[i] = { ...state.employees[i], ...d };
+        saveToFirebase('employees', state.employees);
+    }
+}
+
+// 従業員編集モーダルを開く
+function openEditEmployeeModal(id) {
+    const emp = state.employees.find(e => e.id === id);
+    if (!emp) return;
+
+    // モーダルタイトルとボタンテキストを変更
+    document.getElementById('employeeModalTitle').textContent = '👤 従業員編集';
+    document.getElementById('employeeSubmitBtn').textContent = '更新';
+    document.getElementById('editEmployeeId').value = id;
+
+    // フォームに現在の値をセット
+    document.getElementById('employeeName').value = emp.name || '';
+    document.getElementById('employeeRole').value = emp.role || 'staff';
+    document.getElementById('employeeShiftTime').value = emp.shiftTime || 'day';
+
+    // 発注担当分類のチェックボックスをリセットして現在の値をセット
+    document.querySelectorAll('input[name="orderCategory"]').forEach(cb => {
+        cb.checked = emp.orderCategories && emp.orderCategories.includes(cb.value);
+    });
+
+    // モーダルを開く
+    openModal(document.getElementById('employeeModalOverlay'));
+}
+
+// 従業員追加モーダルを開く（リセット用）
+function openAddEmployeeModal() {
+    // モーダルタイトルとボタンテキストをリセット
+    document.getElementById('employeeModalTitle').textContent = '👤 従業員追加';
+    document.getElementById('employeeSubmitBtn').textContent = '追加';
+    document.getElementById('editEmployeeId').value = '';
+
+    // フォームをリセット
+    document.getElementById('employeeName').value = '';
+    document.getElementById('employeeRole').value = 'staff';
+    document.getElementById('employeeShiftTime').value = 'day';
+
+    // 発注担当分類のチェックボックスをリセット
+    document.querySelectorAll('input[name="orderCategory"]').forEach(cb => {
+        cb.checked = false;
+    });
+
+    // モーダルを開く
+    openModal(document.getElementById('employeeModalOverlay'));
+}
+
 function addHolidayRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
     state.holidayRequests.push(r);
@@ -1099,7 +1152,7 @@ function renderAdminPanel() {
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'employees') {
-        c.innerHTML = `<div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openModal(document.getElementById('employeeModalOverlay'))">+ 従業員追加</button></div><div class="employee-list" id="employeeList"></div>`;
+        c.innerHTML = `<div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openAddEmployeeModal()">+ 従業員追加</button></div><div class="employee-list" id="employeeList"></div>`;
         const list = document.getElementById('employeeList');
         const roleNames = { staff: 'スタッフ', shiftLeader: 'シフトリーダー', employee: '社員', manager: 'マネージャー', leader: 'リーダー' };
         const shiftNames = { day: '日勤', evening: '夕勤', night: '夜勤' };
@@ -1107,7 +1160,14 @@ function renderAdminPanel() {
             const card = document.createElement('div'); card.className = 'employee-card';
             const roleName = roleNames[e.role] || e.role;
             const shiftName = shiftNames[e.shiftTime] || '';
-            card.innerHTML = `<div class="employee-info"><div class="employee-avatar">${e.name.charAt(0)}</div><div><div class="employee-name">${e.name}</div><div class="employee-role">${roleName}${shiftName ? ' / ' + shiftName : ''}</div></div></div><button class="btn btn-danger btn-sm" onclick="deleteEmployee('${e.id}')">削除</button>`;
+
+            // 発注担当分類タグを生成
+            let orderCategoriesHtml = '';
+            if (e.orderCategories && e.orderCategories.length > 0) {
+                orderCategoriesHtml = `<div class="order-categories-display">${e.orderCategories.map(cat => `<span class="order-category-tag">${cat}</span>`).join('')}</div>`;
+            }
+
+            card.innerHTML = `<div class="employee-info"><div class="employee-avatar">${e.name.charAt(0)}</div><div><div class="employee-name">${e.name}</div><div class="employee-role">${roleName}${shiftName ? ' / ' + shiftName : ''}</div>${orderCategoriesHtml}</div></div><div class="employee-actions"><button class="btn btn-secondary btn-sm" onclick="openEditEmployeeModal('${e.id}')">✏️ 編集</button><button class="btn btn-danger btn-sm" onclick="deleteEmployee('${e.id}')">削除</button></div>`;
             list.appendChild(card);
         });
     } else if (state.activeAdminTab === 'broadcast') {
@@ -1670,7 +1730,37 @@ function initEventListeners() {
     document.getElementById('employeeModalClose').onclick = () => closeModal(document.getElementById('employeeModalOverlay'));
     document.getElementById('employeeCancelBtn').onclick = () => closeModal(document.getElementById('employeeModalOverlay'));
     document.getElementById('employeeModalOverlay').onclick = e => { if (e.target.id === 'employeeModalOverlay') closeModal(document.getElementById('employeeModalOverlay')); };
-    document.getElementById('employeeForm').onsubmit = e => { e.preventDefault(); addEmployee({ name: document.getElementById('employeeName').value.trim(), role: document.getElementById('employeeRole').value, shiftTime: document.getElementById('employeeShiftTime').value }); closeModal(document.getElementById('employeeModalOverlay')); document.getElementById('employeeForm').reset(); alert('従業員を追加しました'); };
+    document.getElementById('employeeForm').onsubmit = e => {
+        e.preventDefault();
+
+        // 発注担当分類を取得
+        const orderCategories = [];
+        document.querySelectorAll('input[name="orderCategory"]:checked').forEach(cb => {
+            orderCategories.push(cb.value);
+        });
+
+        const employeeData = {
+            name: document.getElementById('employeeName').value.trim(),
+            role: document.getElementById('employeeRole').value,
+            shiftTime: document.getElementById('employeeShiftTime').value,
+            orderCategories: orderCategories
+        };
+
+        const editId = document.getElementById('editEmployeeId').value;
+        if (editId) {
+            // 編集モード
+            updateEmployee(editId, employeeData);
+            alert('従業員情報を更新しました');
+        } else {
+            // 追加モード
+            addEmployee(employeeData);
+            alert('従業員を追加しました');
+        }
+
+        closeModal(document.getElementById('employeeModalOverlay'));
+        document.getElementById('employeeForm').reset();
+        document.getElementById('editEmployeeId').value = '';
+    };
 
     document.getElementById('broadcastModalClose').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
     document.getElementById('broadcastCancelBtn').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
@@ -3228,7 +3318,7 @@ function renderOrderAdvisorExtended() {
 
     // 今日の天気データを取得
     const today = formatDate(new Date());
-    const todayWeather = state.weatherData[today];
+    scm - history - item: /Users/shinoharatakeshi / work / git % E6 % 94 % BE % E9 % 80 % 81 / shift - app ?% 7B % 22repositoryId % 22 % 3A % 22scm0 % 22 % 2C % 22historyItemId % 22 % 3A % 226bfcd0192386ae2cab39a93754623e6af6854f12 % 22 % 2C % 22historyItemParentId % 22 % 3A % 2275e381ccbd55eff005b3abcf795283307a628ad0 % 22 % 2C % 22historyItemDisplayId % 22 % 3A % 226bfcd01 % 22 % 7D    const todayWeather = state.weatherData[today];
 
     if (!todayWeather) {
         container.style.display = 'none';

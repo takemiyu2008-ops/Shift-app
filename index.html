@@ -529,14 +529,15 @@
         </div>
     </div>
 
-    <!-- 従業員追加モーダル -->
+    <!-- 従業員追加/編集モーダル -->
     <div class="modal-overlay" id="employeeModalOverlay">
-        <div class="modal modal-sm">
+        <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">👤 従業員追加</h2>
+                <h2 class="modal-title" id="employeeModalTitle">👤 従業員追加</h2>
                 <button class="modal-close" id="employeeModalClose">×</button>
             </div>
             <form id="employeeForm" class="modal-body">
+                <input type="hidden" id="editEmployeeId" value="">
                 <div class="form-group">
                     <label for="employeeName">名前</label>
                     <input type="text" id="employeeName" placeholder="例：田中太郎" required>
@@ -558,9 +559,90 @@
                         <option value="night">夜勤</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>発注担当分類（複数選択可）</label>
+                    <div class="order-categories" id="orderCategories">
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="米飯">
+                            <span>米飯</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="調理パン">
+                            <span>調理パン</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="麺類その他">
+                            <span>麺類その他</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="デザート">
+                            <span>デザート</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="デリカテッセン（サラダ、惣菜）">
+                            <span>デリカテッセン（サラダ、惣菜）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="７Pデリカ">
+                            <span>７Pデリカ</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="デリテッセン（その他）">
+                            <span>デリテッセン（その他）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="牛乳乳飲料">
+                            <span>牛乳乳飲料</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="FF（おでん、中華まん）">
+                            <span>FF（おでん、中華まん）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="お菓子（チョコレート、和菓子類）">
+                            <span>お菓子（チョコレート、和菓子類）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="お菓子（グミ、駄菓子、飴類）">
+                            <span>お菓子（グミ、駄菓子、飴類）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="お菓子（ポテトチップス、箱スナック、米菓）">
+                            <span>お菓子（ポテトチップス、箱スナック、米菓）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="雑貨類">
+                            <span>雑貨類</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="消耗品">
+                            <span>消耗品</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="加工食品（調味料類、珍味）">
+                            <span>加工食品（調味料類、珍味）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="ドリンク類">
+                            <span>ドリンク類</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="フローズン（アイス、冷凍食品）">
+                            <span>フローズン（アイス、冷凍食品）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="フローズン（フライヤー、焼成パン）">
+                            <span>フローズン（フライヤー、焼成パン）</span>
+                        </label>
+                        <label class="category-checkbox">
+                            <input type="checkbox" name="orderCategory" value="タバコ">
+                            <span>タバコ</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="employeeCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">追加</button>
+                    <button type="submit" class="btn btn-primary" id="employeeSubmitBtn">追加</button>
                 </div>
             </form>
         </div>
