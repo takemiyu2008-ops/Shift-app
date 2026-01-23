@@ -1738,7 +1738,8 @@ body {
 }
 
 .popover-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     padding: 12px 16px;
     border-top: 1px solid var(--border-color);
@@ -1747,12 +1748,27 @@ body {
 }
 
 .popover-actions .btn {
-    flex: 1;
     /* モバイルでのタップを確実に検出 */
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(99, 102, 241, 0.3);
-    min-height: 44px;
+    min-height: 40px;
     /* Apple推奨の最小タッチターゲットサイズ */
+    font-size: 0.75rem;
+    padding: 8px 6px;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* 編集ボタンは1行目で全幅 */
+.popover-actions .btn#popoverEditBtn {
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
+}
+
+/* 削除ボタンも全幅で最終行に */
+.popover-actions .btn#popoverDeleteBtn {
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
 }
 
 /* ========================================
