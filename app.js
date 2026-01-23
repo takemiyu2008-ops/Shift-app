@@ -347,12 +347,25 @@ function renderGanttBody() {
         }));
 
         const all = [...dayShifts, ...overnight, ...fixed, ...fixedOvernight];
-        const levels = calculateShiftLevels(all);
+
+        // 承認済みの休日（全日休み）がある担当者のシフトを除外
+        const approvedHolidays = state.holidayRequests.filter(h =>
+            h.status === 'approved' &&
+            dateStr >= h.startDate &&
+            dateStr <= h.endDate &&
+            !h.halfDayType // 半休以外（全日休み）の場合のみ除外
+        );
+        const holidayNames = approvedHolidays.map(h => h.name);
+
+        // 全日休みの担当者のシフトを除外したリスト
+        const filteredAll = all.filter(s => !holidayNames.includes(s.name));
+
+        const levels = calculateShiftLevels(filteredAll);
         const maxLvl = Math.max(0, ...Object.values(levels));
         const baseH = 80, perLvl = 28;
         timeline.style.minHeight = `${baseH + maxLvl * perLvl}px`;
 
-        all.forEach(s => timeline.appendChild(createShiftBar(s, levels[s.id])));
+        filteredAll.forEach(s => timeline.appendChild(createShiftBar(s, levels[s.id])));
 
         // 有給
         const leaves = state.leaveRequests.filter(l => l.status === 'approved' && dateStr >= l.startDate && dateStr <= l.endDate);
