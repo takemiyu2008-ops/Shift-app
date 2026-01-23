@@ -370,7 +370,15 @@ function renderGanttBody() {
         const holidays = state.holidayRequests.filter(h => h.status === 'approved' && dateStr >= h.startDate && dateStr <= h.endDate);
         holidays.forEach((h, idx) => {
             const bar = document.createElement('div');
-            bar.className = 'holiday-bar';
+
+            // 半休タイプに応じてクラスを設定
+            if (h.halfDayType === 'morning') {
+                bar.className = 'holiday-bar half-day-bar morning';
+            } else if (h.halfDayType === 'afternoon') {
+                bar.className = 'holiday-bar half-day-bar afternoon';
+            } else {
+                bar.className = 'holiday-bar';
+            }
             bar.dataset.holidayId = h.id;
 
             // シフト時間情報がある場合は、その時間に合わせて表示
@@ -399,14 +407,26 @@ function renderGanttBody() {
                     timeText = ` ${formatTime(h.startHour)}-${formatTime(h.endHour)}`;
                 }
             }
-            bar.textContent = `🏠 ${h.name} 休日${timeText}`;
+
+            // 半休タイプに応じたラベル
+            let label;
+            if (h.halfDayType === 'morning') {
+                label = `🌅 ${h.name} 午前半休${timeText}`;
+            } else if (h.halfDayType === 'afternoon') {
+                label = `🌇 ${h.name} 午後半休${timeText}`;
+            } else {
+                label = `🏠 ${h.name} 休日${timeText}`;
+            }
+            bar.textContent = label;
 
             // クリック/タップで削除
             bar.style.cursor = 'pointer';
-            bar.title = 'クリックで休日を取り消し';
+            const deleteLabel = h.halfDayType ? '半休' : '休日';
+            bar.title = `クリックで${deleteLabel}を取り消し`;
 
             const handleDeleteHoliday = () => {
-                if (confirm(`${h.name}さんの休日（${h.startDate}）を取り消しますか？`)) {
+                const typeLabel = h.halfDayType === 'morning' ? '午前半休' : (h.halfDayType === 'afternoon' ? '午後半休' : '休日');
+                if (confirm(`${h.name}さんの${typeLabel}（${h.startDate}）を取り消しますか？`)) {
                     state.holidayRequests = state.holidayRequests.filter(x => x.id !== h.id);
                     saveToFirebase('holidayRequests', state.holidayRequests);
                     render();
@@ -909,6 +929,90 @@ function addHolidayRequest(d) {
     }
     state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: d.name, title, content, createdAt: new Date().toISOString(), read: false });
     saveToFirebase('messages', state.messages);
+}
+
+// 半休を作成する関数
+function createHalfDayOff(s, halfDayType) {
+    // シフトの担当者名と日付を取得
+    let name, date, startHour, endHour, overnight;
+
+    if (s.isFixed) {
+        const parts = s.id.split('-');
+        const originalId = parts[1];
+        const fixed = state.fixedShifts.find(f => f.id === originalId);
+        if (fixed) {
+            name = fixed.name;
+            date = s.date;
+            startHour = fixed.startHour;
+            endHour = fixed.endHour;
+            overnight = fixed.overnight || false;
+        }
+    } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
+        const originalId = s.id.replace('on-', '');
+        const original = state.shifts.find(x => x.id === originalId);
+        if (original) {
+            name = original.name;
+            date = original.date;
+            startHour = original.startHour;
+            endHour = original.endHour;
+            overnight = original.overnight || false;
+        }
+    } else {
+        name = s.name;
+        date = s.date;
+        startHour = s.startHour;
+        endHour = s.endHour;
+        overnight = s.overnight || false;
+    }
+
+    if (!name || !date) {
+        alert('シフト情報の取得に失敗しました。');
+        return;
+    }
+
+    // 半休の時間を計算（12時を境界とする）
+    let halfStartHour, halfEndHour;
+    if (halfDayType === 'morning') {
+        // 午前半休: シフト開始〜12:00 を休みにする
+        halfStartHour = Math.min(startHour, 12);
+        halfEndHour = 12;
+    } else {
+        // 午後半休: 12:00〜シフト終了 を休みにする
+        halfStartHour = 12;
+        halfEndHour = Math.max(endHour, 12);
+        // 夜勤で翌日にまたがる場合
+        if (overnight) {
+            halfEndHour = 24;
+        }
+    }
+
+    // 承認済みの半休リクエストを作成
+    const holidayRequest = {
+        id: Date.now().toString(),
+        name: name,
+        startDate: date,
+        endDate: date,
+        startHour: halfStartHour,
+        endHour: halfEndHour,
+        overnight: false,
+        halfDayType: halfDayType,  // 'morning' or 'afternoon'
+        reason: halfDayType === 'morning' ? '午前半休' : '午後半休',
+        swapRequested: false,
+        swapPartner: null,
+        status: 'approved',
+        createdAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString(),
+        processedBy: '管理者（即時承認）'
+    };
+    state.holidayRequests.push(holidayRequest);
+    saveToFirebase('holidayRequests', state.holidayRequests);
+
+    // シフトは削除せず、半休バーを表示する（シフトは残したまま）
+    // 必要に応じてシフトを削除する場合はここに追加
+
+    const typeText = halfDayType === 'morning' ? '午前半休' : '午後半休';
+    alert(`${typeText}に変更しました。`);
+    render();
 }
 function sendBroadcast(title, content) {
     state.employees.forEach(e => {
@@ -2258,12 +2362,59 @@ function initPopoverEvents() {
         }
     };
 
+
     if (dayOffBtn) {
         dayOffBtn.onclick = handleDayOff;
         dayOffBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
             e.stopPropagation();
             handleDayOff();
+        }, { passive: false });
+    }
+
+    // 午前半休ボタン
+    const morningHalfDayBtn = document.getElementById('popoverMorningHalfDayBtn');
+    const handleMorningHalfDay = () => {
+        if (state.currentPopoverShift) {
+            const s = state.currentPopoverShift;
+            closeShiftPopover();
+            setTimeout(() => {
+                if (confirm('このシフトを午前半休にしますか？\n午前中（〜12:00）が休みになります。')) {
+                    createHalfDayOff(s, 'morning');
+                }
+            }, 100);
+        }
+    };
+
+    if (morningHalfDayBtn) {
+        morningHalfDayBtn.onclick = handleMorningHalfDay;
+        morningHalfDayBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleMorningHalfDay();
+        }, { passive: false });
+    }
+
+    // 午後半休ボタン
+    const afternoonHalfDayBtn = document.getElementById('popoverAfternoonHalfDayBtn');
+    const handleAfternoonHalfDay = () => {
+        if (state.currentPopoverShift) {
+            const s = state.currentPopoverShift;
+            closeShiftPopover();
+            setTimeout(() => {
+                if (confirm('このシフトを午後半休にしますか？\n午後（12:00〜）が休みになります。')) {
+                    createHalfDayOff(s, 'afternoon');
+                }
+            }, 100);
+        }
+    };
+
+    if (afternoonHalfDayBtn) {
+        afternoonHalfDayBtn.onclick = handleAfternoonHalfDay;
+        afternoonHalfDayBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleAfternoonHalfDay();
         }, { passive: false });
     }
 

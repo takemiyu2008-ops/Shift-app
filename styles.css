@@ -982,6 +982,47 @@ body {
             rgba(239, 68, 68, 0.7) 20px);
 }
 
+/* 半休バー */
+.half-day-bar {
+    border-style: solid;
+}
+
+/* 午前半休バー */
+.half-day-bar.morning {
+    background: repeating-linear-gradient(45deg,
+            rgba(251, 191, 36, 0.4),
+            rgba(251, 191, 36, 0.4) 10px,
+            rgba(251, 191, 36, 0.6) 10px,
+            rgba(251, 191, 36, 0.6) 20px);
+    border-color: #fbbf24;
+}
+
+.half-day-bar.morning:hover {
+    background: repeating-linear-gradient(45deg,
+            rgba(251, 191, 36, 0.5),
+            rgba(251, 191, 36, 0.5) 10px,
+            rgba(251, 191, 36, 0.7) 10px,
+            rgba(251, 191, 36, 0.7) 20px);
+}
+
+/* 午後半休バー */
+.half-day-bar.afternoon {
+    background: repeating-linear-gradient(45deg,
+            rgba(249, 115, 22, 0.4),
+            rgba(249, 115, 22, 0.4) 10px,
+            rgba(249, 115, 22, 0.6) 10px,
+            rgba(249, 115, 22, 0.6) 20px);
+    border-color: #f97316;
+}
+
+.half-day-bar.afternoon:hover {
+    background: repeating-linear-gradient(45deg,
+            rgba(249, 115, 22, 0.5),
+            rgba(249, 115, 22, 0.5) 10px,
+            rgba(249, 115, 22, 0.7) 10px,
+            rgba(249, 115, 22, 0.7) 20px);
+}
+
 /* ラジオボタングループ */
 .radio-group {
     display: flex;
