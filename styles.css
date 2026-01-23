@@ -674,7 +674,8 @@ body {
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 200;
+    min-width: fit-content;
 }
 
 .gantt-label-header {
@@ -707,6 +708,7 @@ body {
     font-weight: 500;
     color: var(--text-secondary);
     border-right: 1px solid var(--border-color);
+    background: var(--bg-secondary);
 }
 
 .time-cell:last-child {
