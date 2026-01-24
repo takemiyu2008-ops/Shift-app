@@ -3435,12 +3435,10 @@ body {
         font-size: 1rem;
     }
 }
-
 /* ========================================
    発注アドバイス機能
    ======================================== */
 
-/* 発注アドバイス画面 */
 .order-advice-screen {
     position: fixed;
     top: 0;
@@ -3465,7 +3463,6 @@ body {
     }
 }
 
-/* ヘッダー */
 .order-advice-header {
     display: flex;
     justify-content: space-between;
@@ -3505,7 +3502,6 @@ body {
     color: var(--text-secondary);
 }
 
-/* 担当者選択画面 */
 .staff-selection {
     max-width: 1000px;
     margin: 0 auto;
@@ -3572,7 +3568,6 @@ body {
     white-space: nowrap;
 }
 
-/* 発注情報バー */
 .order-info-bar {
     display: flex;
     justify-content: space-between;
@@ -3642,7 +3637,6 @@ body {
     50% { opacity: 0.7; }
 }
 
-/* 天気・特別日カード */
 .weather-special-card {
     display: flex;
     justify-content: space-between;
@@ -3726,7 +3720,6 @@ body {
     font-size: 0.85rem;
 }
 
-/* アドバイスタブ */
 .advice-tabs {
     display: flex;
     gap: 8px;
@@ -3755,7 +3748,6 @@ body {
     border-color: var(--accent-primary);
 }
 
-/* カテゴリ別アドバイスカード */
 .category-advice-list {
     display: flex;
     flex-direction: column;
@@ -3801,7 +3793,6 @@ body {
     border-radius: var(--radius-sm);
 }
 
-/* 推奨事項 */
 .recommendations {
     margin-bottom: 12px;
 }
@@ -3839,7 +3830,6 @@ body {
     border-radius: 12px;
 }
 
-/* 注意事項 */
 .warnings {
     margin-top: 8px;
 }
@@ -3862,7 +3852,6 @@ body {
     color: var(--text-secondary);
 }
 
-/* フィードバックフォーム */
 .feedback-form-container {
     display: flex;
     flex-direction: column;
@@ -3942,7 +3931,6 @@ body {
     min-height: 60px;
 }
 
-/* モバイル対応 */
 @media (max-width: 768px) {
     .order-advice-screen {
         padding: 12px;
