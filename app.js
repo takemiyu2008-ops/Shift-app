@@ -4878,5 +4878,11 @@ function loadOrderFeedback() {
 // 発注アドバイスボタンのイベントリスナー
 document.getElementById('orderAdviceBtn').addEventListener('click', showOrderAdviceScreen);
 
+// モバイル用フローティングボタンのイベントリスナー
+const orderAdviceBtnMobile = document.getElementById('orderAdviceBtnMobile');
+if (orderAdviceBtnMobile) {
+    orderAdviceBtnMobile.addEventListener('click', showOrderAdviceScreen);
+}
+
 // 初期化時にフィードバックデータを読み込み
 loadOrderFeedback();

@@ -3974,3 +3974,44 @@ body {
         text-align: center;
     }
 }
+
+/* モバイル用 発注アドバイスフローティングボタン */
+.order-advice-fab {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    font-size: 1.5rem;
+    border: none;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+    cursor: pointer;
+    z-index: 100;
+    transition: all var(--transition-fast);
+}
+
+.order-advice-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(139, 92, 246, 0.6);
+}
+
+.order-advice-fab:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+    .order-advice-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* デスクトップ用の発注アドバイスボタンをモバイルで非表示 */
+    #orderAdviceBtn {
+        display: none;
+    }
+}
