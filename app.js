@@ -1754,6 +1754,9 @@ function initEventListeners() {
         openModal(document.getElementById('modalOverlay'));
     };
 
+    // 発注アドバイスボタン
+    document.getElementById('orderAdviceBtn').onclick = showOrderAdviceScreen;
+
     // 日付変更時に曜日を表示
     document.getElementById('shiftDate').onchange = updateShiftDateDay;
 
@@ -4113,3 +4116,788 @@ function filterNonDailyByCategory(category) {
     state.nonDailyFilter = category;
     renderNonDailyAdvisor();
 }
+
+// ========================================
+// 発注アドバイス機能
+// ========================================
+
+// 発注担当者データ
+const ORDER_STAFF = [
+    { id: 1, name: '市原', role: 'マネージャー/日勤', categories: ['tobacco'] },
+    { id: 2, name: '篠原', role: '社員/夕勤', categories: ['noodle', 'deli', 'ff', 'drink'] },
+    { id: 3, name: '橋本', role: '社員/日勤', categories: ['milk', 'supply'] },
+    { id: 4, name: '森下', role: 'スタッフ/日勤', categories: ['rice', 'sevenPDeli', 'deliOther', 'goods', 'frozen'] },
+    { id: 5, name: '高橋', role: 'スタッフ/日勤', categories: ['bread'] },
+    { id: 6, name: '萩', role: 'スタッフ/日勤', categories: ['processed'] },
+    { id: 7, name: '小宮山', role: 'スタッフ/夕勤', categories: ['sweetsChoco'] },
+    { id: 8, name: '加藤（男）', role: 'スタッフ/日勤', categories: ['dessert', 'sweetsGummy'] },
+    { id: 9, name: '中瀬', role: 'スタッフ/夕勤', categories: ['sweetsSnack'] },
+];
+
+// 発注カテゴリデータ
+const ORDER_ADVICE_CATEGORIES = [
+    { id: 'tobacco', name: 'タバコ', icon: '🚬', items: ['タバコ'], color: '#6B7280' },
+    { id: 'noodle', name: '麺類その他', icon: '🍜', items: ['カップ麺(温)', '調理麺(冷)', 'スパゲティ', 'グラタンドリア', '焼きそば類'], color: '#EF4444' },
+    { id: 'deli', name: 'デリカテッセン（サラダ、惣菜）', icon: '🥗', items: ['サラダ', '惣菜類'], color: '#22C55E' },
+    { id: 'ff', name: 'FF（おでん、中華まん）', icon: '🍢', items: ['おでん', '中華まん', 'フランク'], color: '#F97316' },
+    { id: 'drink', name: 'ドリンク類', icon: '🥤', items: ['ソフトドリンク', 'お茶', 'コーヒー'], color: '#3B82F6' },
+    { id: 'milk', name: '牛乳乳飲料', icon: '🥛', items: ['牛乳', '乳飲料', 'コーヒー牛乳'], color: '#60A5FA' },
+    { id: 'supply', name: '消耗品', icon: '🧻', items: ['消耗品'], color: '#9CA3AF' },
+    { id: 'rice', name: '米飯', icon: '🍙', items: ['おにぎり', '寿司', '弁当', 'チルド弁当'], color: '#F59E0B' },
+    { id: 'sevenPDeli', name: '7Pデリカ', icon: '🍱', items: ['7Pデリカ商品'], color: '#FBBF24' },
+    { id: 'deliOther', name: 'デリテッセン（その他）', icon: '🥡', items: ['その他デリカ'], color: '#34D399' },
+    { id: 'goods', name: '雑貨類', icon: '🛒', items: ['雑貨'], color: '#8B5CF6' },
+    { id: 'frozen', name: 'フローズン（フライヤー、焼成パン）', icon: '🧊', items: ['フライヤー', '焼成パン'], color: '#06B6D4' },
+    { id: 'bread', name: '調理パン', icon: '🥪', items: ['サンドイッチ', 'ロール類', 'ブリトー'], color: '#EAB308' },
+    { id: 'processed', name: '加工食品（調味料類、珍味）', icon: '🫙', items: ['調味料', '珍味'], color: '#A855F7' },
+    { id: 'sweetsChoco', name: 'お菓子（チョコレート、和菓子類）', icon: '🍫', items: ['チョコレート', '和菓子'], color: '#EC4899' },
+    { id: 'dessert', name: 'デザート', icon: '🍰', items: ['チルド用生菓子', 'ヨーグルト', 'ゼリー類'], color: '#F472B6' },
+    { id: 'sweetsGummy', name: 'お菓子（グミ、駄菓子、飴類）', icon: '🍬', items: ['グミ', '駄菓子', '飴類'], color: '#FB7185' },
+    { id: 'sweetsSnack', name: 'お菓子（ポテトチップス、箱スナック、米菓）', icon: '🍿', items: ['ポテトチップス', '箱スナック', '米菓'], color: '#FDBA74' },
+];
+
+// 発注アドバイス用の状態管理を拡張
+state.orderAdvice = {
+    selectedStaffId: null,
+    activeTab: 'advice', // 'advice' or 'feedback'
+    feedbackData: {},
+};
+
+// 発注対象日と締切を計算
+function getOrderTargetInfo() {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // 締切は11時
+    const deadline = new Date(now);
+    deadline.setHours(11, 0, 0, 0);
+    
+    let targetDate;
+    let isBeforeDeadline;
+    
+    if (hour < 11) {
+        // 11時前：翌日分の発注
+        targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + 1);
+        isBeforeDeadline = true;
+    } else {
+        // 11時以降：翌々日分の発注
+        targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + 2);
+        isBeforeDeadline = false;
+        // 次の締切は明日の11時
+        deadline.setDate(deadline.getDate() + 1);
+    }
+    
+    // 締切までの残り時間を計算
+    const timeUntilDeadline = deadline - now;
+    const hoursUntil = Math.floor(timeUntilDeadline / (1000 * 60 * 60));
+    const minutesUntil = Math.floor((timeUntilDeadline % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return {
+        targetDate,
+        targetDateStr: formatDate(targetDate),
+        deadline,
+        isBeforeDeadline,
+        hoursUntil,
+        minutesUntil,
+        isUrgent: hoursUntil < 1 && isBeforeDeadline
+    };
+}
+
+// カテゴリ別アドバイス生成
+function generateOrderAdvice(categoryId, weather, targetDate) {
+    const temp = weather ? (weather.tempMax + weather.tempMin) / 2 : 15;
+    const weatherType = weather ? getWeatherInfo(weather.weatherCode).type : 'sunny';
+    const dayOfWeek = targetDate.getDay();
+    const dayOfMonth = targetDate.getDate();
+    
+    const advice = {
+        categoryId,
+        recommendations: [],
+        warnings: [],
+        confidence: 70,
+    };
+
+    // カテゴリごとのロジック
+    switch (categoryId) {
+        case 'rice':
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒さで温かいご飯需要↑',
+                    items: ['幕の内弁当', 'のり弁', '炊き込みご飯おにぎり'],
+                    psychology: '体を温めたい欲求',
+                });
+            }
+            if (temp >= 25) {
+                advice.recommendations.push({
+                    text: '暑さで塩分・さっぱり需要↑',
+                    items: ['梅おにぎり', '塩むすび', '冷やし寿司'],
+                    psychology: '汗で失った塩分を補いたい',
+                });
+            }
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                advice.recommendations.push({
+                    text: '週末は行楽需要↑',
+                    items: ['おにぎりセット', '助六寿司', 'ファミリー弁当'],
+                    psychology: 'お出かけ・ピクニック気分',
+                });
+            }
+            if (weatherType === 'rainy') {
+                advice.warnings.push({
+                    text: '雨天で来客減少見込み',
+                    suggestion: '発注控えめに（-15%目安）',
+                });
+            }
+            advice.confidence = 78;
+            break;
+
+        case 'noodle':
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒さで温かい麺↑↑',
+                    items: ['カップうどん', 'カップラーメン', 'グラタン', 'ドリア'],
+                    psychology: '体の芯から温まりたい',
+                });
+                advice.confidence = 85;
+            }
+            if (temp >= 25) {
+                advice.recommendations.push({
+                    text: '暑さで冷たい麺↑',
+                    items: ['冷やし中華', '冷製パスタ', 'ざるそば'],
+                    psychology: 'さっぱり・ひんやり食べたい',
+                });
+                advice.warnings.push({
+                    text: 'カップ麺(温)は需要減',
+                    suggestion: '通常より控えめに（-20%目安）',
+                });
+            }
+            break;
+
+        case 'ff':
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒さでホットスナック需要↑↑',
+                    items: ['肉まん', 'あんまん', 'おでん各種', 'フランク'],
+                    psychology: '温かいものを手軽に食べたい',
+                });
+                advice.confidence = 88;
+            }
+            if (temp >= 25) {
+                advice.warnings.push({
+                    text: '暑さでホットスナック需要↓',
+                    suggestion: '肉まん・おでん控えめに',
+                });
+                advice.confidence = 60;
+            }
+            break;
+
+        case 'deli':
+            if (dayOfWeek === 5) {
+                advice.recommendations.push({
+                    text: '金曜は惣菜需要↑',
+                    items: ['唐揚げ', 'ポテトサラダ', 'おつまみ系'],
+                    psychology: '仕事帰りに買って帰りたい',
+                });
+            }
+            if (temp >= 25) {
+                advice.recommendations.push({
+                    text: '暑さでサラダ需要↑',
+                    items: ['グリーンサラダ', '春雨サラダ', '冷しゃぶサラダ'],
+                    psychology: 'さっぱりしたものが食べたい',
+                });
+            }
+            break;
+
+        case 'dessert':
+            if (temp >= 25) {
+                advice.recommendations.push({
+                    text: '暑さで冷たいデザート↑↑',
+                    items: ['ゼリー類', 'プリン', '杏仁豆腐', 'フルーツヨーグルト'],
+                    psychology: 'ひんやり甘いもので癒されたい',
+                });
+                advice.confidence = 88;
+            }
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                advice.recommendations.push({
+                    text: '週末ご褒美需要↑',
+                    items: ['プレミアムスイーツ', '生菓子'],
+                    psychology: '頑張った自分へのご褒美',
+                });
+            }
+            break;
+
+        case 'bread':
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                advice.recommendations.push({
+                    text: '平日朝の需要',
+                    items: ['たまごサンド', 'ハムサンド', 'ツナロール'],
+                    psychology: '手軽に朝食を済ませたい',
+                });
+            }
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒い日はボリューム系↑',
+                    items: ['カツサンド', 'ブリトー（ミート系）'],
+                    psychology: 'しっかり食べて温まりたい',
+                });
+            }
+            break;
+
+        case 'milk':
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒い日はホット需要↑',
+                    items: ['ホットミルク用牛乳', 'ココア原料'],
+                    psychology: '温かい飲み物で温まりたい',
+                });
+            }
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                advice.recommendations.push({
+                    text: '週末は家族需要↑',
+                    items: ['大容量牛乳', 'ファミリーパック'],
+                    psychology: '家族で消費、まとめ買い',
+                });
+            }
+            break;
+
+        case 'drink':
+            if (temp >= 25) {
+                advice.recommendations.push({
+                    text: '暑さで冷たい飲料↑↑',
+                    items: ['スポーツドリンク', 'お茶', '炭酸飲料'],
+                    psychology: '水分補給・クールダウン',
+                });
+                advice.confidence = 90;
+            }
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒さでホット飲料↑',
+                    items: ['ホットコーヒー', 'ホットお茶', 'スープ'],
+                    psychology: '温かい飲み物で温まりたい',
+                });
+            }
+            break;
+
+        case 'sweetsChoco':
+            if (temp <= 15) {
+                advice.recommendations.push({
+                    text: 'チョコレート需要↑',
+                    items: ['板チョコ', 'チョコ菓子'],
+                    psychology: '寒い時期はチョコが美味しい',
+                });
+            }
+            if (temp >= 25) {
+                advice.warnings.push({
+                    text: '暑さでチョコ溶け注意',
+                    suggestion: '在庫管理・陳列場所注意',
+                });
+            }
+            break;
+
+        case 'sweetsGummy':
+            advice.recommendations.push({
+                text: '通年安定需要',
+                items: ['人気グミ', '定番駄菓子'],
+                psychology: '手軽なおやつ需要',
+            });
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                advice.recommendations.push({
+                    text: '週末はファミリー需要↑',
+                    items: ['大袋グミ', 'バラエティパック'],
+                    psychology: '子供のおやつ、まとめ買い',
+                });
+            }
+            break;
+
+        case 'sweetsSnack':
+            advice.recommendations.push({
+                text: '通年安定需要',
+                items: ['定番ポテチ', '人気スナック'],
+                psychology: '定番のおやつ需要',
+            });
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                advice.recommendations.push({
+                    text: '週末パーティー需要↑',
+                    items: ['大袋ポテチ', 'パーティーサイズ'],
+                    psychology: '集まり・宴会用',
+                });
+            }
+            break;
+
+        case 'frozen':
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒さでフライヤー商品↑',
+                    items: ['コロッケ', 'から揚げ', 'ポテト'],
+                    psychology: '温かい揚げ物で温まりたい',
+                });
+            }
+            advice.recommendations.push({
+                text: '焼成パン朝需要',
+                items: ['クロワッサン', 'メロンパン'],
+                psychology: '焼きたての香りで購買意欲↑',
+            });
+            break;
+
+        case 'sevenPDeli':
+            if (temp <= 10) {
+                advice.recommendations.push({
+                    text: '寒さでおでん・中華まん↑↑',
+                    items: ['おでんセット', '肉まん', 'あんまん'],
+                    psychology: '温かいものですぐ温まりたい',
+                });
+                advice.confidence = 90;
+            }
+            break;
+
+        case 'tobacco':
+            advice.recommendations.push({
+                text: '定番銘柄を切らさない',
+                items: ['人気銘柄TOP10', '新商品'],
+                psychology: '指名買いが多い',
+            });
+            advice.confidence = 85;
+            break;
+
+        case 'supply':
+        case 'goods':
+        case 'processed':
+            advice.recommendations.push({
+                text: '通常発注でOK',
+                items: [],
+                psychology: '',
+            });
+            break;
+
+        case 'deliOther':
+            if (dayOfWeek === 5) {
+                advice.recommendations.push({
+                    text: '金曜はお惣菜需要↑',
+                    items: ['おつまみ系惣菜'],
+                    psychology: '週末前の買い足し',
+                });
+            }
+            break;
+
+        default:
+            advice.recommendations.push({
+                text: '通常発注でOK',
+                items: [],
+                psychology: '',
+            });
+            break;
+    }
+
+    // 特別日の追加アドバイス
+    if (dayOfMonth >= 23 && dayOfMonth <= 27) {
+        advice.recommendations.push({
+            text: '💰 給料日前後で消費意欲↑',
+            items: ['プレミアム商品', '高単価商品'],
+            psychology: '財布の紐が緩む',
+        });
+    }
+    if (dayOfMonth >= 26 && dayOfMonth <= 31) {
+        advice.warnings.push({
+            text: '月末で節約志向',
+            suggestion: '高単価商品控えめ、PB商品強化',
+        });
+    }
+
+    return advice;
+}
+
+// 発注アドバイス画面を表示
+function showOrderAdviceScreen() {
+    const mainContent = document.querySelector('.app-container');
+    
+    // 既存の発注アドバイス画面があれば削除
+    const existingScreen = document.getElementById('orderAdviceScreen');
+    if (existingScreen) {
+        existingScreen.remove();
+    }
+    
+    // 発注アドバイス画面を作成
+    const screen = document.createElement('div');
+    screen.id = 'orderAdviceScreen';
+    screen.className = 'order-advice-screen';
+    
+    if (!state.orderAdvice.selectedStaffId) {
+        // 担当者選択画面
+        screen.innerHTML = renderStaffSelection();
+    } else {
+        // アドバイス画面
+        screen.innerHTML = renderAdviceScreen();
+    }
+    
+    mainContent.appendChild(screen);
+    
+    // タイマー更新開始
+    startDeadlineTimer();
+}
+
+// 担当者選択画面をレンダリング
+function renderStaffSelection() {
+    let html = `
+        <div class="order-advice-header">
+            <h2>📦 発注アドバイス</h2>
+            <button class="btn btn-secondary" onclick="closeOrderAdviceScreen()">✕ 閉じる</button>
+        </div>
+        <div class="staff-selection">
+            <h3>担当者を選択してください</h3>
+            <div class="staff-grid">
+    `;
+    
+    ORDER_STAFF.forEach(staff => {
+        const categories = staff.categories.map(catId => {
+            const cat = ORDER_ADVICE_CATEGORIES.find(c => c.id === catId);
+            return cat ? `<span class="staff-category-tag" style="background:${cat.color}">${cat.icon} ${cat.name}</span>` : '';
+        }).join('');
+        
+        html += `
+            <div class="staff-card" onclick="selectOrderStaff(${staff.id})">
+                <div class="staff-card-header">
+                    <span class="staff-name">${staff.name}</span>
+                    <span class="staff-role">${staff.role}</span>
+                </div>
+                <div class="staff-categories">
+                    ${categories}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// 担当者を選択
+function selectOrderStaff(staffId) {
+    state.orderAdvice.selectedStaffId = staffId;
+    showOrderAdviceScreen();
+}
+
+// アドバイス画面をレンダリング
+function renderAdviceScreen() {
+    const staff = ORDER_STAFF.find(s => s.id === state.orderAdvice.selectedStaffId);
+    if (!staff) return '';
+    
+    const orderInfo = getOrderTargetInfo();
+    const targetDateStr = orderInfo.targetDateStr;
+    const weather = state.weatherData[targetDateStr];
+    const targetDate = orderInfo.targetDate;
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    
+    let html = `
+        <div class="order-advice-header">
+            <div class="header-left">
+                <h2>📦 発注アドバイス</h2>
+                <span class="current-staff">担当: ${staff.name}</span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary btn-sm" onclick="changeOrderStaff()">👤 担当者切替</button>
+                <button class="btn btn-secondary" onclick="closeOrderAdviceScreen()">✕ 閉じる</button>
+            </div>
+        </div>
+        
+        <div class="order-info-bar">
+            <div class="target-date">
+                <span class="label">発注対象日:</span>
+                <span class="date">${targetDate.getMonth() + 1}/${targetDate.getDate()}（${dayNames[targetDate.getDay()]}）</span>
+                <span class="note">${orderInfo.isBeforeDeadline ? '翌日分' : '翌々日分'}</span>
+            </div>
+            <div class="deadline ${orderInfo.isUrgent ? 'urgent' : ''}">
+                <span class="label">締切まで:</span>
+                <span class="time" id="deadlineTimer">${orderInfo.hoursUntil}時間${orderInfo.minutesUntil}分</span>
+            </div>
+        </div>
+    `;
+    
+    // 天気・特別日カード
+    if (weather) {
+        const weatherInfo = getWeatherInfo(weather.weatherCode);
+        html += `
+            <div class="weather-special-card">
+                <div class="weather-section">
+                    <span class="weather-icon-large">${weatherInfo.icon}</span>
+                    <div class="weather-details">
+                        <span class="weather-desc">${weatherInfo.desc}</span>
+                        <span class="weather-temp">
+                            <span class="temp-high">${weather.tempMax}°</span> / 
+                            <span class="temp-low">${weather.tempMin}°</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="special-day-section">
+                    ${renderSpecialDayBadges(targetDate)}
+                </div>
+            </div>
+        `;
+    }
+    
+    // タブ
+    html += `
+        <div class="advice-tabs">
+            <button class="advice-tab ${state.orderAdvice.activeTab === 'advice' ? 'active' : ''}" 
+                    onclick="switchAdviceTab('advice')">📋 アドバイス</button>
+            <button class="advice-tab ${state.orderAdvice.activeTab === 'feedback' ? 'active' : ''}" 
+                    onclick="switchAdviceTab('feedback')">📝 フィードバック</button>
+        </div>
+    `;
+    
+    if (state.orderAdvice.activeTab === 'advice') {
+        html += renderCategoryAdvice(staff, weather, targetDate);
+    } else {
+        html += renderFeedbackForm(staff, targetDateStr);
+    }
+    
+    return html;
+}
+
+// 特別日バッジをレンダリング
+function renderSpecialDayBadges(date) {
+    const badges = [];
+    const dayOfWeek = date.getDay();
+    const dayOfMonth = date.getDate();
+    
+    if (dayOfWeek === 5) badges.push('<span class="special-badge friday">🎉 金曜日</span>');
+    if (dayOfWeek === 6) badges.push('<span class="special-badge weekend">🌟 土曜日</span>');
+    if (dayOfWeek === 0) badges.push('<span class="special-badge weekend">🌟 日曜日</span>');
+    if (dayOfMonth >= 23 && dayOfMonth <= 27) badges.push('<span class="special-badge payday">💰 給料日前後</span>');
+    if (dayOfMonth >= 26) badges.push('<span class="special-badge monthend">📅 月末</span>');
+    
+    return badges.length > 0 ? badges.join('') : '<span class="no-special">特別な日ではありません</span>';
+}
+
+// カテゴリ別アドバイスをレンダリング
+function renderCategoryAdvice(staff, weather, targetDate) {
+    let html = '<div class="category-advice-list">';
+    
+    staff.categories.forEach(catId => {
+        const category = ORDER_ADVICE_CATEGORIES.find(c => c.id === catId);
+        if (!category) return;
+        
+        const advice = generateOrderAdvice(catId, weather, targetDate);
+        
+        html += `
+            <div class="category-advice-card" style="border-left-color: ${category.color}">
+                <div class="card-header">
+                    <span class="category-icon" style="background: ${category.color}">${category.icon}</span>
+                    <span class="category-name">${category.name}</span>
+                    <span class="confidence">信頼度: ${advice.confidence}%</span>
+                </div>
+        `;
+        
+        if (advice.recommendations.length > 0) {
+            html += '<div class="recommendations">';
+            advice.recommendations.forEach(rec => {
+                html += `
+                    <div class="recommendation-item">
+                        <div class="rec-text">📈 ${rec.text}</div>
+                        ${rec.psychology ? `<div class="rec-psychology">🧠 ${rec.psychology}</div>` : ''}
+                        ${rec.items.length > 0 ? `
+                            <div class="rec-items">
+                                推奨: ${rec.items.map(item => `<span class="item-tag">${item}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        if (advice.warnings.length > 0) {
+            html += '<div class="warnings">';
+            advice.warnings.forEach(warn => {
+                html += `
+                    <div class="warning-item">
+                        <div class="warn-text">⚠️ ${warn.text}</div>
+                        ${warn.suggestion ? `<div class="warn-suggestion">💡 ${warn.suggestion}</div>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        html += '</div>';
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// フィードバックフォームをレンダリング
+function renderFeedbackForm(staff, targetDateStr) {
+    let html = '<div class="feedback-form-container">';
+    
+    staff.categories.forEach(catId => {
+        const category = ORDER_ADVICE_CATEGORIES.find(c => c.id === catId);
+        if (!category) return;
+        
+        const feedbackKey = `${targetDateStr}-${catId}`;
+        const existingFeedback = state.orderAdvice.feedbackData[feedbackKey] || {};
+        
+        html += `
+            <div class="feedback-card" style="border-left-color: ${category.color}">
+                <div class="card-header">
+                    <span class="category-icon" style="background: ${category.color}">${category.icon}</span>
+                    <span class="category-name">${category.name}</span>
+                </div>
+                
+                <div class="feedback-fields">
+                    <div class="field-group">
+                        <label>的中度評価</label>
+                        <div class="rating-buttons">
+                            <button type="button" class="rating-btn ${existingFeedback.rating === 'excellent' ? 'selected' : ''}" 
+                                    onclick="setFeedbackRating('${feedbackKey}', 'excellent')">◎ 的中</button>
+                            <button type="button" class="rating-btn ${existingFeedback.rating === 'good' ? 'selected' : ''}" 
+                                    onclick="setFeedbackRating('${feedbackKey}', 'good')">○ まあまあ</button>
+                            <button type="button" class="rating-btn ${existingFeedback.rating === 'fair' ? 'selected' : ''}" 
+                                    onclick="setFeedbackRating('${feedbackKey}', 'fair')">△ 普通</button>
+                            <button type="button" class="rating-btn ${existingFeedback.rating === 'poor' ? 'selected' : ''}" 
+                                    onclick="setFeedbackRating('${feedbackKey}', 'poor')">× 外れ</button>
+                        </div>
+                    </div>
+                    
+                    <div class="field-group">
+                        <label>予想以上に売れたもの</label>
+                        <input type="text" class="feedback-input" 
+                               id="oversold-${feedbackKey}" 
+                               value="${existingFeedback.oversold || ''}"
+                               placeholder="例：おにぎり、サンドイッチ">
+                    </div>
+                    
+                    <div class="field-group">
+                        <label>予想より売れなかったもの</label>
+                        <input type="text" class="feedback-input" 
+                               id="undersold-${feedbackKey}" 
+                               value="${existingFeedback.undersold || ''}"
+                               placeholder="例：弁当類、デザート">
+                    </div>
+                    
+                    <div class="field-group">
+                        <label>気づいたこと・特記事項</label>
+                        <textarea class="feedback-textarea" 
+                                  id="notes-${feedbackKey}" 
+                                  rows="2"
+                                  placeholder="例：雨が予報より早く降り始めた">${existingFeedback.notes || ''}</textarea>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-sm" onclick="submitFeedback('${feedbackKey}', '${catId}', '${targetDateStr}')">
+                        💾 保存
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// タブ切り替え
+function switchAdviceTab(tab) {
+    state.orderAdvice.activeTab = tab;
+    showOrderAdviceScreen();
+}
+
+// 担当者切替
+function changeOrderStaff() {
+    state.orderAdvice.selectedStaffId = null;
+    showOrderAdviceScreen();
+}
+
+// 発注アドバイス画面を閉じる
+function closeOrderAdviceScreen() {
+    const screen = document.getElementById('orderAdviceScreen');
+    if (screen) {
+        screen.remove();
+    }
+    stopDeadlineTimer();
+}
+
+// フィードバック評価を設定
+function setFeedbackRating(feedbackKey, rating) {
+    if (!state.orderAdvice.feedbackData[feedbackKey]) {
+        state.orderAdvice.feedbackData[feedbackKey] = {};
+    }
+    state.orderAdvice.feedbackData[feedbackKey].rating = rating;
+    
+    // UIを更新
+    const card = document.querySelector(`[onclick="setFeedbackRating('${feedbackKey}', '${rating}')"]`).closest('.feedback-card');
+    card.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    document.querySelector(`[onclick="setFeedbackRating('${feedbackKey}', '${rating}')"]`).classList.add('selected');
+}
+
+// フィードバック送信
+function submitFeedback(feedbackKey, categoryId, date) {
+    const feedback = {
+        id: feedbackKey,
+        categoryId,
+        date,
+        rating: state.orderAdvice.feedbackData[feedbackKey]?.rating || null,
+        oversold: document.getElementById(`oversold-${feedbackKey}`)?.value || '',
+        undersold: document.getElementById(`undersold-${feedbackKey}`)?.value || '',
+        notes: document.getElementById(`notes-${feedbackKey}`)?.value || '',
+        submittedAt: new Date().toISOString(),
+        submittedBy: ORDER_STAFF.find(s => s.id === state.orderAdvice.selectedStaffId)?.name || '不明'
+    };
+    
+    // Firebaseに保存
+    database.ref(`orderFeedback/${feedbackKey}`).set(feedback);
+    
+    // ローカル状態を更新
+    state.orderAdvice.feedbackData[feedbackKey] = feedback;
+    
+    alert('フィードバックを保存しました');
+}
+
+// 締切タイマー
+let deadlineTimerInterval = null;
+
+function startDeadlineTimer() {
+    stopDeadlineTimer();
+    updateDeadlineTimer();
+    deadlineTimerInterval = setInterval(updateDeadlineTimer, 60000); // 1分ごとに更新
+}
+
+function stopDeadlineTimer() {
+    if (deadlineTimerInterval) {
+        clearInterval(deadlineTimerInterval);
+        deadlineTimerInterval = null;
+    }
+}
+
+function updateDeadlineTimer() {
+    const timerEl = document.getElementById('deadlineTimer');
+    if (!timerEl) return;
+    
+    const orderInfo = getOrderTargetInfo();
+    timerEl.textContent = `${orderInfo.hoursUntil}時間${orderInfo.minutesUntil}分`;
+    
+    const deadlineEl = timerEl.closest('.deadline');
+    if (deadlineEl) {
+        if (orderInfo.isUrgent) {
+            deadlineEl.classList.add('urgent');
+        } else {
+            deadlineEl.classList.remove('urgent');
+        }
+    }
+}
+
+// フィードバックデータをFirebaseから読み込み
+function loadOrderFeedback() {
+    database.ref('orderFeedback').on('value', snap => {
+        const data = snap.val();
+        if (data) {
+            state.orderAdvice.feedbackData = data;
+        }
+    });
+}
+
+// 初期化時にフィードバックデータを読み込み
+loadOrderFeedback();
