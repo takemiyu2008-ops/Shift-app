@@ -39,9 +39,6 @@
                         <span id="roleText">スタッフ</span>
                     </button>
                 </div>
-                <button id="orderAdviceBtn" class="btn btn-info">
-                    📦 発注アドバイス
-                </button>
                 <button id="addShiftBtn" class="btn btn-primary">
                     <span class="btn-icon">+</span>
                     シフト追加
@@ -71,7 +68,7 @@
                     <button class="admin-tab" data-tab="leaveRequests">有給申請</button>
                     <button class="admin-tab" data-tab="holidayRequests">休日申請</button>
                     <button class="admin-tab" data-tab="dailyEvents">📅 店舗スケジュール</button>
-                    <button class="admin-tab" data-tab="nonDailyAdvice">📈 非デイリー</button>
+                    <button class="admin-tab" data-tab="nonDailyAdvice">📈 非デイリー参考情報</button>
                     <button class="admin-tab" data-tab="history">📜 履歴</button>
                     <button class="admin-tab" data-tab="employees">従業員管理</button>
                     <button class="admin-tab" data-tab="broadcast">全員へ通知</button>
@@ -132,23 +129,11 @@
                 <button class="advisor-group-toggle" id="advisorGroupToggle">▼</button>
             </div>
             <div class="advisor-group-content collapsed" id="advisorGroupContent">
-                <!-- デイリー発注アドバイス -->
-                <div class="order-advisor" id="orderAdvisor" style="display: none;">
-                    <div class="advisor-header">
-                        <span class="advisor-icon">📊</span>
-                        <span class="advisor-title">デイリー発注アドバイス（毎日更新）</span>
-                        <button class="advisor-toggle collapsed" id="advisorToggle">▼</button>
-                    </div>
-                    <div class="advisor-content collapsed" id="advisorContent">
-                        <!-- JSで動的に生成 -->
-                    </div>
-                </div>
-
-                <!-- 非デイリー発注アドバイス -->
+                <!-- 非デイリー発注参考情報 -->
                 <div class="order-advisor non-daily-advisor" id="nonDailyAdvisor" style="display: none;">
                     <div class="advisor-header">
                         <span class="advisor-icon">📈</span>
-                        <span class="advisor-title">非デイリー発注アドバイス（毎週月曜更新）</span>
+                        <span class="advisor-title">非デイリー発注参考情報（毎週月曜更新）</span>
                         <button class="advisor-toggle collapsed" id="nonDailyToggle">▼</button>
                     </div>
                     <div class="advisor-content collapsed" id="nonDailyContent">
