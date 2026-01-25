@@ -4996,17 +4996,22 @@ function toggleInfoCategoryExpand(pmaId, infoId) {
 
 // PMA追加モーダルを開く
 function openAddPMAModal() {
-    const modal = createCategoryModal({
-        title: '📦 PMA（大分類）追加',
-        fields: [
-            { name: 'name', label: 'PMA名', type: 'text', placeholder: '例: 米飯', required: true },
-            { name: 'icon', label: 'アイコン', type: 'text', placeholder: '例: 🍙', maxLength: 2 }
-        ],
-        onSubmit: (data) => {
-            addPMA(data);
-        }
-    });
-    document.body.appendChild(modal);
+    try {
+        alert('PMA追加ボタンがクリックされました');
+        const modal = createCategoryModal({
+            title: '📦 PMA（大分類）追加',
+            fields: [
+                { name: 'name', label: 'PMA名', type: 'text', placeholder: '例: 米飯', required: true },
+                { name: 'icon', label: 'アイコン', type: 'text', placeholder: '例: 🍙', maxLength: 2 }
+            ],
+            onSubmit: (data) => {
+                addPMA(data);
+            }
+        });
+        document.body.appendChild(modal);
+    } catch (error) {
+        alert('エラー: ' + error.message);
+    }
 }
 
 // PMA編集モーダルを開く
