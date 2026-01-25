@@ -1368,6 +1368,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'nonDailyAdvice') {
         // 非デイリーアドバイス管理
         renderNonDailyAdminPanel(c);
+    } else if (state.activeAdminTab === 'feedbackStats') {
+        // フィードバック集計
+        renderFeedbackStats(c);
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -4863,6 +4866,365 @@ function updateDeadlineTimer() {
             deadlineEl.classList.remove('urgent');
         }
     }
+}
+
+// フィードバック集計をレンダリング（管理者専用）
+function renderFeedbackStats(container) {
+    const feedbackData = state.orderAdvice.feedbackData || {};
+    const feedbackList = Object.values(feedbackData);
+    
+    // フィルター状態の初期化
+    if (!state.feedbackFilter) {
+        state.feedbackFilter = {
+            period: 'all',
+            staffName: 'all',
+            startDate: '',
+            endDate: ''
+        };
+    }
+    
+    // 担当者リストを作成
+    const staffNames = [...new Set(feedbackList.map(f => f.submittedBy).filter(Boolean))].sort();
+    
+    // フィルターUI
+    container.innerHTML = `
+        <div class="feedback-stats-container">
+            <div class="feedback-stats-header">
+                <h3>📊 発注フィードバック集計</h3>
+            </div>
+            
+            <div class="feedback-filters">
+                <div class="filter-group">
+                    <label>期間:</label>
+                    <select id="feedbackPeriodFilter" onchange="updateFeedbackFilter('period', this.value)">
+                        <option value="all" ${state.feedbackFilter.period === 'all' ? 'selected' : ''}>すべて</option>
+                        <option value="week" ${state.feedbackFilter.period === 'week' ? 'selected' : ''}>直近1週間</option>
+                        <option value="month" ${state.feedbackFilter.period === 'month' ? 'selected' : ''}>直近1ヶ月</option>
+                        <option value="custom" ${state.feedbackFilter.period === 'custom' ? 'selected' : ''}>期間指定</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group custom-date-range" id="customDateRange" style="display: ${state.feedbackFilter.period === 'custom' ? 'flex' : 'none'}">
+                    <input type="date" id="feedbackStartDate" value="${state.feedbackFilter.startDate}" onchange="updateFeedbackFilter('startDate', this.value)">
+                    <span>〜</span>
+                    <input type="date" id="feedbackEndDate" value="${state.feedbackFilter.endDate}" onchange="updateFeedbackFilter('endDate', this.value)">
+                </div>
+                
+                <div class="filter-group">
+                    <label>担当者:</label>
+                    <select id="feedbackStaffFilter" onchange="updateFeedbackFilter('staffName', this.value)">
+                        <option value="all" ${state.feedbackFilter.staffName === 'all' ? 'selected' : ''}>全員</option>
+                        ${staffNames.map(name => `<option value="${name}" ${state.feedbackFilter.staffName === name ? 'selected' : ''}>${name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="feedback-stats-summary" id="feedbackSummary"></div>
+            
+            <div class="feedback-stats-tabs">
+                <button class="stats-tab active" data-view="byStaff" onclick="switchFeedbackView('byStaff')">👤 担当者別</button>
+                <button class="stats-tab" data-view="byDate" onclick="switchFeedbackView('byDate')">📅 日付別</button>
+                <button class="stats-tab" data-view="list" onclick="switchFeedbackView('list')">📋 一覧</button>
+            </div>
+            
+            <div class="feedback-stats-content" id="feedbackStatsContent"></div>
+        </div>
+    `;
+    
+    // 初期表示
+    if (!state.feedbackView) state.feedbackView = 'byStaff';
+    renderFeedbackContent(feedbackList);
+}
+
+// フィードバックフィルター更新
+function updateFeedbackFilter(key, value) {
+    state.feedbackFilter[key] = value;
+    
+    // 期間指定の表示切り替え
+    const customRange = document.getElementById('customDateRange');
+    if (customRange) {
+        customRange.style.display = state.feedbackFilter.period === 'custom' ? 'flex' : 'none';
+    }
+    
+    renderFeedbackContent(Object.values(state.orderAdvice.feedbackData || {}));
+}
+
+// フィードバック表示切り替え
+function switchFeedbackView(view) {
+    state.feedbackView = view;
+    
+    // タブのアクティブ状態を更新
+    document.querySelectorAll('.stats-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.view === view);
+    });
+    
+    renderFeedbackContent(Object.values(state.orderAdvice.feedbackData || {}));
+}
+
+// フィードバック内容をレンダリング
+function renderFeedbackContent(feedbackList) {
+    // フィルタリング
+    let filtered = [...feedbackList];
+    
+    // 期間フィルター
+    if (state.feedbackFilter.period !== 'all') {
+        const now = new Date();
+        let startDate;
+        
+        if (state.feedbackFilter.period === 'week') {
+            startDate = new Date(now);
+            startDate.setDate(startDate.getDate() - 7);
+        } else if (state.feedbackFilter.period === 'month') {
+            startDate = new Date(now);
+            startDate.setMonth(startDate.getMonth() - 1);
+        } else if (state.feedbackFilter.period === 'custom') {
+            if (state.feedbackFilter.startDate) {
+                startDate = new Date(state.feedbackFilter.startDate);
+            }
+            if (state.feedbackFilter.endDate) {
+                const endDate = new Date(state.feedbackFilter.endDate);
+                endDate.setHours(23, 59, 59);
+                filtered = filtered.filter(f => new Date(f.submittedAt) <= endDate);
+            }
+        }
+        
+        if (startDate) {
+            filtered = filtered.filter(f => new Date(f.submittedAt) >= startDate);
+        }
+    }
+    
+    // 担当者フィルター
+    if (state.feedbackFilter.staffName !== 'all') {
+        filtered = filtered.filter(f => f.submittedBy === state.feedbackFilter.staffName);
+    }
+    
+    // サマリー更新
+    const summaryEl = document.getElementById('feedbackSummary');
+    if (summaryEl) {
+        const totalCount = filtered.length;
+        const staffCount = new Set(filtered.map(f => f.submittedBy)).size;
+        const ratingCounts = {
+            excellent: filtered.filter(f => f.rating === 'excellent').length,
+            good: filtered.filter(f => f.rating === 'good').length,
+            fair: filtered.filter(f => f.rating === 'fair').length,
+            poor: filtered.filter(f => f.rating === 'poor').length
+        };
+        
+        summaryEl.innerHTML = `
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="summary-value">${totalCount}</div>
+                    <div class="summary-label">総フィードバック数</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${staffCount}</div>
+                    <div class="summary-label">担当者数</div>
+                </div>
+                <div class="summary-card rating-card">
+                    <div class="rating-breakdown">
+                        <span class="rating-item excellent">◎ ${ratingCounts.excellent}</span>
+                        <span class="rating-item good">○ ${ratingCounts.good}</span>
+                        <span class="rating-item fair">△ ${ratingCounts.fair}</span>
+                        <span class="rating-item poor">× ${ratingCounts.poor}</span>
+                    </div>
+                    <div class="summary-label">評価内訳</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // コンテンツ更新
+    const contentEl = document.getElementById('feedbackStatsContent');
+    if (!contentEl) return;
+    
+    if (filtered.length === 0) {
+        contentEl.innerHTML = '<p class="no-data-message">フィードバックデータがありません</p>';
+        return;
+    }
+    
+    if (state.feedbackView === 'byStaff') {
+        renderFeedbackByStaff(contentEl, filtered);
+    } else if (state.feedbackView === 'byDate') {
+        renderFeedbackByDate(contentEl, filtered);
+    } else {
+        renderFeedbackList(contentEl, filtered);
+    }
+}
+
+// 担当者別表示
+function renderFeedbackByStaff(container, feedbackList) {
+    // 担当者ごとにグループ化
+    const byStaff = {};
+    feedbackList.forEach(f => {
+        const name = f.submittedBy || '不明';
+        if (!byStaff[name]) {
+            byStaff[name] = [];
+        }
+        byStaff[name].push(f);
+    });
+    
+    // フィードバック数で降順ソート
+    const sortedStaff = Object.entries(byStaff).sort((a, b) => b[1].length - a[1].length);
+    
+    let html = '<div class="staff-stats-list">';
+    
+    sortedStaff.forEach(([staffName, feedbacks]) => {
+        const ratingCounts = {
+            excellent: feedbacks.filter(f => f.rating === 'excellent').length,
+            good: feedbacks.filter(f => f.rating === 'good').length,
+            fair: feedbacks.filter(f => f.rating === 'fair').length,
+            poor: feedbacks.filter(f => f.rating === 'poor').length
+        };
+        
+        // 最新のフィードバック日時
+        const latestFeedback = feedbacks.sort((a, b) => 
+            new Date(b.submittedAt) - new Date(a.submittedAt)
+        )[0];
+        const latestDate = latestFeedback ? formatDateTime(latestFeedback.submittedAt) : '-';
+        
+        html += `
+            <div class="staff-stat-card">
+                <div class="staff-stat-header">
+                    <div class="staff-avatar">${staffName.charAt(0)}</div>
+                    <div class="staff-info">
+                        <div class="staff-name">${staffName}</div>
+                        <div class="staff-meta">最終フィードバック: ${latestDate}</div>
+                    </div>
+                    <div class="staff-count">${feedbacks.length}件</div>
+                </div>
+                <div class="staff-rating-bars">
+                    <div class="rating-bar-row">
+                        <span class="rating-label">◎ 的中</span>
+                        <div class="rating-bar">
+                            <div class="rating-bar-fill excellent" style="width: ${feedbacks.length > 0 ? (ratingCounts.excellent / feedbacks.length * 100) : 0}%"></div>
+                        </div>
+                        <span class="rating-count">${ratingCounts.excellent}</span>
+                    </div>
+                    <div class="rating-bar-row">
+                        <span class="rating-label">○ まあまあ</span>
+                        <div class="rating-bar">
+                            <div class="rating-bar-fill good" style="width: ${feedbacks.length > 0 ? (ratingCounts.good / feedbacks.length * 100) : 0}%"></div>
+                        </div>
+                        <span class="rating-count">${ratingCounts.good}</span>
+                    </div>
+                    <div class="rating-bar-row">
+                        <span class="rating-label">△ 普通</span>
+                        <div class="rating-bar">
+                            <div class="rating-bar-fill fair" style="width: ${feedbacks.length > 0 ? (ratingCounts.fair / feedbacks.length * 100) : 0}%"></div>
+                        </div>
+                        <span class="rating-count">${ratingCounts.fair}</span>
+                    </div>
+                    <div class="rating-bar-row">
+                        <span class="rating-label">× 外れ</span>
+                        <div class="rating-bar">
+                            <div class="rating-bar-fill poor" style="width: ${feedbacks.length > 0 ? (ratingCounts.poor / feedbacks.length * 100) : 0}%"></div>
+                        </div>
+                        <span class="rating-count">${ratingCounts.poor}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 日付別表示
+function renderFeedbackByDate(container, feedbackList) {
+    // 日付ごとにグループ化（フィードバック送信日）
+    const byDate = {};
+    feedbackList.forEach(f => {
+        const dateStr = f.submittedAt ? f.submittedAt.split('T')[0] : 'unknown';
+        if (!byDate[dateStr]) {
+            byDate[dateStr] = [];
+        }
+        byDate[dateStr].push(f);
+    });
+    
+    // 日付で降順ソート
+    const sortedDates = Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0]));
+    
+    let html = '<div class="date-stats-list">';
+    
+    sortedDates.forEach(([dateStr, feedbacks]) => {
+        const date = new Date(dateStr);
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        const displayDate = `${date.getMonth() + 1}/${date.getDate()}（${dayNames[date.getDay()]}）`;
+        
+        // 担当者ごとに集計
+        const staffCounts = {};
+        feedbacks.forEach(f => {
+            const name = f.submittedBy || '不明';
+            staffCounts[name] = (staffCounts[name] || 0) + 1;
+        });
+        
+        html += `
+            <div class="date-stat-card">
+                <div class="date-stat-header">
+                    <span class="date-display">${displayDate}</span>
+                    <span class="date-count">${feedbacks.length}件のフィードバック</span>
+                </div>
+                <div class="date-staff-list">
+                    ${Object.entries(staffCounts).map(([name, count]) => `
+                        <span class="staff-chip">${name}: ${count}件</span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 一覧表示
+function renderFeedbackList(container, feedbackList) {
+    // 送信日時で降順ソート
+    const sorted = [...feedbackList].sort((a, b) => 
+        new Date(b.submittedAt) - new Date(a.submittedAt)
+    );
+    
+    // カテゴリマップを作成
+    const categoryMap = {};
+    ORDER_ADVICE_CATEGORIES.forEach(cat => {
+        categoryMap[cat.id] = cat;
+    });
+    
+    const ratingLabels = {
+        excellent: '◎ 的中',
+        good: '○ まあまあ',
+        fair: '△ 普通',
+        poor: '× 外れ'
+    };
+    
+    let html = '<div class="feedback-list-table"><table><thead><tr><th>送信日時</th><th>担当者</th><th>対象日</th><th>カテゴリ</th><th>評価</th><th>詳細</th></tr></thead><tbody>';
+    
+    sorted.forEach(f => {
+        const category = categoryMap[f.categoryId];
+        const categoryName = category ? `${category.icon} ${category.name}` : f.categoryId;
+        const ratingLabel = ratingLabels[f.rating] || '-';
+        const ratingClass = f.rating || '';
+        
+        const details = [];
+        if (f.oversold) details.push(`売れ残り: ${f.oversold}`);
+        if (f.undersold) details.push(`欠品: ${f.undersold}`);
+        if (f.notes) details.push(`メモ: ${f.notes}`);
+        
+        html += `
+            <tr>
+                <td>${formatDateTime(f.submittedAt)}</td>
+                <td>${f.submittedBy || '不明'}</td>
+                <td>${f.date || '-'}</td>
+                <td class="category-cell">${categoryName}</td>
+                <td class="rating-cell ${ratingClass}">${ratingLabel}</td>
+                <td class="details-cell">${details.length > 0 ? details.join('<br>') : '-'}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
 }
 
 // フィードバックデータをFirebaseから読み込み
