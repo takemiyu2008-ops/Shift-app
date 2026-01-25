@@ -4996,22 +4996,17 @@ function toggleInfoCategoryExpand(pmaId, infoId) {
 
 // PMA追加モーダルを開く
 function openAddPMAModal() {
-    try {
-        alert('PMA追加ボタンがクリックされました');
-        const modal = createCategoryModal({
-            title: '📦 PMA（大分類）追加',
-            fields: [
-                { name: 'name', label: 'PMA名', type: 'text', placeholder: '例: 米飯', required: true },
-                { name: 'icon', label: 'アイコン', type: 'text', placeholder: '例: 🍙', maxLength: 2 }
-            ],
-            onSubmit: (data) => {
-                addPMA(data);
-            }
-        });
-        document.body.appendChild(modal);
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
+    const modal = createCategoryModal({
+        title: '📦 PMA（大分類）追加',
+        fields: [
+            { name: 'name', label: 'PMA名', type: 'text', placeholder: '例: 米飯', required: true },
+            { name: 'icon', label: 'アイコン', type: 'text', placeholder: '例: 🍙', maxLength: 2 }
+        ],
+        onSubmit: (data) => {
+            addPMA(data);
+        }
+    });
+    document.body.appendChild(modal);
 }
 
 // PMA編集モーダルを開く
@@ -5100,8 +5095,7 @@ function openEditSubCategoryModal(pmaId, infoId, subId) {
 // カテゴリモーダルを作成（汎用）
 function createCategoryModal({ title, fields, onSubmit }) {
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay category-modal-overlay';
-    overlay.style.display = 'flex';
+    overlay.className = 'modal-overlay category-modal-overlay active';
     
     const fieldsHtml = fields.map(f => `
         <div class="form-group">
