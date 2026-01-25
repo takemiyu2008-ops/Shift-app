@@ -47,7 +47,8 @@ const state = {
     nonDailyFilter: 'all', // 非デイリーアドバイスのカテゴリフィルター
     dailyChecklist: {}, // カテゴリ別日次チェックリスト
     categoryMemos: [], // カテゴリ別メモ
-    selectedAdvisorCategory: null // 選択中のアドバイザーカテゴリ
+    selectedAdvisorCategory: null, // 選択中のアドバイザーカテゴリ
+    productCategories: [] // 商品分類データ（PMA/情報分類/小分類）
 };
 
 // 店舗の位置情報（千葉県千葉市）
@@ -126,7 +127,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos'];
+    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos', 'productCategories'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -1371,6 +1372,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'feedbackStats') {
         // フィードバック集計
         renderFeedbackStats(c);
+    } else if (state.activeAdminTab === 'productCategories') {
+        // 商品分類管理
+        renderProductCategoriesPanel(c);
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -4883,6 +4887,436 @@ function updateDeadlineTimer() {
             deadlineEl.classList.remove('urgent');
         }
     }
+}
+
+// ========================================
+// 商品分類管理機能
+// ========================================
+
+// 商品分類管理パネルをレンダリング
+function renderProductCategoriesPanel(container) {
+    const categories = state.productCategories || [];
+    
+    container.innerHTML = `
+        <div class="product-categories-container">
+            <div class="product-categories-header">
+                <h3>📂 商品分類管理</h3>
+                <p class="header-description">PMA（大分類）、情報分類（中分類）、小分類を管理します。ここで設定した内容が発注アドバイスに反映されます。</p>
+                <button class="btn btn-primary" onclick="openAddPMAModal()">+ PMA追加</button>
+            </div>
+            
+            <div class="pma-list" id="pmaList">
+                ${categories.length === 0 ? 
+                    '<p class="no-data-message">商品分類がまだ登録されていません。<br>「+ PMA追加」ボタンから追加してください。</p>' : 
+                    categories.map(pma => renderPMACard(pma)).join('')
+                }
+            </div>
+        </div>
+    `;
+}
+
+// PMAカードをレンダリング
+function renderPMACard(pma) {
+    const infoCategories = pma.infoCategories || [];
+    
+    return `
+        <div class="pma-card" data-pma-id="${pma.id}">
+            <div class="pma-header">
+                <div class="pma-title">
+                    <span class="pma-icon">${pma.icon || '📦'}</span>
+                    <span class="pma-name">${pma.name}</span>
+                </div>
+                <div class="pma-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="openEditPMAModal('${pma.id}')">✏️ 編集</button>
+                    <button class="btn btn-sm btn-danger" onclick="confirmDeletePMA('${pma.id}')">🗑️ 削除</button>
+                </div>
+            </div>
+            
+            <div class="info-categories-section">
+                <div class="info-categories-header">
+                    <span class="section-label">情報分類</span>
+                    <button class="btn btn-xs btn-primary" onclick="openAddInfoCategoryModal('${pma.id}')">+ 情報分類追加</button>
+                </div>
+                
+                <div class="info-categories-list">
+                    ${infoCategories.length === 0 ? 
+                        '<p class="no-items-message">情報分類がありません</p>' :
+                        infoCategories.map(info => renderInfoCategoryItem(pma.id, info)).join('')
+                    }
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 情報分類アイテムをレンダリング
+function renderInfoCategoryItem(pmaId, info) {
+    const subCategories = info.subCategories || [];
+    const isExpanded = state.expandedInfoCategories?.[`${pmaId}-${info.id}`] || false;
+    
+    return `
+        <div class="info-category-item" data-info-id="${info.id}">
+            <div class="info-category-header" onclick="toggleInfoCategoryExpand('${pmaId}', '${info.id}')">
+                <span class="expand-icon">${isExpanded ? '▼' : '▶'}</span>
+                <span class="info-category-name">${info.name}</span>
+                <span class="sub-count">(${subCategories.length})</span>
+                <div class="info-category-actions" onclick="event.stopPropagation()">
+                    <button class="btn btn-xs btn-secondary" onclick="openEditInfoCategoryModal('${pmaId}', '${info.id}')">✏️</button>
+                    <button class="btn btn-xs btn-danger" onclick="confirmDeleteInfoCategory('${pmaId}', '${info.id}')">🗑️</button>
+                </div>
+            </div>
+            
+            <div class="sub-categories-section" style="display: ${isExpanded ? 'block' : 'none'}">
+                <div class="sub-categories-list">
+                    ${subCategories.map(sub => `
+                        <div class="sub-category-item">
+                            <span class="sub-category-name">${sub.name}</span>
+                            <div class="sub-category-actions">
+                                <button class="btn btn-xs btn-secondary" onclick="openEditSubCategoryModal('${pmaId}', '${info.id}', '${sub.id}')">✏️</button>
+                                <button class="btn btn-xs btn-danger" onclick="confirmDeleteSubCategory('${pmaId}', '${info.id}', '${sub.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn btn-xs btn-outline add-sub-btn" onclick="openAddSubCategoryModal('${pmaId}', '${info.id}')">+ 小分類追加</button>
+            </div>
+        </div>
+    `;
+}
+
+// 情報分類の展開/折りたたみを切り替え
+function toggleInfoCategoryExpand(pmaId, infoId) {
+    if (!state.expandedInfoCategories) {
+        state.expandedInfoCategories = {};
+    }
+    const key = `${pmaId}-${infoId}`;
+    state.expandedInfoCategories[key] = !state.expandedInfoCategories[key];
+    renderAdminPanel();
+}
+
+// PMA追加モーダルを開く
+function openAddPMAModal() {
+    const modal = createCategoryModal({
+        title: '📦 PMA（大分類）追加',
+        fields: [
+            { name: 'name', label: 'PMA名', type: 'text', placeholder: '例: 米飯', required: true },
+            { name: 'icon', label: 'アイコン', type: 'text', placeholder: '例: 🍙', maxLength: 2 }
+        ],
+        onSubmit: (data) => {
+            addPMA(data);
+        }
+    });
+    document.body.appendChild(modal);
+}
+
+// PMA編集モーダルを開く
+function openEditPMAModal(pmaId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    if (!pma) return;
+    
+    const modal = createCategoryModal({
+        title: '📦 PMA（大分類）編集',
+        fields: [
+            { name: 'name', label: 'PMA名', type: 'text', value: pma.name, required: true },
+            { name: 'icon', label: 'アイコン', type: 'text', value: pma.icon || '', maxLength: 2 }
+        ],
+        onSubmit: (data) => {
+            updatePMA(pmaId, data);
+        }
+    });
+    document.body.appendChild(modal);
+}
+
+// 情報分類追加モーダルを開く
+function openAddInfoCategoryModal(pmaId) {
+    const modal = createCategoryModal({
+        title: '📁 情報分類追加',
+        fields: [
+            { name: 'name', label: '情報分類名', type: 'text', placeholder: '例: おにぎり', required: true }
+        ],
+        onSubmit: (data) => {
+            addInfoCategory(pmaId, data);
+        }
+    });
+    document.body.appendChild(modal);
+}
+
+// 情報分類編集モーダルを開く
+function openEditInfoCategoryModal(pmaId, infoId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    if (!info) return;
+    
+    const modal = createCategoryModal({
+        title: '📁 情報分類編集',
+        fields: [
+            { name: 'name', label: '情報分類名', type: 'text', value: info.name, required: true }
+        ],
+        onSubmit: (data) => {
+            updateInfoCategory(pmaId, infoId, data);
+        }
+    });
+    document.body.appendChild(modal);
+}
+
+// 小分類追加モーダルを開く
+function openAddSubCategoryModal(pmaId, infoId) {
+    const modal = createCategoryModal({
+        title: '📄 小分類追加',
+        fields: [
+            { name: 'name', label: '小分類名', type: 'text', placeholder: '例: 手巻おにぎり', required: true }
+        ],
+        onSubmit: (data) => {
+            addSubCategory(pmaId, infoId, data);
+        }
+    });
+    document.body.appendChild(modal);
+}
+
+// 小分類編集モーダルを開く
+function openEditSubCategoryModal(pmaId, infoId, subId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    const sub = info?.subCategories?.find(s => s.id === subId);
+    if (!sub) return;
+    
+    const modal = createCategoryModal({
+        title: '📄 小分類編集',
+        fields: [
+            { name: 'name', label: '小分類名', type: 'text', value: sub.name, required: true }
+        ],
+        onSubmit: (data) => {
+            updateSubCategory(pmaId, infoId, subId, data);
+        }
+    });
+    document.body.appendChild(modal);
+}
+
+// カテゴリモーダルを作成（汎用）
+function createCategoryModal({ title, fields, onSubmit }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay category-modal-overlay';
+    overlay.style.display = 'flex';
+    
+    const fieldsHtml = fields.map(f => `
+        <div class="form-group">
+            <label for="category-${f.name}">${f.label}${f.required ? ' <span class="required">*</span>' : ''}</label>
+            <input type="${f.type}" 
+                   id="category-${f.name}" 
+                   name="${f.name}"
+                   value="${f.value || ''}" 
+                   placeholder="${f.placeholder || ''}"
+                   ${f.maxLength ? `maxlength="${f.maxLength}"` : ''}
+                   ${f.required ? 'required' : ''}>
+        </div>
+    `).join('');
+    
+    overlay.innerHTML = `
+        <div class="modal category-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">${title}</h2>
+                <button class="modal-close" onclick="closeCategoryModal(this)">×</button>
+            </div>
+            <form class="modal-body" onsubmit="handleCategoryFormSubmit(event, this)">
+                ${fieldsHtml}
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCategoryModal(this)">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    // onSubmitコールバックを保存
+    overlay._onSubmit = onSubmit;
+    
+    // オーバーレイクリックで閉じる
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    };
+    
+    return overlay;
+}
+
+// カテゴリモーダルを閉じる
+function closeCategoryModal(element) {
+    const overlay = element.closest('.category-modal-overlay');
+    if (overlay) overlay.remove();
+}
+
+// カテゴリフォーム送信処理
+function handleCategoryFormSubmit(event, form) {
+    event.preventDefault();
+    const overlay = form.closest('.category-modal-overlay');
+    const formData = new FormData(form);
+    const data = {};
+    formData.forEach((value, key) => {
+        data[key] = value;
+    });
+    
+    if (overlay._onSubmit) {
+        overlay._onSubmit(data);
+    }
+    overlay.remove();
+}
+
+// PMA追加
+function addPMA(data) {
+    const newPMA = {
+        id: 'pma-' + Date.now(),
+        name: data.name,
+        icon: data.icon || '📦',
+        infoCategories: [],
+        createdAt: new Date().toISOString()
+    };
+    
+    state.productCategories.push(newPMA);
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// PMA更新
+function updatePMA(pmaId, data) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    if (!pma) return;
+    
+    pma.name = data.name;
+    pma.icon = data.icon || '📦';
+    pma.updatedAt = new Date().toISOString();
+    
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// PMA削除確認
+function confirmDeletePMA(pmaId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    if (!pma) return;
+    
+    if (confirm(`「${pma.name}」を削除しますか？\n含まれる情報分類・小分類もすべて削除されます。`)) {
+        deletePMA(pmaId);
+    }
+}
+
+// PMA削除
+function deletePMA(pmaId) {
+    state.productCategories = state.productCategories.filter(p => p.id !== pmaId);
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// 情報分類追加
+function addInfoCategory(pmaId, data) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    if (!pma) return;
+    
+    if (!pma.infoCategories) pma.infoCategories = [];
+    
+    pma.infoCategories.push({
+        id: 'info-' + Date.now(),
+        name: data.name,
+        subCategories: [],
+        createdAt: new Date().toISOString()
+    });
+    
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// 情報分類更新
+function updateInfoCategory(pmaId, infoId, data) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    if (!info) return;
+    
+    info.name = data.name;
+    info.updatedAt = new Date().toISOString();
+    
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// 情報分類削除確認
+function confirmDeleteInfoCategory(pmaId, infoId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    if (!info) return;
+    
+    if (confirm(`「${info.name}」を削除しますか？\n含まれる小分類もすべて削除されます。`)) {
+        deleteInfoCategory(pmaId, infoId);
+    }
+}
+
+// 情報分類削除
+function deleteInfoCategory(pmaId, infoId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    if (!pma) return;
+    
+    pma.infoCategories = pma.infoCategories.filter(i => i.id !== infoId);
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// 小分類追加
+function addSubCategory(pmaId, infoId, data) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    if (!info) return;
+    
+    if (!info.subCategories) info.subCategories = [];
+    
+    info.subCategories.push({
+        id: 'sub-' + Date.now(),
+        name: data.name,
+        createdAt: new Date().toISOString()
+    });
+    
+    saveToFirebase('productCategories', state.productCategories);
+    
+    // 展開状態を保持
+    if (!state.expandedInfoCategories) state.expandedInfoCategories = {};
+    state.expandedInfoCategories[`${pmaId}-${infoId}`] = true;
+    
+    renderAdminPanel();
+}
+
+// 小分類更新
+function updateSubCategory(pmaId, infoId, subId, data) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    const sub = info?.subCategories?.find(s => s.id === subId);
+    if (!sub) return;
+    
+    sub.name = data.name;
+    sub.updatedAt = new Date().toISOString();
+    
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
+}
+
+// 小分類削除確認
+function confirmDeleteSubCategory(pmaId, infoId, subId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    const sub = info?.subCategories?.find(s => s.id === subId);
+    if (!sub) return;
+    
+    if (confirm(`「${sub.name}」を削除しますか？`)) {
+        deleteSubCategory(pmaId, infoId, subId);
+    }
+}
+
+// 小分類削除
+function deleteSubCategory(pmaId, infoId, subId) {
+    const pma = state.productCategories.find(p => p.id === pmaId);
+    const info = pma?.infoCategories?.find(i => i.id === infoId);
+    if (!info) return;
+    
+    info.subCategories = info.subCategories.filter(s => s.id !== subId);
+    saveToFirebase('productCategories', state.productCategories);
+    renderAdminPanel();
 }
 
 // フィードバック集計をレンダリング（管理者専用）
