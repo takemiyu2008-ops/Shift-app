@@ -4832,6 +4832,23 @@ function submitFeedback(feedbackKey, categoryId, date) {
     database.ref(`orderFeedback/${feedbackKey}`).set(feedback);
     state.orderAdvice.feedbackData[feedbackKey] = feedback;
     
+    // 入力欄をクリア
+    const oversoldInput = document.getElementById(`oversold-${feedbackKey}`);
+    const undersoldInput = document.getElementById(`undersold-${feedbackKey}`);
+    const notesInput = document.getElementById(`notes-${feedbackKey}`);
+    if (oversoldInput) oversoldInput.value = '';
+    if (undersoldInput) undersoldInput.value = '';
+    if (notesInput) notesInput.value = '';
+    
+    // 評価ボタンの選択状態もリセット
+    const card = document.querySelector(`#oversold-${feedbackKey}`)?.closest('.feedback-card');
+    if (card) {
+        card.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    }
+    
+    // 状態もリセット
+    delete state.orderAdvice.feedbackData[feedbackKey].rating;
+    
     alert('フィードバックを保存しました');
 }
 
@@ -4870,8 +4887,10 @@ function updateDeadlineTimer() {
 
 // フィードバック集計をレンダリング（管理者専用）
 function renderFeedbackStats(container) {
-    const feedbackData = state.orderAdvice.feedbackData || {};
+    const feedbackData = state.orderAdvice?.feedbackData || {};
     const feedbackList = Object.values(feedbackData);
+    
+    console.log('renderFeedbackStats called', { feedbackData, feedbackList });
     
     // フィルター状態の初期化
     if (!state.feedbackFilter) {
@@ -4891,6 +4910,9 @@ function renderFeedbackStats(container) {
         <div class="feedback-stats-container">
             <div class="feedback-stats-header">
                 <h3>📊 発注フィードバック集計</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">
+                    登録件数: ${feedbackList.length}件
+                </p>
             </div>
             
             <div class="feedback-filters">
