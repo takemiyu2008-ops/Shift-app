@@ -4439,7 +4439,7 @@ body {
 }
 
 .product-categories-header {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .product-categories-header h3 {
@@ -4451,100 +4451,191 @@ body {
 .product-categories-header .header-description {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    margin-bottom: 16px;
+    margin: 0;
 }
 
-/* PMAカード */
-.pma-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+/* 2カラムレイアウト */
+.product-categories-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    min-height: 400px;
 }
 
-.pma-card {
+/* 左サイドバー: PMA一覧 */
+.pma-sidebar {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
-.pma-header {
+.pma-sidebar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.sidebar-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.pma-sidebar-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.pma-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--glass-border);
+    transition: all var(--transition-fast);
+}
+
+.pma-sidebar-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.pma-sidebar-item.active {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
 }
 
-.pma-title {
+.pma-item-icon {
+    font-size: 1.2rem;
+}
+
+.pma-item-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.pma-item-count {
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.pma-sidebar-item.active .pma-item-count {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.no-data-message-small {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* 右側: PMA詳細 */
+.pma-detail {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.pma-detail-empty {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: var(--text-muted);
+    font-size: 1rem;
 }
 
-.pma-icon {
-    font-size: 1.5rem;
+.pma-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
 }
 
-.pma-name {
-    font-size: 1.1rem;
+.pma-detail-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pma-detail-icon {
+    font-size: 1.8rem;
+}
+
+.pma-detail-name {
+    font-size: 1.3rem;
     font-weight: 600;
 }
 
-.pma-actions {
+.pma-detail-actions {
     display: flex;
     gap: 8px;
 }
 
-.pma-actions .btn {
+.pma-detail-actions .btn {
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
 }
 
-.pma-actions .btn:hover {
+.pma-detail-actions .btn:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
-.pma-actions .btn-danger {
+.pma-detail-actions .btn-danger {
     background: rgba(239, 68, 68, 0.8);
     border-color: rgba(239, 68, 68, 0.9);
 }
 
-.pma-actions .btn-danger:hover {
-    background: rgba(239, 68, 68, 1);
-}
-
 /* 情報分類セクション */
 .info-categories-section {
-    padding: 16px;
+    padding: 20px;
 }
 
 .info-categories-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .section-label {
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .info-categories-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .no-items-message {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    padding: 20px;
+    text-align: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.no-items-message-small {
     font-size: 0.85rem;
     color: var(--text-muted);
-    font-style: italic;
-    padding: 8px;
+    padding: 12px;
+    text-align: center;
 }
 
 /* 情報分類アイテム */
@@ -4597,28 +4688,42 @@ body {
 
 /* 小分類セクション */
 .sub-categories-section {
-    padding: 0 12px 12px 36px;
+    padding: 12px 16px 16px 40px;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--glass-border);
+}
+
+.sub-categories-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.sub-section-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
 }
 
 .sub-categories-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: 6px;
 }
 
 .sub-category-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 10px 14px;
     background: var(--bg-primary);
     border-radius: var(--radius-sm);
     border-left: 3px solid var(--primary);
 }
 
 .sub-category-name {
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     color: var(--text-primary);
 }
 
@@ -4737,13 +4842,26 @@ body {
 
 /* モバイル対応 */
 @media (max-width: 768px) {
-    .pma-header {
+    .product-categories-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .pma-sidebar {
+        max-height: 200px;
+    }
+    
+    .pma-sidebar-list {
+        max-height: 150px;
+    }
+    
+    .pma-detail-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
     }
     
-    .pma-actions {
+    .pma-detail-actions {
         width: 100%;
         justify-content: flex-end;
     }
@@ -4763,7 +4881,7 @@ body {
     }
     
     .sub-categories-section {
-        padding-left: 20px;
+        padding-left: 24px;
     }
     
     .category-modal {

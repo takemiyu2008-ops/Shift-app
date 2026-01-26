@@ -48,7 +48,8 @@ const state = {
     dailyChecklist: {}, // カテゴリ別日次チェックリスト
     categoryMemos: [], // カテゴリ別メモ
     selectedAdvisorCategory: null, // 選択中のアドバイザーカテゴリ
-    productCategories: [] // 商品分類データ（PMA/情報分類/小分類）
+    productCategories: [], // 商品分類データ（PMA/情報分類/小分類）
+    selectedPmaId: null // 選択中のPMA ID
 };
 
 // 店舗の位置情報（千葉県千葉市）
@@ -1070,6 +1071,21 @@ function approveRequest(type, id) {
             r.status = 'approved';
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
+            
+            // 有給期間中の該当者のシフトを削除
+            const startDate = new Date(r.startDate);
+            const endDate = new Date(r.endDate);
+            
+            // 通常シフトから該当者・該当期間のシフトを削除
+            state.shifts = state.shifts.filter(s => {
+                const shiftDate = new Date(s.date);
+                const isInRange = shiftDate >= startDate && shiftDate <= endDate;
+                const isSamePerson = s.name === r.name;
+                // 該当者かつ期間内のシフトは削除（falseを返す）
+                return !(isInRange && isSamePerson);
+            });
+            
+            saveToFirebase('shifts', state.shifts);
             saveToFirebase('leaveRequests', state.leaveRequests);
         }
     } else if (type === 'swap') {
@@ -4896,54 +4912,84 @@ function updateDeadlineTimer() {
 // 商品分類管理パネルをレンダリング
 function renderProductCategoriesPanel(container) {
     const categories = state.productCategories || [];
+    const selectedPmaId = state.selectedPmaId || null;
+    const selectedPma = selectedPmaId ? categories.find(p => p.id === selectedPmaId) : null;
     
     container.innerHTML = `
         <div class="product-categories-container">
             <div class="product-categories-header">
                 <h3>📂 商品分類管理</h3>
                 <p class="header-description">PMA（大分類）、情報分類（中分類）、小分類を管理します。ここで設定した内容が発注アドバイスに反映されます。</p>
-                <button class="btn btn-primary" onclick="openAddPMAModal()">+ PMA追加</button>
             </div>
             
-            <div class="pma-list" id="pmaList">
-                ${categories.length === 0 ? 
-                    '<p class="no-data-message">商品分類がまだ登録されていません。<br>「+ PMA追加」ボタンから追加してください。</p>' : 
-                    categories.map(pma => renderPMACard(pma)).join('')
-                }
+            <div class="product-categories-layout">
+                <!-- 左側: PMA一覧 -->
+                <div class="pma-sidebar">
+                    <div class="pma-sidebar-header">
+                        <span class="sidebar-title">PMA一覧</span>
+                        <button class="btn btn-sm btn-primary" onclick="openAddPMAModal()">+ 追加</button>
+                    </div>
+                    <div class="pma-sidebar-list">
+                        ${categories.length === 0 ? 
+                            '<p class="no-data-message-small">PMAがありません</p>' : 
+                            categories.map(pma => `
+                                <div class="pma-sidebar-item ${selectedPmaId === pma.id ? 'active' : ''}" 
+                                     onclick="selectPMA('${pma.id}')">
+                                    <span class="pma-item-icon">${pma.icon || '📦'}</span>
+                                    <span class="pma-item-name">${pma.name}</span>
+                                    <span class="pma-item-count">${(pma.infoCategories || []).length}</span>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+                </div>
+                
+                <!-- 右側: 選択されたPMAの詳細 -->
+                <div class="pma-detail">
+                    ${selectedPma ? renderPMADetail(selectedPma) : `
+                        <div class="pma-detail-empty">
+                            <p>👈 左のPMA一覧から選択してください</p>
+                        </div>
+                    `}
+                </div>
             </div>
         </div>
     `;
 }
 
-// PMAカードをレンダリング
-function renderPMACard(pma) {
+// PMA選択
+function selectPMA(pmaId) {
+    state.selectedPmaId = pmaId;
+    renderAdminPanel();
+}
+
+// PMA詳細をレンダリング
+function renderPMADetail(pma) {
     const infoCategories = pma.infoCategories || [];
     
     return `
-        <div class="pma-card" data-pma-id="${pma.id}">
-            <div class="pma-header">
-                <div class="pma-title">
-                    <span class="pma-icon">${pma.icon || '📦'}</span>
-                    <span class="pma-name">${pma.name}</span>
-                </div>
-                <div class="pma-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="openEditPMAModal('${pma.id}')">✏️ 編集</button>
-                    <button class="btn btn-sm btn-danger" onclick="confirmDeletePMA('${pma.id}')">🗑️ 削除</button>
-                </div>
+        <div class="pma-detail-header">
+            <div class="pma-detail-title">
+                <span class="pma-detail-icon">${pma.icon || '📦'}</span>
+                <span class="pma-detail-name">${pma.name}</span>
+            </div>
+            <div class="pma-detail-actions">
+                <button class="btn btn-sm btn-secondary" onclick="openEditPMAModal('${pma.id}')">✏️ 編集</button>
+                <button class="btn btn-sm btn-danger" onclick="confirmDeletePMA('${pma.id}')">🗑️ 削除</button>
+            </div>
+        </div>
+        
+        <div class="info-categories-section">
+            <div class="info-categories-header">
+                <span class="section-label">情報分類（中分類）</span>
+                <button class="btn btn-sm btn-primary" onclick="openAddInfoCategoryModal('${pma.id}')">+ 情報分類追加</button>
             </div>
             
-            <div class="info-categories-section">
-                <div class="info-categories-header">
-                    <span class="section-label">情報分類</span>
-                    <button class="btn btn-xs btn-primary" onclick="openAddInfoCategoryModal('${pma.id}')">+ 情報分類追加</button>
-                </div>
-                
-                <div class="info-categories-list">
-                    ${infoCategories.length === 0 ? 
-                        '<p class="no-items-message">情報分類がありません</p>' :
-                        infoCategories.map(info => renderInfoCategoryItem(pma.id, info)).join('')
-                    }
-                </div>
+            <div class="info-categories-list">
+                ${infoCategories.length === 0 ? 
+                    '<p class="no-items-message">情報分類がありません。「+ 情報分類追加」ボタンから追加してください。</p>' :
+                    infoCategories.map(info => renderInfoCategoryItem(pma.id, info)).join('')
+                }
             </div>
         </div>
     `;
@@ -4959,7 +5005,7 @@ function renderInfoCategoryItem(pmaId, info) {
             <div class="info-category-header" onclick="toggleInfoCategoryExpand('${pmaId}', '${info.id}')">
                 <span class="expand-icon">${isExpanded ? '▼' : '▶'}</span>
                 <span class="info-category-name">${info.name}</span>
-                <span class="sub-count">(${subCategories.length})</span>
+                <span class="sub-count">(小分類: ${subCategories.length}件)</span>
                 <div class="info-category-actions" onclick="event.stopPropagation()">
                     <button class="btn btn-xs btn-secondary" onclick="openEditInfoCategoryModal('${pmaId}', '${info.id}')">✏️</button>
                     <button class="btn btn-xs btn-danger" onclick="confirmDeleteInfoCategory('${pmaId}', '${info.id}')">🗑️</button>
@@ -4967,18 +5013,24 @@ function renderInfoCategoryItem(pmaId, info) {
             </div>
             
             <div class="sub-categories-section" style="display: ${isExpanded ? 'block' : 'none'}">
-                <div class="sub-categories-list">
-                    ${subCategories.map(sub => `
-                        <div class="sub-category-item">
-                            <span class="sub-category-name">${sub.name}</span>
-                            <div class="sub-category-actions">
-                                <button class="btn btn-xs btn-secondary" onclick="openEditSubCategoryModal('${pmaId}', '${info.id}', '${sub.id}')">✏️</button>
-                                <button class="btn btn-xs btn-danger" onclick="confirmDeleteSubCategory('${pmaId}', '${info.id}', '${sub.id}')">🗑️</button>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="sub-categories-header">
+                    <span class="sub-section-label">小分類</span>
+                    <button class="btn btn-xs btn-primary" onclick="openAddSubCategoryModal('${pmaId}', '${info.id}')">+ 小分類追加</button>
                 </div>
-                <button class="btn btn-xs btn-outline add-sub-btn" onclick="openAddSubCategoryModal('${pmaId}', '${info.id}')">+ 小分類追加</button>
+                <div class="sub-categories-list">
+                    ${subCategories.length === 0 ?
+                        '<p class="no-items-message-small">小分類がありません</p>' :
+                        subCategories.map(sub => `
+                            <div class="sub-category-item">
+                                <span class="sub-category-name">${sub.name}</span>
+                                <div class="sub-category-actions">
+                                    <button class="btn btn-xs btn-secondary" onclick="openEditSubCategoryModal('${pmaId}', '${info.id}', '${sub.id}')">✏️</button>
+                                    <button class="btn btn-xs btn-danger" onclick="confirmDeleteSubCategory('${pmaId}', '${info.id}', '${sub.id}')">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('')
+                    }
+                </div>
             </div>
         </div>
     `;
