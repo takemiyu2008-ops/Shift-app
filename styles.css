@@ -2646,6 +2646,78 @@ body {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
 }
 
+/* 管理者用 新商品レポート管理画面 */
+.new-product-admin-container {
+    padding: 16px;
+}
+
+.new-product-admin-header {
+    margin-bottom: 24px;
+}
+
+.new-product-admin-header h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.new-product-admin-header .header-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.new-product-admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.new-product-admin-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+}
+
+.new-product-admin-card .admin-card-header {
+    margin-bottom: 12px;
+}
+
+.new-product-admin-card .admin-card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.new-product-admin-card .admin-card-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.new-product-admin-card .admin-card-content {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.new-product-admin-card .admin-card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* フロント表示用 */
 .new-product-actions {
     margin-bottom: 16px;
     text-align: right;

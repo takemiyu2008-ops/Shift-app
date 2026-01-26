@@ -1393,6 +1393,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'productCategories') {
         // 商品分類管理
         renderProductCategoriesPanel(c);
+    } else if (state.activeAdminTab === 'newProductReport') {
+        // 新商品レポート管理
+        renderNewProductReportAdmin(c);
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -3859,7 +3862,63 @@ function initNonDailyToggle() {
 // 定期コンビニ新商品レポート
 // ========================================
 
-// 新商品レポートを描画
+// 管理者用 新商品レポート管理画面
+function renderNewProductReportAdmin(container) {
+    const reports = state.newProductReports || [];
+    
+    // 更新日時順にソート（新しい順）
+    const sortedReports = [...reports].sort((a, b) => 
+        new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+    );
+
+    let html = `
+        <div class="new-product-admin-container">
+            <div class="new-product-admin-header">
+                <h3>🆕 定期コンビニ新商品レポート管理</h3>
+                <p class="header-description">新商品の情報を登録・管理します。登録した内容は「発注・スケジュール情報」に表示されます。</p>
+                <button class="btn btn-primary" onclick="openAddNewProductReportModal()">+ 新商品レポート追加</button>
+            </div>
+            
+            <div class="new-product-admin-list">
+    `;
+
+    if (sortedReports.length === 0) {
+        html += '<p class="no-data-message">新商品レポートがまだ登録されていません。<br>「+ 新商品レポート追加」ボタンから追加してください。</p>';
+    } else {
+        sortedReports.forEach(report => {
+            const createdDate = new Date(report.createdAt);
+            const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
+            const updatedDate = report.updatedAt ? new Date(report.updatedAt) : null;
+            const updatedStr = updatedDate ? `${updatedDate.getFullYear()}/${updatedDate.getMonth() + 1}/${updatedDate.getDate()}` : null;
+            
+            html += `
+                <div class="new-product-admin-card">
+                    <div class="admin-card-header">
+                        <div class="admin-card-title">${report.title}</div>
+                        <div class="admin-card-meta">
+                            <span>📅 作成: ${dateStr}</span>
+                            ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="admin-card-content">${report.content.replace(/\n/g, '<br>')}</div>
+                    <div class="admin-card-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">✏️ 編集</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">🗑️ 削除</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// 新商品レポートを描画（フロント表示用）
 function renderNewProductReport() {
     const container = document.getElementById('newProductReportSection');
     const content = document.getElementById('newProductContent');
@@ -3873,15 +3932,6 @@ function renderNewProductReport() {
     );
 
     let html = '';
-    
-    // 管理者の場合は追加ボタンを表示
-    if (state.isAdmin) {
-        html += `
-            <div class="new-product-actions">
-                <button class="btn btn-primary btn-sm" onclick="openAddNewProductReportModal()">+ 新商品レポート追加</button>
-            </div>
-        `;
-    }
 
     if (sortedReports.length === 0) {
         html += '<p class="no-report-message">新商品レポートはまだありません。</p>';
