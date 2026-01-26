@@ -1506,11 +1506,22 @@ body {
 
     .admin-tabs {
         gap: 4px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+        padding-bottom: 8px;
+    }
+    
+    .admin-tabs::-webkit-scrollbar {
+        display: none;
     }
 
     .admin-tab {
         padding: 6px 10px;
         font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .legend {
@@ -2698,6 +2709,29 @@ body {
     gap: 8px;
     margin-top: 12px;
     justify-content: flex-end;
+}
+
+/* 新商品レポート モバイル対応 */
+@media (max-width: 768px) {
+    .new-product-report-card {
+        padding: 14px;
+    }
+    
+    .new-product-report-card .report-title {
+        font-size: 1rem;
+    }
+    
+    .new-product-report-card .report-content {
+        font-size: 0.9rem;
+    }
+    
+    .new-product-report-card .report-actions {
+        justify-content: center;
+    }
+    
+    .new-product-actions {
+        text-align: center;
+    }
 }
 
 /* ========================================
@@ -4909,9 +4943,25 @@ body {
     background: var(--bg-secondary);
     color: var(--text-primary);
     font-size: 0.95rem;
+    box-sizing: border-box;
 }
 
-.category-modal input[type="text"]:focus {
+.category-modal textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 120px;
+    box-sizing: border-box;
+}
+
+.category-modal input[type="text"]:focus,
+.category-modal textarea:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
@@ -4972,6 +5022,56 @@ body {
     
     .category-modal {
         width: 95%;
+        max-width: none;
         margin: 16px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .category-modal .modal-body {
+        padding: 16px;
+    }
+    
+    .category-modal textarea {
+        min-height: 150px;
+    }
+    
+    .category-modal .modal-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .category-modal .modal-actions .btn {
+        width: 100%;
+    }
+}
+
+/* 追加のモバイル対応 */
+@media (max-width: 480px) {
+    /* 小さい画面用の追加調整 */
+    .filter-tab {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .non-daily-filter-tabs .filter-tab {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+    }
+    
+    .advisor-title {
+        font-size: 0.9rem;
+    }
+    
+    .pma-sidebar {
+        max-height: 180px;
+    }
+    
+    .pma-detail-icon {
+        font-size: 1.5rem;
+    }
+    
+    .pma-detail-name {
+        font-size: 1.1rem;
     }
 }
