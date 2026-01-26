@@ -35,6 +35,7 @@ const state = {
     swapRequests: [],
     dailyEvents: [],
     nonDailyAdvice: [], // 非デイリー発注アドバイス
+    newProductReports: [], // 定期コンビニ新商品レポート
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
@@ -128,13 +129,14 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos', 'productCategories'];
+    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos', 'productCategories', 'newProductReports'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
             state[key] = data ? Object.values(data) : [];
             if (key === 'employees') updateEmployeeSelects();
             if (key === 'nonDailyAdvice') renderNonDailyAdvisor();
+            if (key === 'newProductReports') renderNewProductReport();
             render();
             if (state.isAdmin) renderAdminPanel();
             updateMessageBar();
@@ -3755,7 +3757,7 @@ const NON_DAILY_CATEGORIES = {
     ice: { name: 'アイス', icon: '🍦' },
     misc: { name: '雑貨', icon: '🧴' },
     processed: { name: '加工食品', icon: '🥫' },
-    other: { name: 'その他', icon: '📦' }
+    character: { name: '流行しているキャラクター', icon: '⭐' }
 };
 
 // 非デイリーアドバイザーを描画
@@ -3802,7 +3804,7 @@ function renderNonDailyAdvisor() {
         html += '<p class="no-advice-message">該当するアドバイスはありません</p>';
     } else {
         sortedAdvice.forEach(advice => {
-            const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.other;
+            const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.character;
             const updatedDate = new Date(advice.updatedAt);
             const dateStr = `${updatedDate.getMonth() + 1}/${updatedDate.getDate()}`;
 
@@ -3851,6 +3853,196 @@ function initNonDailyToggle() {
             content.classList.toggle('collapsed');
         };
     }
+}
+
+// ========================================
+// 定期コンビニ新商品レポート
+// ========================================
+
+// 新商品レポートを描画
+function renderNewProductReport() {
+    const container = document.getElementById('newProductReportSection');
+    const content = document.getElementById('newProductContent');
+    if (!container || !content) return;
+
+    const reports = state.newProductReports || [];
+    
+    // 更新日時順にソート（新しい順）
+    const sortedReports = [...reports].sort((a, b) => 
+        new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+    );
+
+    let html = '';
+    
+    // 管理者の場合は追加ボタンを表示
+    if (state.isAdmin) {
+        html += `
+            <div class="new-product-actions">
+                <button class="btn btn-primary btn-sm" onclick="openAddNewProductReportModal()">+ 新商品レポート追加</button>
+            </div>
+        `;
+    }
+
+    if (sortedReports.length === 0) {
+        html += '<p class="no-report-message">新商品レポートはまだありません。</p>';
+    } else {
+        html += '<div class="new-product-reports-list">';
+        sortedReports.forEach(report => {
+            const createdDate = new Date(report.createdAt);
+            const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
+            
+            html += `
+                <div class="new-product-report-card">
+                    <div class="report-header">
+                        <span class="report-title">${report.title}</span>
+                        <span class="report-date">📅 ${dateStr}</span>
+                    </div>
+                    <div class="report-content">${report.content.replace(/\n/g, '<br>')}</div>
+                    ${state.isAdmin ? `
+                        <div class="report-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">✏️ 編集</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">🗑️ 削除</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    content.innerHTML = html;
+
+    // トグル機能の初期化
+    initNewProductToggle();
+}
+
+// 新商品レポートのトグル機能を初期化
+function initNewProductToggle() {
+    const container = document.getElementById('newProductReportSection');
+    if (!container) return;
+
+    const header = container.querySelector('.advisor-header');
+    const toggle = document.getElementById('newProductToggle');
+    const content = document.getElementById('newProductContent');
+
+    if (header && toggle && content) {
+        header.onclick = () => {
+            toggle.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        };
+    }
+}
+
+// 新商品レポート追加モーダルを開く
+function openAddNewProductReportModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay category-modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal category-modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🆕 新商品レポート追加</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <form class="modal-body" onsubmit="submitNewProductReport(event, this)">
+                <div class="form-group">
+                    <label>タイトル <span class="required">*</span></label>
+                    <input type="text" name="title" placeholder="例: 2026年1月 新商品情報" required>
+                </div>
+                <div class="form-group">
+                    <label>内容 <span class="required">*</span></label>
+                    <textarea name="content" rows="10" placeholder="新商品の情報を入力してください..." required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    document.body.appendChild(modal);
+}
+
+// 新商品レポート編集モーダルを開く
+function openEditNewProductReportModal(reportId) {
+    const report = state.newProductReports.find(r => r.id === reportId);
+    if (!report) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay category-modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal category-modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🆕 新商品レポート編集</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <form class="modal-body" onsubmit="submitNewProductReport(event, this, '${reportId}')">
+                <div class="form-group">
+                    <label>タイトル <span class="required">*</span></label>
+                    <input type="text" name="title" value="${report.title}" required>
+                </div>
+                <div class="form-group">
+                    <label>内容 <span class="required">*</span></label>
+                    <textarea name="content" rows="10" required>${report.content}</textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    document.body.appendChild(modal);
+}
+
+// 新商品レポート送信
+function submitNewProductReport(event, form, reportId = null) {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const title = formData.get('title');
+    const content = formData.get('content');
+    
+    if (reportId) {
+        // 編集
+        const report = state.newProductReports.find(r => r.id === reportId);
+        if (report) {
+            report.title = title;
+            report.content = content;
+            report.updatedAt = new Date().toISOString();
+        }
+    } else {
+        // 新規追加
+        const newReport = {
+            id: 'report-' + Date.now(),
+            title,
+            content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        state.newProductReports.push(newReport);
+    }
+    
+    saveToFirebase('newProductReports', state.newProductReports);
+    form.closest('.modal-overlay').remove();
+    renderNewProductReport();
+}
+
+// 新商品レポート削除
+function deleteNewProductReport(reportId) {
+    if (!confirm('このレポートを削除しますか？')) return;
+    
+    state.newProductReports = state.newProductReports.filter(r => r.id !== reportId);
+    saveToFirebase('newProductReports', state.newProductReports);
+    renderNewProductReport();
 }
 
 // ========================================
