@@ -332,10 +332,24 @@ function renderGanttBody() {
             ...s, id: `on-${s.id}`, date: dateStr, startHour: 0, endHour: s.endHour, isOvernightContinuation: true
         }));
 
-        // 固定シフト（ただし、同じ日・同じ時間帯に通常シフトがある場合は除外）
+        // 有給による上書きシフトのIDを取得
+        const leaveOverrideFixedIds = state.shifts
+            .filter(s => s.date === dateStr && s.isLeaveOverride && s.fixedShiftOverride)
+            .map(s => s.fixedShiftOverride);
+
+        // 固定シフト（ただし、同じ日・同じ時間帯に通常シフトがある場合は除外、有給上書きも除外）
         const fixed = state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).map(f => ({
             ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
         })).filter(f => {
+            // 有給による上書きがある場合は除外
+            if (leaveOverrideFixedIds.includes(f.id.replace(`fx-`, '').replace(`-${dateStr}`, ''))) {
+                return false;
+            }
+            // 元のIDを取得（fx-xxx-dateStr形式から）
+            const originalId = f.id.split('-')[1];
+            if (leaveOverrideFixedIds.includes(originalId)) {
+                return false;
+            }
             // 同じ日・同じ固定シフトから交代された通常シフトがあるか確認
             return !dayShifts.some(s =>
                 s.swapHistory &&
@@ -346,11 +360,23 @@ function renderGanttBody() {
         });
 
         const prevDow = (dayOfWeek + 6) % 7;
+        // 有給による上書きを夜勤継続分にも適用
+        const leaveOverrideFixedIdsForOvernight = state.shifts
+            .filter(s => s.date === prevStr && s.isLeaveOverride && s.fixedShiftOverride)
+            .map(s => s.fixedShiftOverride);
+            
         const fixedOvernight = state.fixedShifts.filter(f => f.dayOfWeek === prevDow && f.overnight).map(f => ({
             ...f, id: `fxo-${f.id}-${dateStr}`, date: dateStr, startHour: 0, endHour: f.endHour, isFixed: true, isOvernightContinuation: true
-        }));
+        })).filter(f => {
+            const originalId = f.id.split('-')[1];
+            return !leaveOverrideFixedIdsForOvernight.includes(originalId);
+        });
 
-        const all = [...dayShifts, ...overnight, ...fixed, ...fixedOvernight];
+        // 通常シフトからhiddenフラグのものを除外
+        const visibleDayShifts = dayShifts.filter(s => !s.hidden && !s.isLeaveOverride);
+        const visibleOvernight = overnight.filter(s => !s.hidden && !s.isLeaveOverride);
+
+        const all = [...visibleDayShifts, ...visibleOvernight, ...fixed, ...fixedOvernight];
 
         // 承認済みの休日（全日休み）がある担当者のシフトを除外
         const approvedHolidays = state.holidayRequests.filter(h =>
@@ -361,8 +387,16 @@ function renderGanttBody() {
         );
         const holidayNames = approvedHolidays.map(h => h.name);
 
-        // 全日休みの担当者のシフトを除外したリスト
-        const filteredAll = all.filter(s => !holidayNames.includes(s.name));
+        // 承認済みの有給がある担当者のシフトも除外
+        const approvedLeaves = state.leaveRequests.filter(l =>
+            l.status === 'approved' &&
+            dateStr >= l.startDate &&
+            dateStr <= l.endDate
+        );
+        const leaveNames = approvedLeaves.map(l => l.name);
+
+        // 全日休み・有給の担当者のシフトを除外したリスト
+        const filteredAll = all.filter(s => !holidayNames.includes(s.name) && !leaveNames.includes(s.name));
 
         const levels = calculateShiftLevels(filteredAll);
         const maxLvl = Math.max(0, ...Object.values(levels));
@@ -1078,14 +1112,64 @@ function approveRequest(type, id) {
             const startDate = new Date(r.startDate);
             const endDate = new Date(r.endDate);
             
+            console.log('有給承認処理:', { name: r.name, startDate: r.startDate, endDate: r.endDate });
+            
             // 通常シフトから該当者・該当期間のシフトを削除
+            const beforeCount = state.shifts.length;
             state.shifts = state.shifts.filter(s => {
                 const shiftDate = new Date(s.date);
                 const isInRange = shiftDate >= startDate && shiftDate <= endDate;
                 const isSamePerson = s.name === r.name;
+                if (isInRange && isSamePerson) {
+                    console.log('削除対象シフト:', s);
+                }
                 // 該当者かつ期間内のシフトは削除（falseを返す）
                 return !(isInRange && isSamePerson);
             });
+            console.log('通常シフト削除:', beforeCount, '->', state.shifts.length);
+            
+            // 固定シフトの場合：該当日に「削除」マークのシフトを追加して上書き
+            // （固定シフト自体は消せないので、その日だけ非表示にする）
+            const fixedShiftsToOverride = state.fixedShifts.filter(f => f.name === r.name);
+            console.log('固定シフト対象:', fixedShiftsToOverride);
+            
+            if (fixedShiftsToOverride.length > 0) {
+                // 有給期間の各日をループ
+                const currentDate = new Date(startDate);
+                while (currentDate <= endDate) {
+                    const dateStr = formatDate(currentDate);
+                    const dayOfWeek = currentDate.getDay();
+                    
+                    // その日に該当する固定シフトがあるか確認
+                    fixedShiftsToOverride.forEach(fixed => {
+                        if (fixed.dayOfWeek === dayOfWeek) {
+                            // 既に通常シフトで上書きされていないか確認
+                            const existingOverride = state.shifts.find(s => 
+                                s.date === dateStr && 
+                                s.fixedShiftOverride === fixed.id
+                            );
+                            
+                            if (!existingOverride) {
+                                // 固定シフトを「削除」として上書きするシフトを追加
+                                state.shifts.push({
+                                    id: 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                                    date: dateStr,
+                                    name: r.name,
+                                    startHour: fixed.startHour,
+                                    endHour: fixed.endHour,
+                                    color: fixed.color,
+                                    fixedShiftOverride: fixed.id,
+                                    isLeaveOverride: true, // 有給による上書きマーク
+                                    hidden: true // 非表示フラグ
+                                });
+                                console.log('固定シフト上書き追加:', dateStr, fixed.name);
+                            }
+                        }
+                    });
+                    
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
             
             saveToFirebase('shifts', state.shifts);
             saveToFirebase('leaveRequests', state.leaveRequests);
