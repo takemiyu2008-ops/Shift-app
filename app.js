@@ -578,7 +578,9 @@ function createShiftBar(s, lvl) {
     bar.style.width = `${widthPercent}%`;
     bar.style.top = `${8 + lvl * 28}px`;
     bar.style.height = '24px';
-    bar.style.background = `linear-gradient(135deg, ${s.color}, ${adjustColor(s.color, -20)})`;
+    // 色が正しく設定されているか確認し、不正な場合はデフォルト色を使用
+    const shiftColor = (s.color && s.color.startsWith('#') && s.color.length >= 4) ? s.color : '#6366f1';
+    bar.style.background = `linear-gradient(135deg, ${shiftColor}, ${adjustColor(shiftColor, -20)})`;
 
     let icons = '';
     if (s.changeHistory) icons += '<span class="change-icon" title="シフト変更あり">📝</span>';
@@ -615,8 +617,10 @@ function createShiftBar(s, lvl) {
     // クリックイベント（デスクトップ用）
     bar.addEventListener('click', e => {
         if (e.target.classList.contains('delete-btn')) return;
-        // ポップオーバーを表示
-        showShiftPopover(s, e, bar);
+        // 確認ダイアログを表示してからポップオーバーを表示
+        if (confirm('シフト内容を変更しますか？')) {
+            showShiftPopover(s, e, bar);
+        }
     });
 
     // タッチイベント（モバイル用）
@@ -655,12 +659,14 @@ function createShiftBar(s, lvl) {
         e.preventDefault();
         e.stopPropagation();
 
-        // ポップオーバーを表示（タッチ位置を使用）
-        showShiftPopover(s, {
-            clientX: touchStartX,
-            clientY: touchStartY,
-            target: bar
-        }, bar);
+        // 確認ダイアログを表示してからポップオーバーを表示
+        if (confirm('シフト内容を変更しますか？')) {
+            showShiftPopover(s, {
+                clientX: touchStartX,
+                clientY: touchStartY,
+                target: bar
+            }, bar);
+        }
     }, { passive: false });
 
     // 削除ボタン
@@ -863,11 +869,20 @@ function showSwapHistoryModal(s) {
 }
 
 function adjustColor(hex, amt) {
-    const n = parseInt(hex.slice(1), 16);
-    const r = Math.min(255, Math.max(0, (n >> 16) + amt));
-    const g = Math.min(255, Math.max(0, ((n >> 8) & 0xFF) + amt));
-    const b = Math.min(255, Math.max(0, (n & 0xFF) + amt));
-    return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+    // 色が正しくない場合はデフォルト色を使用
+    if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length < 4) {
+        hex = '#6366f1';
+    }
+    try {
+        const n = parseInt(hex.slice(1), 16);
+        if (isNaN(n)) return '#6366f1';
+        const r = Math.min(255, Math.max(0, (n >> 16) + amt));
+        const g = Math.min(255, Math.max(0, ((n >> 8) & 0xFF) + amt));
+        const b = Math.min(255, Math.max(0, (n & 0xFF) + amt));
+        return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+    } catch (e) {
+        return '#6366f1';
+    }
 }
 
 // 凡例
@@ -2078,13 +2093,25 @@ function initEventListeners() {
     document.getElementById('broadcastModalOverlay').onclick = e => { if (e.target.id === 'broadcastModalOverlay') closeModal(document.getElementById('broadcastModalOverlay')); };
     document.getElementById('broadcastForm').onsubmit = e => { e.preventDefault(); sendBroadcast(document.getElementById('broadcastTitle').value.trim(), document.getElementById('broadcastMessage').value.trim()); closeModal(document.getElementById('broadcastModalOverlay')); document.getElementById('broadcastForm').reset(); alert('全従業員にメッセージを送信しました'); };
 
-    document.querySelectorAll('.color-option').forEach(o => o.onclick = () => { document.querySelectorAll('.color-option').forEach(x => x.classList.remove('selected')); o.classList.add('selected'); state.selectedColor = o.dataset.color; });
+    document.querySelectorAll('.color-option').forEach(o => o.onclick = (e) => { 
+        e.preventDefault();
+        e.stopPropagation();
+        const color = o.dataset.color;
+        // 色が正しく取得できた場合のみ処理
+        if (color && color.startsWith('#')) {
+            document.querySelectorAll('.color-option').forEach(x => x.classList.remove('selected')); 
+            o.classList.add('selected'); 
+            state.selectedColor = color;
+        }
+    });
 
     document.getElementById('shiftForm').onsubmit = e => {
         e.preventDefault();
         const id = document.getElementById('editShiftId').value;
         const isFixedChecked = document.getElementById('fixedShift').checked;
-        const d = { date: document.getElementById('shiftDate').value, name: document.getElementById('shiftName').value, startHour: +document.getElementById('shiftStart').value, endHour: +document.getElementById('shiftEnd').value, color: state.selectedColor, overnight: document.getElementById('overnightShift').checked };
+        // 色のバリデーション - 正しくない場合はデフォルト色を使用
+        const validColor = (state.selectedColor && state.selectedColor.startsWith('#') && state.selectedColor.length >= 4) ? state.selectedColor : '#6366f1';
+        const d = { date: document.getElementById('shiftDate').value, name: document.getElementById('shiftName').value, startHour: +document.getElementById('shiftStart').value, endHour: +document.getElementById('shiftEnd').value, color: validColor, overnight: document.getElementById('overnightShift').checked };
         if (!d.overnight && d.startHour >= d.endHour) { alert('終了時刻は開始時刻より後に'); return; }
         if (d.overnight && d.startHour <= d.endHour) { alert('夜勤は終了時刻を翌日の時刻に'); return; }
 
