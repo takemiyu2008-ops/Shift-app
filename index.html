@@ -140,15 +140,38 @@
                 <button class="advisor-group-toggle" id="advisorGroupToggle">▼</button>
             </div>
             <div class="advisor-group-content collapsed" id="advisorGroupContent">
-                <!-- 週刊トレンドレポート -->
-                <div class="order-advisor trend-report-section" id="trendReportSection" style="display: none;">
-                    <div class="advisor-header">
+                
+                <!-- レポート（サブグループ） -->
+                <div class="order-advisor report-group-section" id="reportGroupSection">
+                    <div class="advisor-header" id="reportGroupHeader">
                         <span class="advisor-icon">📊</span>
-                        <span class="advisor-title">週刊トレンドレポート</span>
-                        <button class="advisor-toggle collapsed" id="trendReportToggle">▼</button>
+                        <span class="advisor-title">レポート</span>
+                        <button class="advisor-toggle collapsed" id="reportGroupToggle">▼</button>
                     </div>
-                    <div class="advisor-content collapsed" id="trendReportContent">
-                        <!-- JSで動的に生成 -->
+                    <div class="advisor-content report-group-content collapsed" id="reportGroupContent">
+                        <!-- 週刊トレンドレポート -->
+                        <div class="report-sub-section" id="trendReportSection" style="display: none;">
+                            <div class="report-sub-header" id="trendReportHeader">
+                                <span class="report-sub-icon">📄</span>
+                                <span class="report-sub-title">週刊トレンドレポート</span>
+                                <button class="report-sub-toggle collapsed" id="trendReportToggle">▼</button>
+                            </div>
+                            <div class="report-sub-content collapsed" id="trendReportContent">
+                                <!-- JSで動的に生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 定期コンビニ新商品レポート -->
+                        <div class="report-sub-section" id="newProductReportSection">
+                            <div class="report-sub-header" id="newProductHeader">
+                                <span class="report-sub-icon">🆕</span>
+                                <span class="report-sub-title">定期コンビニ新商品レポート</span>
+                                <button class="report-sub-toggle collapsed" id="newProductToggle">▼</button>
+                            </div>
+                            <div class="report-sub-content collapsed" id="newProductContent">
+                                <!-- JSで動的に生成 -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -160,18 +183,6 @@
                         <button class="advisor-toggle collapsed" id="nonDailyToggle">▼</button>
                     </div>
                     <div class="advisor-content collapsed" id="nonDailyContent">
-                        <!-- JSで動的に生成 -->
-                    </div>
-                </div>
-
-                <!-- 定期コンビニ新商品レポート -->
-                <div class="order-advisor new-product-report" id="newProductReportSection">
-                    <div class="advisor-header">
-                        <span class="advisor-icon">🆕</span>
-                        <span class="advisor-title">定期コンビニ新商品レポート</span>
-                        <button class="advisor-toggle collapsed" id="newProductToggle">▼</button>
-                    </div>
-                    <div class="advisor-content collapsed" id="newProductContent">
                         <!-- JSで動的に生成 -->
                     </div>
                 </div>

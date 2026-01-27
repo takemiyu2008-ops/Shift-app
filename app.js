@@ -2811,6 +2811,7 @@ function init() {
     initPopoverEvents();
     initEventModal();
     initAdvisorGroupToggle(); // グループトグルを初期化
+    initReportGroupToggle(); // レポートグループのトグルを初期化
     loadData();
     render();
 
@@ -2826,6 +2827,24 @@ function init() {
             applyZoom();
         }, 100);
     });
+}
+
+// レポートグループのトグル機能を初期化
+function initReportGroupToggle() {
+    const reportGroup = document.getElementById('reportGroupSection');
+    if (!reportGroup) return;
+
+    const header = document.getElementById('reportGroupHeader');
+    const content = document.getElementById('reportGroupContent');
+    const toggle = document.getElementById('reportGroupToggle');
+
+    if (header && content && toggle) {
+        header.onclick = () => {
+            content.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+        };
+    }
 }
 
 // ========================================
@@ -4281,12 +4300,12 @@ function renderNewProductReport() {
     initNewProductToggle();
 }
 
-// 新商品レポートのトグル機能を初期化
+// 新商品レポートのトグル機能を初期化（サブセクション用）
 function initNewProductToggle() {
     const container = document.getElementById('newProductReportSection');
     if (!container) return;
 
-    const header = container.querySelector('.advisor-header');
+    const header = container.querySelector('.report-sub-header');
     const toggle = document.getElementById('newProductToggle');
     const content = document.getElementById('newProductContent');
 
@@ -4294,6 +4313,7 @@ function initNewProductToggle() {
         header.onclick = () => {
             toggle.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
         };
     }
 }
@@ -4775,14 +4795,14 @@ function renderTrendReports() {
     initTrendReportToggle();
 }
 
-// トレンドレポートのトグル機能を初期化
+// トレンドレポートのトグル機能を初期化（サブセクション用）
 function initTrendReportToggle() {
     const section = document.getElementById('trendReportSection');
     if (!section) return;
 
-    const header = section.querySelector('.advisor-header');
-    const content = section.querySelector('.advisor-content');
-    const toggle = section.querySelector('.advisor-toggle');
+    const header = section.querySelector('.report-sub-header');
+    const content = section.querySelector('.report-sub-content');
+    const toggle = section.querySelector('.report-sub-toggle');
 
     if (header && content && toggle) {
         header.onclick = () => {
