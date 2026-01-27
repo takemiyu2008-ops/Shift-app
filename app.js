@@ -36,6 +36,7 @@ const state = {
     swapRequests: [],
     dailyEvents: [],
     nonDailyAdvice: [], // 非デイリー発注アドバイス
+    trendReports: [], // 週刊トレンドレポート
     newProductReports: [], // 定期コンビニ新商品レポート
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
@@ -130,7 +131,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos', 'productCategories', 'newProductReports'];
+    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -138,6 +139,7 @@ function loadData() {
             if (key === 'employees') updateEmployeeSelects();
             if (key === 'nonDailyAdvice') renderNonDailyAdvisor();
             if (key === 'newProductReports') renderNewProductReport();
+            if (key === 'trendReports') renderTrendReports();
             render();
             if (state.isAdmin) renderAdminPanel();
             updateMessageBar();
@@ -4690,6 +4692,328 @@ function filterEventsByType(type) {
 function filterNonDailyByCategory(category) {
     state.nonDailyFilter = category;
     renderNonDailyAdvisor();
+}
+
+// ========================================
+// 週刊トレンドレポート機能
+// ========================================
+
+// 週刊トレンドレポートを描画
+function renderTrendReports() {
+    const section = document.getElementById('trendReportSection');
+    const content = document.getElementById('trendReportContent');
+    if (!section || !content) return;
+
+    // 1ヶ月以内のレポートのみ表示
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    const recentReports = (state.trendReports || [])
+        .filter(r => new Date(r.uploadedAt) >= oneMonthAgo)
+        .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+    if (recentReports.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+
+    let html = '<div class="trend-reports-list">';
+    
+    recentReports.forEach(report => {
+        const uploadDate = new Date(report.uploadedAt);
+        const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
+        const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+        
+        html += `
+            <div class="trend-report-item">
+                <div class="trend-report-info">
+                    <div class="trend-report-title">
+                        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                        📄 ${report.title}
+                    </div>
+                    <div class="trend-report-meta">
+                        <span class="report-date">📅 ${dateStr}</span>
+                        <span class="report-size">${formatFileSize(report.fileSize)}</span>
+                    </div>
+                </div>
+                <div class="trend-report-actions">
+                    <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
+                        📥 ダウンロード
+                    </button>
+                    ${state.isAdmin ? `
+                    <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
+                        🗑️
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+
+    // 管理者のみアップロードボタンを表示
+    if (state.isAdmin) {
+        html += `
+            <div class="trend-report-upload-section">
+                <button class="btn btn-primary" onclick="openTrendReportUploadModal()">
+                    📤 新しいレポートをアップロード
+                </button>
+            </div>
+        `;
+    }
+
+    content.innerHTML = html;
+    initTrendReportToggle();
+}
+
+// トレンドレポートのトグル機能を初期化
+function initTrendReportToggle() {
+    const section = document.getElementById('trendReportSection');
+    if (!section) return;
+
+    const header = section.querySelector('.advisor-header');
+    const content = section.querySelector('.advisor-content');
+    const toggle = section.querySelector('.advisor-toggle');
+
+    if (header && content && toggle) {
+        header.onclick = () => {
+            content.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+        };
+    }
+}
+
+// ファイルサイズをフォーマット
+function formatFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// レポートアップロードモーダルを開く
+function openTrendReportUploadModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay category-modal-overlay active';
+    overlay.id = 'trendReportUploadOverlay';
+    
+    overlay.innerHTML = `
+        <div class="modal category-modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2 class="modal-title">📤 週刊トレンドレポートをアップロード</h2>
+                <button class="modal-close" onclick="closeTrendReportUploadModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>レポートタイトル</label>
+                    <input type="text" id="trendReportTitle" class="form-control" 
+                           placeholder="例: 週刊トレンドレポート 2026年1月27日号" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>ファイルを選択</label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="trendReportFile" accept=".docx,.doc,.pdf,.xlsx,.xls" 
+                               style="display: none;" onchange="handleTrendReportFileSelect(event)">
+                        <div class="file-upload-placeholder" onclick="document.getElementById('trendReportFile').click()">
+                            <span class="upload-icon">📁</span>
+                            <span class="upload-text">クリックしてファイルを選択</span>
+                            <span class="upload-hint">対応形式: Word (.docx), PDF, Excel (.xlsx)</span>
+                        </div>
+                        <div class="file-selected-info" id="fileSelectedInfo" style="display: none;">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name" id="selectedFileName"></span>
+                            <span class="file-size" id="selectedFileSize"></span>
+                            <button type="button" class="btn btn-xs btn-secondary" onclick="clearSelectedFile()">✕</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">アップロード中...</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeTrendReportUploadModal()">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="uploadTrendReportBtn" onclick="uploadTrendReport()" disabled>
+                    📤 アップロード
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+}
+
+// アップロードモーダルを閉じる
+function closeTrendReportUploadModal() {
+    const overlay = document.getElementById('trendReportUploadOverlay');
+    if (overlay) overlay.remove();
+    state.selectedTrendReportFile = null;
+}
+
+// ファイル選択時の処理
+function handleTrendReportFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // ファイルサイズチェック (5MB制限)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('ファイルサイズは5MB以下にしてください。');
+        return;
+    }
+    
+    state.selectedTrendReportFile = file;
+    
+    // UI更新
+    document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'none';
+    document.getElementById('fileSelectedInfo').style.display = 'flex';
+    document.getElementById('selectedFileName').textContent = file.name;
+    document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
+    document.getElementById('uploadTrendReportBtn').disabled = false;
+    
+    // タイトルが空なら自動設定
+    const titleInput = document.getElementById('trendReportTitle');
+    if (!titleInput.value) {
+        const today = new Date();
+        titleInput.value = `週刊トレンドレポート ${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日号`;
+    }
+}
+
+// 選択したファイルをクリア
+function clearSelectedFile() {
+    state.selectedTrendReportFile = null;
+    document.getElementById('trendReportFile').value = '';
+    document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'flex';
+    document.getElementById('fileSelectedInfo').style.display = 'none';
+    document.getElementById('uploadTrendReportBtn').disabled = true;
+}
+
+// レポートをアップロード
+async function uploadTrendReport() {
+    const title = document.getElementById('trendReportTitle').value.trim();
+    const file = state.selectedTrendReportFile;
+    
+    if (!title || !file) {
+        alert('タイトルとファイルを入力してください。');
+        return;
+    }
+    
+    // プログレス表示
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('uploadTrendReportBtn').disabled = true;
+    
+    try {
+        // ファイルをBase64に変換
+        const base64Data = await fileToBase64(file);
+        
+        const report = {
+            id: Date.now().toString(),
+            title: title,
+            fileName: file.name,
+            fileType: file.type || getFileTypeFromName(file.name),
+            fileSize: file.size,
+            fileData: base64Data,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: '管理者'
+        };
+        
+        state.trendReports.push(report);
+        
+        // 1ヶ月より古いレポートを削除
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        state.trendReports = state.trendReports.filter(r => new Date(r.uploadedAt) >= oneMonthAgo);
+        
+        saveToFirebase('trendReports', state.trendReports);
+        
+        document.getElementById('progressFill').style.width = '100%';
+        document.getElementById('progressText').textContent = 'アップロード完了！';
+        
+        setTimeout(() => {
+            closeTrendReportUploadModal();
+            renderTrendReports();
+            alert('レポートをアップロードしました。');
+        }, 500);
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        alert('アップロードに失敗しました。ファイルサイズを確認してください。');
+        document.getElementById('uploadProgress').style.display = 'none';
+        document.getElementById('uploadTrendReportBtn').disabled = false;
+    }
+}
+
+// ファイルをBase64に変換
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// ファイル名から拡張子でタイプを取得
+function getFileTypeFromName(fileName) {
+    const ext = fileName.split('.').pop().toLowerCase();
+    const types = {
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'doc': 'application/msword',
+        'pdf': 'application/pdf',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'xls': 'application/vnd.ms-excel'
+    };
+    return types[ext] || 'application/octet-stream';
+}
+
+// レポートをダウンロード
+function downloadTrendReport(reportId) {
+    const report = state.trendReports.find(r => r.id === reportId);
+    if (!report) {
+        alert('レポートが見つかりません。');
+        return;
+    }
+    
+    try {
+        // Base64データからBlobを作成
+        const byteCharacters = atob(report.fileData.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: report.fileType });
+        
+        // ダウンロードリンクを作成
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = report.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Download error:', error);
+        alert('ダウンロードに失敗しました。');
+    }
+}
+
+// レポートを削除
+function deleteTrendReport(reportId) {
+    if (!confirm('このレポートを削除しますか？')) return;
+    
+    state.trendReports = state.trendReports.filter(r => r.id !== reportId);
+    saveToFirebase('trendReports', state.trendReports);
+    renderTrendReports();
 }
 
 // ========================================
