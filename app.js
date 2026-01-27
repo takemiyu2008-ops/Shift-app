@@ -5245,7 +5245,7 @@ function renderProductCategoriesPanel(container) {
         <div class="product-categories-container">
             <div class="product-categories-header">
                 <h3>📂 商品分類管理</h3>
-                <p class="header-description">PMA（大分類）、情報分類（中分類）、小分類を管理します。ここで設定した内容が発注アドバイスに反映されます。</p>
+                <p class="header-description">PMA（大分類）と情報分類を管理します。ここで設定した内容が発注アドバイスに反映されます。</p>
             </div>
             
             <div class="product-categories-layout">
@@ -5296,6 +5296,7 @@ function renderPMADetail(pma) {
     return `
         <div class="pma-detail-header">
             <div class="pma-detail-title">
+                <button class="btn btn-sm btn-secondary" onclick="deselectPMA()" style="margin-right: 12px;">← 戻る</button>
                 <span class="pma-detail-icon">${pma.icon || '📦'}</span>
                 <span class="pma-detail-name">${pma.name}</span>
             </div>
@@ -5307,7 +5308,7 @@ function renderPMADetail(pma) {
         
         <div class="info-categories-section">
             <div class="info-categories-header">
-                <span class="section-label">情報分類（中分類）</span>
+                <span class="section-label">情報分類</span>
                 <button class="btn btn-sm btn-primary" onclick="openAddInfoCategoryModal('${pma.id}')">+ 情報分類追加</button>
             </div>
             
@@ -5323,52 +5324,22 @@ function renderPMADetail(pma) {
 
 // 情報分類アイテムをレンダリング
 function renderInfoCategoryItem(pmaId, info) {
-    const subCategories = info.subCategories || [];
-    const isExpanded = state.expandedInfoCategories?.[`${pmaId}-${info.id}`] || false;
-    
     return `
         <div class="info-category-item" data-info-id="${info.id}">
-            <div class="info-category-header" onclick="toggleInfoCategoryExpand('${pmaId}', '${info.id}')">
-                <span class="expand-icon">${isExpanded ? '▼' : '▶'}</span>
+            <div class="info-category-header">
                 <span class="info-category-name">${info.name}</span>
-                <span class="sub-count">(小分類: ${subCategories.length}件)</span>
-                <div class="info-category-actions" onclick="event.stopPropagation()">
+                <div class="info-category-actions">
                     <button class="btn btn-xs btn-secondary" onclick="openEditInfoCategoryModal('${pmaId}', '${info.id}')">✏️</button>
                     <button class="btn btn-xs btn-danger" onclick="confirmDeleteInfoCategory('${pmaId}', '${info.id}')">🗑️</button>
-                </div>
-            </div>
-            
-            <div class="sub-categories-section" style="display: ${isExpanded ? 'block' : 'none'}">
-                <div class="sub-categories-header">
-                    <span class="sub-section-label">小分類</span>
-                    <button class="btn btn-xs btn-primary" onclick="openAddSubCategoryModal('${pmaId}', '${info.id}')">+ 小分類追加</button>
-                </div>
-                <div class="sub-categories-list">
-                    ${subCategories.length === 0 ?
-                        '<p class="no-items-message-small">小分類がありません</p>' :
-                        subCategories.map(sub => `
-                            <div class="sub-category-item">
-                                <span class="sub-category-name">${sub.name}</span>
-                                <div class="sub-category-actions">
-                                    <button class="btn btn-xs btn-secondary" onclick="openEditSubCategoryModal('${pmaId}', '${info.id}', '${sub.id}')">✏️</button>
-                                    <button class="btn btn-xs btn-danger" onclick="confirmDeleteSubCategory('${pmaId}', '${info.id}', '${sub.id}')">🗑️</button>
-                                </div>
-                            </div>
-                        `).join('')
-                    }
                 </div>
             </div>
         </div>
     `;
 }
 
-// 情報分類の展開/折りたたみを切り替え
-function toggleInfoCategoryExpand(pmaId, infoId) {
-    if (!state.expandedInfoCategories) {
-        state.expandedInfoCategories = {};
-    }
-    const key = `${pmaId}-${infoId}`;
-    state.expandedInfoCategories[key] = !state.expandedInfoCategories[key];
+// PMA選択解除
+function deselectPMA() {
+    state.selectedPmaId = null;
     renderAdminPanel();
 }
 
@@ -5432,39 +5403,6 @@ function openEditInfoCategoryModal(pmaId, infoId) {
         ],
         onSubmit: (data) => {
             updateInfoCategory(pmaId, infoId, data);
-        }
-    });
-    document.body.appendChild(modal);
-}
-
-// 小分類追加モーダルを開く
-function openAddSubCategoryModal(pmaId, infoId) {
-    const modal = createCategoryModal({
-        title: '📄 小分類追加',
-        fields: [
-            { name: 'name', label: '小分類名', type: 'text', placeholder: '例: 手巻おにぎり', required: true }
-        ],
-        onSubmit: (data) => {
-            addSubCategory(pmaId, infoId, data);
-        }
-    });
-    document.body.appendChild(modal);
-}
-
-// 小分類編集モーダルを開く
-function openEditSubCategoryModal(pmaId, infoId, subId) {
-    const pma = state.productCategories.find(p => p.id === pmaId);
-    const info = pma?.infoCategories?.find(i => i.id === infoId);
-    const sub = info?.subCategories?.find(s => s.id === subId);
-    if (!sub) return;
-    
-    const modal = createCategoryModal({
-        title: '📄 小分類編集',
-        fields: [
-            { name: 'name', label: '小分類名', type: 'text', value: sub.name, required: true }
-        ],
-        onSubmit: (data) => {
-            updateSubCategory(pmaId, infoId, subId, data);
         }
     });
     document.body.appendChild(modal);
@@ -5632,66 +5570,6 @@ function deleteInfoCategory(pmaId, infoId) {
     if (!pma) return;
     
     pma.infoCategories = pma.infoCategories.filter(i => i.id !== infoId);
-    saveToFirebase('productCategories', state.productCategories);
-    renderAdminPanel();
-}
-
-// 小分類追加
-function addSubCategory(pmaId, infoId, data) {
-    const pma = state.productCategories.find(p => p.id === pmaId);
-    const info = pma?.infoCategories?.find(i => i.id === infoId);
-    if (!info) return;
-    
-    if (!info.subCategories) info.subCategories = [];
-    
-    info.subCategories.push({
-        id: 'sub-' + Date.now(),
-        name: data.name,
-        createdAt: new Date().toISOString()
-    });
-    
-    saveToFirebase('productCategories', state.productCategories);
-    
-    // 展開状態を保持
-    if (!state.expandedInfoCategories) state.expandedInfoCategories = {};
-    state.expandedInfoCategories[`${pmaId}-${infoId}`] = true;
-    
-    renderAdminPanel();
-}
-
-// 小分類更新
-function updateSubCategory(pmaId, infoId, subId, data) {
-    const pma = state.productCategories.find(p => p.id === pmaId);
-    const info = pma?.infoCategories?.find(i => i.id === infoId);
-    const sub = info?.subCategories?.find(s => s.id === subId);
-    if (!sub) return;
-    
-    sub.name = data.name;
-    sub.updatedAt = new Date().toISOString();
-    
-    saveToFirebase('productCategories', state.productCategories);
-    renderAdminPanel();
-}
-
-// 小分類削除確認
-function confirmDeleteSubCategory(pmaId, infoId, subId) {
-    const pma = state.productCategories.find(p => p.id === pmaId);
-    const info = pma?.infoCategories?.find(i => i.id === infoId);
-    const sub = info?.subCategories?.find(s => s.id === subId);
-    if (!sub) return;
-    
-    if (confirm(`「${sub.name}」を削除しますか？`)) {
-        deleteSubCategory(pmaId, infoId, subId);
-    }
-}
-
-// 小分類削除
-function deleteSubCategory(pmaId, infoId, subId) {
-    const pma = state.productCategories.find(p => p.id === pmaId);
-    const info = pma?.infoCategories?.find(i => i.id === infoId);
-    if (!info) return;
-    
-    info.subCategories = info.subCategories.filter(s => s.id !== subId);
     saveToFirebase('productCategories', state.productCategories);
     renderAdminPanel();
 }
