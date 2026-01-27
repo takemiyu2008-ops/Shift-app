@@ -99,19 +99,6 @@
             <button id="viewMessagesBtn" class="btn btn-sm btn-primary">確認</button>
         </div>
 
-        <!-- 日付ナビゲーション -->
-        <div class="date-nav">
-            <button id="prevWeek" class="nav-btn">
-                <span>◀</span>
-                前週
-            </button>
-            <div class="current-period" id="currentPeriod">2026年1月12日 〜 1月18日</div>
-            <button id="nextWeek" class="nav-btn">
-                次週
-                <span>▶</span>
-            </button>
-        </div>
-
         <!-- ズームコントロール & PDF出力 -->
         <div class="zoom-controls">
             <div class="zoom-section">
@@ -140,38 +127,15 @@
                 <button class="advisor-group-toggle" id="advisorGroupToggle">▼</button>
             </div>
             <div class="advisor-group-content collapsed" id="advisorGroupContent">
-                
-                <!-- レポート（サブグループ） -->
-                <div class="order-advisor report-group-section" id="reportGroupSection">
-                    <div class="advisor-header" id="reportGroupHeader">
+                <!-- 週刊トレンドレポート -->
+                <div class="order-advisor trend-report-section" id="trendReportSection" style="display: none;">
+                    <div class="advisor-header">
                         <span class="advisor-icon">📊</span>
-                        <span class="advisor-title">レポート</span>
-                        <button class="advisor-toggle collapsed" id="reportGroupToggle">▼</button>
+                        <span class="advisor-title">週刊トレンドレポート</span>
+                        <button class="advisor-toggle collapsed" id="trendReportToggle">▼</button>
                     </div>
-                    <div class="advisor-content report-group-content collapsed" id="reportGroupContent">
-                        <!-- 週刊トレンドレポート -->
-                        <div class="report-sub-section" id="trendReportSection" style="display: none;">
-                            <div class="report-sub-header" id="trendReportHeader">
-                                <span class="report-sub-icon">📄</span>
-                                <span class="report-sub-title">週刊トレンドレポート</span>
-                                <button class="report-sub-toggle collapsed" id="trendReportToggle">▼</button>
-                            </div>
-                            <div class="report-sub-content collapsed" id="trendReportContent">
-                                <!-- JSで動的に生成 -->
-                            </div>
-                        </div>
-
-                        <!-- 定期コンビニ新商品レポート -->
-                        <div class="report-sub-section" id="newProductReportSection">
-                            <div class="report-sub-header" id="newProductHeader">
-                                <span class="report-sub-icon">🆕</span>
-                                <span class="report-sub-title">定期コンビニ新商品レポート</span>
-                                <button class="report-sub-toggle collapsed" id="newProductToggle">▼</button>
-                            </div>
-                            <div class="report-sub-content collapsed" id="newProductContent">
-                                <!-- JSで動的に生成 -->
-                            </div>
-                        </div>
+                    <div class="advisor-content collapsed" id="trendReportContent">
+                        <!-- JSで動的に生成 -->
                     </div>
                 </div>
 
@@ -183,6 +147,18 @@
                         <button class="advisor-toggle collapsed" id="nonDailyToggle">▼</button>
                     </div>
                     <div class="advisor-content collapsed" id="nonDailyContent">
+                        <!-- JSで動的に生成 -->
+                    </div>
+                </div>
+
+                <!-- 定期コンビニ新商品レポート -->
+                <div class="order-advisor new-product-report" id="newProductReportSection">
+                    <div class="advisor-header">
+                        <span class="advisor-icon">🆕</span>
+                        <span class="advisor-title">定期コンビニ新商品レポート</span>
+                        <button class="advisor-toggle collapsed" id="newProductToggle">▼</button>
+                    </div>
+                    <div class="advisor-content collapsed" id="newProductContent">
                         <!-- JSで動的に生成 -->
                     </div>
                 </div>
@@ -199,6 +175,19 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- 日付ナビゲーション -->
+        <div class="date-nav">
+            <button id="prevWeek" class="nav-btn">
+                <span>◀</span>
+                前週
+            </button>
+            <div class="current-period" id="currentPeriod">2026年1月12日 〜 1月18日</div>
+            <button id="nextWeek" class="nav-btn">
+                次週
+                <span>▶</span>
+            </button>
         </div>
 
         <!-- ガントチャート -->
@@ -264,12 +253,16 @@
                 </div>
             </div>
             <div class="popover-actions">
-                <button class="btn btn-primary btn-sm" id="popoverEditBtn">✏️ 編集</button>
-                <button class="btn btn-secondary btn-sm" id="popoverOverrideBtn" style="display: none;">📝 この日のみ変更</button>
-                <button class="btn btn-info btn-sm" id="popoverMorningHalfDayBtn">🌅 午前半休</button>
-                <button class="btn btn-info btn-sm" id="popoverAfternoonHalfDayBtn">🌇 午後半休</button>
-                <button class="btn btn-warning btn-sm" id="popoverDayOffBtn">🏠 休み</button>
-                <button class="btn btn-danger btn-sm" id="popoverDeleteBtn">🗑️ 削除</button>
+                <div class="popover-action-row">
+                    <button class="btn btn-primary btn-sm" id="popoverEditBtn">✏️ 編集</button>
+                    <button class="btn btn-secondary btn-sm" id="popoverOverrideBtn" style="display: none;">📝 この日のみ</button>
+                    <button class="btn btn-danger btn-sm" id="popoverDeleteBtn">🗑️ 削除</button>
+                </div>
+                <div class="popover-action-row">
+                    <button class="btn btn-info btn-sm" id="popoverMorningHalfDayBtn">🌅 午前半休</button>
+                    <button class="btn btn-info btn-sm" id="popoverAfternoonHalfDayBtn">🌇 午後半休</button>
+                    <button class="btn btn-warning btn-sm" id="popoverDayOffBtn">🏠 休み</button>
+                </div>
             </div>
         </div>
     </div>
@@ -440,10 +433,6 @@
                         <label for="leaveEndDate">終了日</label>
                         <input type="date" id="leaveEndDate" required>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="leaveReason">申請理由</label>
-                    <textarea id="leaveReason" placeholder="例：旅行のため" rows="3" required></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="leaveCancelBtn">キャンセル</button>

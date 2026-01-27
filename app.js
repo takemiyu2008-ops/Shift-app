@@ -1365,8 +1365,8 @@ function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.
 // 認証
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
 function verifyPin(p) { return p === CONFIG.ADMIN_PIN; }
-function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); renderTrendReports(); }
-function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; renderTrendReports(); }
+function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); }
+function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; }
 function toggleRole() { state.isAdmin ? switchToStaff() : showPinModal(); }
 
 // 管理者タブの通知バッジ更新
@@ -2141,7 +2141,7 @@ function initEventListeners() {
 
     document.getElementById('leaveForm').onsubmit = e => {
         e.preventDefault();
-        const d = { name: document.getElementById('leaveName').value, startDate: document.getElementById('leaveStartDate').value, endDate: document.getElementById('leaveEndDate').value, reason: document.getElementById('leaveReason').value.trim() };
+        const d = { name: document.getElementById('leaveName').value, startDate: document.getElementById('leaveStartDate').value, endDate: document.getElementById('leaveEndDate').value };
         if (d.startDate > d.endDate) { alert('終了日は開始日以降に'); return; }
         addLeaveRequest(d);
         closeModal(document.getElementById('leaveModalOverlay'));
@@ -2811,7 +2811,6 @@ function init() {
     initPopoverEvents();
     initEventModal();
     initAdvisorGroupToggle(); // グループトグルを初期化
-    initReportGroupToggle(); // レポートグループのトグルを初期化
     loadData();
     render();
 
@@ -2827,24 +2826,6 @@ function init() {
             applyZoom();
         }, 100);
     });
-}
-
-// レポートグループのトグル機能を初期化
-function initReportGroupToggle() {
-    const reportGroup = document.getElementById('reportGroupSection');
-    if (!reportGroup) return;
-
-    const header = document.getElementById('reportGroupHeader');
-    const content = document.getElementById('reportGroupContent');
-    const toggle = document.getElementById('reportGroupToggle');
-
-    if (header && content && toggle) {
-        header.onclick = () => {
-            content.classList.toggle('collapsed');
-            toggle.classList.toggle('collapsed');
-            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
-        };
-    }
 }
 
 // ========================================
@@ -4300,12 +4281,12 @@ function renderNewProductReport() {
     initNewProductToggle();
 }
 
-// 新商品レポートのトグル機能を初期化（サブセクション用）
+// 新商品レポートのトグル機能を初期化
 function initNewProductToggle() {
     const container = document.getElementById('newProductReportSection');
     if (!container) return;
 
-    const header = container.querySelector('.report-sub-header');
+    const header = container.querySelector('.advisor-header');
     const toggle = document.getElementById('newProductToggle');
     const content = document.getElementById('newProductContent');
 
@@ -4313,7 +4294,6 @@ function initNewProductToggle() {
         header.onclick = () => {
             toggle.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
-            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
         };
     }
 }
@@ -4732,51 +4712,45 @@ function renderTrendReports() {
         .filter(r => new Date(r.uploadedAt) >= oneMonthAgo)
         .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 
-    // レポートがなく、管理者でもない場合は非表示
-    if (recentReports.length === 0 && !state.isAdmin) {
+    if (recentReports.length === 0) {
         section.style.display = 'none';
         return;
     }
 
-    // 管理者またはレポートがある場合は表示
     section.style.display = 'block';
 
     let html = '<div class="trend-reports-list">';
     
-    if (recentReports.length === 0) {
-        html += '<p class="no-reports-message" style="text-align: center; color: var(--text-secondary); padding: 20px;">まだレポートがアップロードされていません。</p>';
-    } else {
-        recentReports.forEach(report => {
-            const uploadDate = new Date(report.uploadedAt);
-            const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
-            const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
-            
-            html += `
-                <div class="trend-report-item">
-                    <div class="trend-report-info">
-                        <div class="trend-report-title">
-                            ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-                            📄 ${report.title}
-                        </div>
-                        <div class="trend-report-meta">
-                            <span class="report-date">📅 ${dateStr}</span>
-                            <span class="report-size">${formatFileSize(report.fileSize)}</span>
-                        </div>
+    recentReports.forEach(report => {
+        const uploadDate = new Date(report.uploadedAt);
+        const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
+        const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+        
+        html += `
+            <div class="trend-report-item">
+                <div class="trend-report-info">
+                    <div class="trend-report-title">
+                        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                        📄 ${report.title}
                     </div>
-                    <div class="trend-report-actions">
-                        <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
-                            📥 ダウンロード
-                        </button>
-                        ${state.isAdmin ? `
-                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
-                            🗑️
-                        </button>
-                        ` : ''}
+                    <div class="trend-report-meta">
+                        <span class="report-date">📅 ${dateStr}</span>
+                        <span class="report-size">${formatFileSize(report.fileSize)}</span>
                     </div>
                 </div>
-            `;
-        });
-    }
+                <div class="trend-report-actions">
+                    <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
+                        📥 ダウンロード
+                    </button>
+                    ${state.isAdmin ? `
+                    <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
+                        🗑️
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
 
     html += '</div>';
 
@@ -4795,14 +4769,14 @@ function renderTrendReports() {
     initTrendReportToggle();
 }
 
-// トレンドレポートのトグル機能を初期化（サブセクション用）
+// トレンドレポートのトグル機能を初期化
 function initTrendReportToggle() {
     const section = document.getElementById('trendReportSection');
     if (!section) return;
 
-    const header = section.querySelector('.report-sub-header');
-    const content = section.querySelector('.report-sub-content');
-    const toggle = section.querySelector('.report-sub-toggle');
+    const header = section.querySelector('.advisor-header');
+    const content = section.querySelector('.advisor-content');
+    const toggle = section.querySelector('.advisor-toggle');
 
     if (header && content && toggle) {
         header.onclick = () => {
@@ -4843,14 +4817,13 @@ function openTrendReportUploadModal() {
                 <div class="form-group">
                     <label>ファイルを選択</label>
                     <div class="file-upload-area" id="fileUploadArea">
-                        <label for="trendReportFile" class="file-upload-label">
-                            <input type="file" id="trendReportFile" accept=".docx,.doc,.pdf,.xlsx,.xls">
-                            <div class="file-upload-placeholder" id="filePlaceholder">
-                                <span class="upload-icon">📁</span>
-                                <span class="upload-text">タップしてファイルを選択</span>
-                                <span class="upload-hint">対応形式: Word (.docx), PDF, Excel (.xlsx)</span>
-                            </div>
-                        </label>
+                        <input type="file" id="trendReportFile" accept=".docx,.doc,.pdf,.xlsx,.xls" 
+                               style="display: none;" onchange="handleTrendReportFileSelect(event)">
+                        <div class="file-upload-placeholder" onclick="document.getElementById('trendReportFile').click()">
+                            <span class="upload-icon">📁</span>
+                            <span class="upload-text">クリックしてファイルを選択</span>
+                            <span class="upload-hint">対応形式: Word (.docx), PDF, Excel (.xlsx)</span>
+                        </div>
                         <div class="file-selected-info" id="fileSelectedInfo" style="display: none;">
                             <span class="file-icon">📄</span>
                             <span class="file-name" id="selectedFileName"></span>
@@ -4877,12 +4850,6 @@ function openTrendReportUploadModal() {
     `;
     
     document.body.appendChild(overlay);
-    
-    // ファイル入力のイベントリスナーを設定
-    const fileInput = document.getElementById('trendReportFile');
-    if (fileInput) {
-        fileInput.addEventListener('change', handleTrendReportFileSelect);
-    }
 }
 
 // アップロードモーダルを閉じる
@@ -4900,17 +4867,14 @@ function handleTrendReportFileSelect(event) {
     // ファイルサイズチェック (5MB制限)
     if (file.size > 5 * 1024 * 1024) {
         alert('ファイルサイズは5MB以下にしてください。');
-        event.target.value = '';
         return;
     }
     
     state.selectedTrendReportFile = file;
     
     // UI更新
-    const placeholder = document.getElementById('filePlaceholder');
-    const selectedInfo = document.getElementById('fileSelectedInfo');
-    if (placeholder) placeholder.style.display = 'none';
-    if (selectedInfo) selectedInfo.style.display = 'flex';
+    document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'none';
+    document.getElementById('fileSelectedInfo').style.display = 'flex';
     document.getElementById('selectedFileName').textContent = file.name;
     document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
     document.getElementById('uploadTrendReportBtn').disabled = false;
@@ -4926,12 +4890,9 @@ function handleTrendReportFileSelect(event) {
 // 選択したファイルをクリア
 function clearSelectedFile() {
     state.selectedTrendReportFile = null;
-    const fileInput = document.getElementById('trendReportFile');
-    if (fileInput) fileInput.value = '';
-    const placeholder = document.getElementById('filePlaceholder');
-    const selectedInfo = document.getElementById('fileSelectedInfo');
-    if (placeholder) placeholder.style.display = 'flex';
-    if (selectedInfo) selectedInfo.style.display = 'none';
+    document.getElementById('trendReportFile').value = '';
+    document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'flex';
+    document.getElementById('fileSelectedInfo').style.display = 'none';
     document.getElementById('uploadTrendReportBtn').disabled = true;
 }
 
