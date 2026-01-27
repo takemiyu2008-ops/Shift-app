@@ -1505,23 +1505,15 @@ body {
     }
 
     .admin-tabs {
-        gap: 4px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        flex-wrap: nowrap;
+        gap: 6px;
+        flex-wrap: wrap;
         padding-bottom: 8px;
-    }
-    
-    .admin-tabs::-webkit-scrollbar {
-        display: none;
     }
 
     .admin-tab {
         padding: 6px 10px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         white-space: nowrap;
-        flex-shrink: 0;
     }
 
     .legend {

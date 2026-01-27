@@ -4470,9 +4470,9 @@ function filterNonDailyByCategory(category) {
 // 発注担当者データ
 const ORDER_STAFF = [
     { id: 1, name: '市原', role: 'マネージャー/日勤', categories: ['tobacco'] },
-    { id: 2, name: '篠原', role: '社員/夕勤', categories: ['noodle', 'deli', 'ff', 'drink'] },
-    { id: 3, name: '橋本', role: '社員/日勤', categories: ['milk', 'supply'] },
-    { id: 4, name: '森下', role: 'スタッフ/日勤', categories: ['rice', 'sevenPDeli', 'deliOther', 'goods', 'frozen'] },
+    { id: 2, name: '篠原', role: '社員/夕勤', categories: ['deli', 'ff', 'drink'] },
+    { id: 3, name: '橋本', role: '社員/日勤', categories: ['supply', 'noodle', 'goods', 'frozen'] },
+    { id: 4, name: '森下', role: 'スタッフ/日勤', categories: ['rice', 'sevenPDeli', 'deliOther', 'milk', 'frozen'] },
     { id: 5, name: '高橋', role: 'スタッフ/日勤', categories: ['bread'] },
     { id: 6, name: '萩', role: 'スタッフ/日勤', categories: ['processed'] },
     { id: 7, name: '小宮山', role: 'スタッフ/夕勤', categories: ['sweetsChoco'] },
