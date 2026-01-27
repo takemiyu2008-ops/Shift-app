@@ -1365,8 +1365,8 @@ function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.
 // 認証
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
 function verifyPin(p) { return p === CONFIG.ADMIN_PIN; }
-function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); }
-function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; }
+function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); renderTrendReports(); }
+function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; renderTrendReports(); }
 function toggleRole() { state.isAdmin ? switchToStaff() : showPinModal(); }
 
 // 管理者タブの通知バッジ更新
@@ -4712,45 +4712,51 @@ function renderTrendReports() {
         .filter(r => new Date(r.uploadedAt) >= oneMonthAgo)
         .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 
-    if (recentReports.length === 0) {
+    // レポートがなく、管理者でもない場合は非表示
+    if (recentReports.length === 0 && !state.isAdmin) {
         section.style.display = 'none';
         return;
     }
 
+    // 管理者またはレポートがある場合は表示
     section.style.display = 'block';
 
     let html = '<div class="trend-reports-list">';
     
-    recentReports.forEach(report => {
-        const uploadDate = new Date(report.uploadedAt);
-        const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
-        const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
-        
-        html += `
-            <div class="trend-report-item">
-                <div class="trend-report-info">
-                    <div class="trend-report-title">
-                        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-                        📄 ${report.title}
+    if (recentReports.length === 0) {
+        html += '<p class="no-reports-message" style="text-align: center; color: var(--text-secondary); padding: 20px;">まだレポートがアップロードされていません。</p>';
+    } else {
+        recentReports.forEach(report => {
+            const uploadDate = new Date(report.uploadedAt);
+            const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
+            const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+            
+            html += `
+                <div class="trend-report-item">
+                    <div class="trend-report-info">
+                        <div class="trend-report-title">
+                            ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                            📄 ${report.title}
+                        </div>
+                        <div class="trend-report-meta">
+                            <span class="report-date">📅 ${dateStr}</span>
+                            <span class="report-size">${formatFileSize(report.fileSize)}</span>
+                        </div>
                     </div>
-                    <div class="trend-report-meta">
-                        <span class="report-date">📅 ${dateStr}</span>
-                        <span class="report-size">${formatFileSize(report.fileSize)}</span>
+                    <div class="trend-report-actions">
+                        <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
+                            📥 ダウンロード
+                        </button>
+                        ${state.isAdmin ? `
+                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
+                            🗑️
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
-                <div class="trend-report-actions">
-                    <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
-                        📥 ダウンロード
-                    </button>
-                    ${state.isAdmin ? `
-                    <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
-                        🗑️
-                    </button>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    }
 
     html += '</div>';
 
