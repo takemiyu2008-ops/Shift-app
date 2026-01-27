@@ -5228,10 +5228,8 @@ body {
 .file-upload-area {
     border: 2px dashed var(--border-color);
     border-radius: var(--radius-md);
-    padding: 24px;
     text-align: center;
     transition: all var(--transition-fast);
-    cursor: pointer;
 }
 
 .file-upload-area:hover {
@@ -5239,11 +5237,30 @@ body {
     background: rgba(99, 102, 241, 0.05);
 }
 
+.file-upload-label {
+    display: block;
+    cursor: pointer;
+    padding: 24px;
+}
+
+.file-upload-label input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .file-upload-placeholder {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
+    pointer-events: none;
 }
 
 .upload-icon {

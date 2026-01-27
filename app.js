@@ -4823,13 +4823,14 @@ function openTrendReportUploadModal() {
                 <div class="form-group">
                     <label>ファイルを選択</label>
                     <div class="file-upload-area" id="fileUploadArea">
-                        <input type="file" id="trendReportFile" accept=".docx,.doc,.pdf,.xlsx,.xls" 
-                               style="display: none;" onchange="handleTrendReportFileSelect(event)">
-                        <div class="file-upload-placeholder" onclick="document.getElementById('trendReportFile').click()">
-                            <span class="upload-icon">📁</span>
-                            <span class="upload-text">クリックしてファイルを選択</span>
-                            <span class="upload-hint">対応形式: Word (.docx), PDF, Excel (.xlsx)</span>
-                        </div>
+                        <label for="trendReportFile" class="file-upload-label">
+                            <input type="file" id="trendReportFile" accept=".docx,.doc,.pdf,.xlsx,.xls">
+                            <div class="file-upload-placeholder" id="filePlaceholder">
+                                <span class="upload-icon">📁</span>
+                                <span class="upload-text">タップしてファイルを選択</span>
+                                <span class="upload-hint">対応形式: Word (.docx), PDF, Excel (.xlsx)</span>
+                            </div>
+                        </label>
                         <div class="file-selected-info" id="fileSelectedInfo" style="display: none;">
                             <span class="file-icon">📄</span>
                             <span class="file-name" id="selectedFileName"></span>
@@ -4856,6 +4857,12 @@ function openTrendReportUploadModal() {
     `;
     
     document.body.appendChild(overlay);
+    
+    // ファイル入力のイベントリスナーを設定
+    const fileInput = document.getElementById('trendReportFile');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleTrendReportFileSelect);
+    }
 }
 
 // アップロードモーダルを閉じる
@@ -4873,14 +4880,17 @@ function handleTrendReportFileSelect(event) {
     // ファイルサイズチェック (5MB制限)
     if (file.size > 5 * 1024 * 1024) {
         alert('ファイルサイズは5MB以下にしてください。');
+        event.target.value = '';
         return;
     }
     
     state.selectedTrendReportFile = file;
     
     // UI更新
-    document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'none';
-    document.getElementById('fileSelectedInfo').style.display = 'flex';
+    const placeholder = document.getElementById('filePlaceholder');
+    const selectedInfo = document.getElementById('fileSelectedInfo');
+    if (placeholder) placeholder.style.display = 'none';
+    if (selectedInfo) selectedInfo.style.display = 'flex';
     document.getElementById('selectedFileName').textContent = file.name;
     document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
     document.getElementById('uploadTrendReportBtn').disabled = false;
@@ -4896,9 +4906,12 @@ function handleTrendReportFileSelect(event) {
 // 選択したファイルをクリア
 function clearSelectedFile() {
     state.selectedTrendReportFile = null;
-    document.getElementById('trendReportFile').value = '';
-    document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'flex';
-    document.getElementById('fileSelectedInfo').style.display = 'none';
+    const fileInput = document.getElementById('trendReportFile');
+    if (fileInput) fileInput.value = '';
+    const placeholder = document.getElementById('filePlaceholder');
+    const selectedInfo = document.getElementById('fileSelectedInfo');
+    if (placeholder) placeholder.style.display = 'flex';
+    if (selectedInfo) selectedInfo.style.display = 'none';
     document.getElementById('uploadTrendReportBtn').disabled = true;
 }
 
