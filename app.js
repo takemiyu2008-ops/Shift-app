@@ -27,6 +27,7 @@ const state = {
     currentWeekStart: getWeekStart(new Date()),
     shifts: [],
     fixedShifts: [],
+    shiftOverrides: [], // 固定シフトの単日上書き
     changeRequests: [],
     leaveRequests: [],
     holidayRequests: [],
@@ -129,7 +130,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos', 'productCategories', 'newProductReports'];
+    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'categoryMemos', 'productCategories', 'newProductReports'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -337,10 +338,29 @@ function renderGanttBody() {
             .filter(s => s.date === dateStr && s.isLeaveOverride && s.fixedShiftOverride)
             .map(s => s.fixedShiftOverride);
 
+        // この日の単日上書きデータを取得
+        const dayOverrides = state.shiftOverrides.filter(o => o.date === dateStr);
+
         // 固定シフト（ただし、同じ日・同じ時間帯に通常シフトがある場合は除外、有給上書きも除外）
-        const fixed = state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).map(f => ({
-            ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
-        })).filter(f => {
+        const fixed = state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).map(f => {
+            // 単日上書きがあるか確認
+            const override = dayOverrides.find(o => o.fixedShiftId === f.id);
+            if (override) {
+                // 上書きデータを適用
+                return {
+                    ...f,
+                    ...override,
+                    id: `fx-${f.id}-${dateStr}`,
+                    date: dateStr,
+                    isFixed: true,
+                    hasOverride: true,
+                    overrideId: override.id
+                };
+            }
+            return {
+                ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
+            };
+        }).filter(f => {
             // 有給による上書きがある場合は除外
             if (leaveOverrideFixedIds.includes(f.id.replace(`fx-`, '').replace(`-${dateStr}`, ''))) {
                 return false;
@@ -364,10 +384,31 @@ function renderGanttBody() {
         const leaveOverrideFixedIdsForOvernight = state.shifts
             .filter(s => s.date === prevStr && s.isLeaveOverride && s.fixedShiftOverride)
             .map(s => s.fixedShiftOverride);
+
+        // 前日の単日上書きデータを取得
+        const prevDayOverrides = state.shiftOverrides.filter(o => o.date === prevStr);
             
-        const fixedOvernight = state.fixedShifts.filter(f => f.dayOfWeek === prevDow && f.overnight).map(f => ({
-            ...f, id: `fxo-${f.id}-${dateStr}`, date: dateStr, startHour: 0, endHour: f.endHour, isFixed: true, isOvernightContinuation: true
-        })).filter(f => {
+        const fixedOvernight = state.fixedShifts.filter(f => f.dayOfWeek === prevDow && f.overnight).map(f => {
+            // 単日上書きがあるか確認
+            const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
+            if (override && override.overnight) {
+                return {
+                    ...f,
+                    ...override,
+                    id: `fxo-${f.id}-${dateStr}`,
+                    date: dateStr,
+                    startHour: 0,
+                    endHour: override.endHour,
+                    isFixed: true,
+                    isOvernightContinuation: true,
+                    hasOverride: true,
+                    overrideId: override.id
+                };
+            }
+            return {
+                ...f, id: `fxo-${f.id}-${dateStr}`, date: dateStr, startHour: 0, endHour: f.endHour, isFixed: true, isOvernightContinuation: true
+            };
+        }).filter(f => {
             const originalId = f.id.split('-')[1];
             return !leaveOverrideFixedIdsForOvernight.includes(originalId);
         });
@@ -540,7 +581,8 @@ function createShiftBar(s, lvl) {
     let icons = '';
     if (s.changeHistory) icons += '<span class="change-icon" title="シフト変更あり">📝</span>';
     if (s.swapHistory) icons += '<span class="swap-icon" title="シフト交代あり">🤝</span>';
-    if (s.isFixed) icons += '<span class="fixed-icon">🔁</span>';
+    if (s.hasOverride) icons += '<span class="override-icon" title="この日のみ変更">✏️</span>';
+    if (s.isFixed && !s.hasOverride) icons += '<span class="fixed-icon">🔁</span>';
     if (s.overnight && !s.isOvernightContinuation) icons += '<span class="overnight-icon">🌙</span>';
     if (s.isOvernightContinuation) icons += '<span class="overnight-icon">→</span>';
 
@@ -664,7 +706,7 @@ function showShiftPopover(s, event, barElement = null) {
         const originalId = parts[1];
         const original = state.fixedShifts.find(f => f.id === originalId);
         if (original) {
-            displayShift = { ...original, date: s.date, isFixed: true };
+            displayShift = { ...original, date: s.date, isFixed: true, hasOverride: s.hasOverride, overrideId: s.overrideId };
         }
     } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
         const originalId = s.id.replace('on-', '');
@@ -700,6 +742,24 @@ function showShiftPopover(s, event, barElement = null) {
     document.getElementById('popoverOvernightRow').style.display =
         (displayShift.overnight && !s.isOvernightContinuation) ? 'flex' : 'none';
     document.getElementById('popoverFixedRow').style.display = s.isFixed ? 'flex' : 'none';
+
+    // 単日変更表示
+    const overrideRow = document.getElementById('popoverOverrideRow');
+    if (overrideRow) {
+        overrideRow.style.display = s.hasOverride ? 'flex' : 'none';
+    }
+
+    // 「この日のみ変更」ボタンの表示制御（固定シフトの場合のみ表示）
+    const overrideBtn = document.getElementById('popoverOverrideBtn');
+    if (overrideBtn) {
+        overrideBtn.style.display = s.isFixed ? 'inline-block' : 'none';
+        // すでに上書きがある場合はボタンテキストを変更
+        if (s.hasOverride) {
+            overrideBtn.textContent = '📝 単日変更を編集';
+        } else {
+            overrideBtn.textContent = '📝 この日のみ変更';
+        }
+    }
 
     // 変更履歴表示
     if (displayShift.changeHistory) {
@@ -853,6 +913,26 @@ function updateFixedShift(id, d) {
         state.fixedShifts[i] = updated;
         saveToFirebase('fixedShifts', state.fixedShifts);
     }
+}
+
+// 単日上書き CRUD操作
+function addShiftOverride(d) {
+    const override = { id: Date.now().toString(), createdAt: new Date().toISOString(), ...d };
+    state.shiftOverrides.push(override);
+    saveToFirebase('shiftOverrides', state.shiftOverrides);
+}
+
+function updateShiftOverride(id, d) {
+    const i = state.shiftOverrides.findIndex(o => o.id === id);
+    if (i >= 0) {
+        state.shiftOverrides[i] = { ...state.shiftOverrides[i], ...d, updatedAt: new Date().toISOString() };
+        saveToFirebase('shiftOverrides', state.shiftOverrides);
+    }
+}
+
+function deleteShiftOverride(id) {
+    state.shiftOverrides = state.shiftOverrides.filter(o => o.id !== id);
+    saveToFirebase('shiftOverrides', state.shiftOverrides);
 }
 function addChangeRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
@@ -2317,6 +2397,134 @@ function initPdfExport() {
 }
 
 // ========================================
+// 単日上書き（この日のみ変更）機能
+// ========================================
+function openShiftOverrideModal(shift) {
+    // 固定シフトのIDを取得
+    const parts = shift.id.split('-');
+    const fixedShiftId = parts[1];
+    const dateStr = shift.date;
+    
+    // 元の固定シフトを取得
+    const fixedShift = state.fixedShifts.find(f => f.id === fixedShiftId);
+    if (!fixedShift) return;
+    
+    // 既存の上書きがあるか確認
+    const existingOverride = state.shiftOverrides.find(o => 
+        o.fixedShiftId === fixedShiftId && o.date === dateStr
+    );
+    
+    const currentStartHour = existingOverride ? existingOverride.startHour : fixedShift.startHour;
+    const currentEndHour = existingOverride ? existingOverride.endHour : fixedShift.endHour;
+    const currentOvernight = existingOverride ? existingOverride.overnight : (fixedShift.overnight || false);
+    
+    // モーダル作成
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay category-modal-overlay active';
+    overlay.id = 'overrideModalOverlay';
+    
+    const hourOptions = Array.from({ length: 24 }, (_, i) => 
+        `<option value="${i}" ${i === currentStartHour ? 'selected' : ''}>${i}:00</option>`
+    ).join('');
+    
+    const hourOptionsEnd = Array.from({ length: 24 }, (_, i) => 
+        `<option value="${i}" ${i === currentEndHour ? 'selected' : ''}>${i}:00</option>`
+    ).join('');
+    
+    overlay.innerHTML = `
+        <div class="modal category-modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">📝 この日のみ変更</h2>
+                <button class="modal-close" onclick="closeOverrideModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="override-info" style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600;">📅 ${dateStr} のみの変更</p>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">
+                        元の固定シフト: ${fixedShift.name} ${formatTime(fixedShift.startHour)}〜${formatTime(fixedShift.endHour)}
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label>開始時刻</label>
+                    <select id="overrideStartHour" class="form-control">
+                        ${hourOptions}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>終了時刻</label>
+                    <select id="overrideEndHour" class="form-control">
+                        ${hourOptionsEnd}
+                    </select>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="overrideOvernight" ${currentOvernight ? 'checked' : ''}>
+                        <span>🌙 夜勤（翌日に跨ぐ）</span>
+                    </label>
+                </div>
+                
+                ${existingOverride ? `
+                <div class="form-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteOverrideAndClose('${existingOverride.id}')" style="width: 100%;">
+                        🗑️ 単日変更を削除（元のシフトに戻す）
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeOverrideModal()">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveShiftOverride('${fixedShiftId}', '${dateStr}', ${existingOverride ? `'${existingOverride.id}'` : 'null'})">
+                    ${existingOverride ? '更新' : '変更を保存'}
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+}
+
+function closeOverrideModal() {
+    const overlay = document.getElementById('overrideModalOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+function saveShiftOverride(fixedShiftId, dateStr, existingOverrideId) {
+    const startHour = parseInt(document.getElementById('overrideStartHour').value);
+    const endHour = parseInt(document.getElementById('overrideEndHour').value);
+    const overnight = document.getElementById('overrideOvernight').checked;
+    
+    const overrideData = {
+        fixedShiftId,
+        date: dateStr,
+        startHour,
+        endHour,
+        overnight
+    };
+    
+    if (existingOverrideId) {
+        updateShiftOverride(existingOverrideId, overrideData);
+    } else {
+        addShiftOverride(overrideData);
+    }
+    
+    closeOverrideModal();
+    render();
+}
+
+function deleteOverrideAndClose(overrideId) {
+    if (confirm('単日変更を削除しますか？\n元の固定シフトの時間に戻ります。')) {
+        deleteShiftOverride(overrideId);
+        closeOverrideModal();
+        render();
+    }
+}
+
+// ========================================
 // ポップオーバーイベントリスナー
 // ========================================
 function initPopoverEvents() {
@@ -2540,6 +2748,27 @@ function initPopoverEvents() {
             e.preventDefault();
             e.stopPropagation();
             handleAfternoonHalfDay();
+        }, { passive: false });
+    }
+
+    // 「この日のみ変更」ボタン
+    const overrideBtn = document.getElementById('popoverOverrideBtn');
+    const handleOverride = () => {
+        if (state.currentPopoverShift && state.currentPopoverShift.isFixed) {
+            const s = state.currentPopoverShift;
+            closeShiftPopover();
+            setTimeout(() => {
+                openShiftOverrideModal(s);
+            }, 100);
+        }
+    };
+
+    if (overrideBtn) {
+        overrideBtn.onclick = handleOverride;
+        overrideBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleOverride();
         }, { passive: false });
     }
 

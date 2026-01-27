@@ -234,10 +234,15 @@
                         <span class="info-label">交代履歴:</span>
                         <span class="info-value" id="popoverSwapInfo">-</span>
                     </div>
+                    <div class="info-row" id="popoverOverrideRow" style="display: none;">
+                        <span class="info-label">単日変更:</span>
+                        <span class="info-value override-badge">📝 この日のみ変更済み</span>
+                    </div>
                 </div>
             </div>
             <div class="popover-actions">
                 <button class="btn btn-primary btn-sm" id="popoverEditBtn">✏️ 編集</button>
+                <button class="btn btn-secondary btn-sm" id="popoverOverrideBtn" style="display: none;">📝 この日のみ変更</button>
                 <button class="btn btn-info btn-sm" id="popoverMorningHalfDayBtn">🌅 午前半休</button>
                 <button class="btn btn-info btn-sm" id="popoverAfternoonHalfDayBtn">🌇 午後半休</button>
                 <button class="btn btn-warning btn-sm" id="popoverDayOffBtn">🏠 休み</button>
