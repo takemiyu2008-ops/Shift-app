@@ -3637,7 +3637,7 @@ body {
 }
 
 #reportsGroupContent.collapsed {
-    display: none;
+    display: none !important;
     padding: 0;
 }
 
@@ -3672,6 +3672,17 @@ body {
 
 .sub-report .advisor-content {
     padding-left: 32px;
+}
+
+/* レポートなしメッセージ */
+.no-reports-message {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.no-reports-message p {
+    margin: 0;
 }
 
 /* モバイル対応 */

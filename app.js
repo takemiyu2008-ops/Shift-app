@@ -4753,6 +4753,9 @@ function renderTrendReports() {
     const content = document.getElementById('trendReportContent');
     if (!section || !content) return;
 
+    // 常にセクションを表示
+    section.style.display = 'block';
+
     // 1ヶ月以内のレポートのみ表示
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -4761,47 +4764,46 @@ function renderTrendReports() {
         .filter(r => new Date(r.uploadedAt) >= oneMonthAgo)
         .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 
+    let html = '';
+
     if (recentReports.length === 0) {
-        section.style.display = 'none';
-        return;
-    }
-
-    section.style.display = 'block';
-
-    let html = '<div class="trend-reports-list">';
-    
-    recentReports.forEach(report => {
-        const uploadDate = new Date(report.uploadedAt);
-        const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
-        const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+        html = '<div class="no-reports-message"><p>📭 現在、週刊トレンドレポートはありません</p></div>';
+    } else {
+        html = '<div class="trend-reports-list">';
         
-        html += `
-            <div class="trend-report-item">
-                <div class="trend-report-info">
-                    <div class="trend-report-title">
-                        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-                        📄 ${report.title}
+        recentReports.forEach(report => {
+            const uploadDate = new Date(report.uploadedAt);
+            const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
+            const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+            
+            html += `
+                <div class="trend-report-item">
+                    <div class="trend-report-info">
+                        <div class="trend-report-title">
+                            ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                            📄 ${report.title}
+                        </div>
+                        <div class="trend-report-meta">
+                            <span class="report-date">📅 ${dateStr}</span>
+                            <span class="report-size">${formatFileSize(report.fileSize)}</span>
+                        </div>
                     </div>
-                    <div class="trend-report-meta">
-                        <span class="report-date">📅 ${dateStr}</span>
-                        <span class="report-size">${formatFileSize(report.fileSize)}</span>
+                    <div class="trend-report-actions">
+                        <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
+                            📥 ダウンロード
+                        </button>
+                        ${state.isAdmin ? `
+                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
+                            🗑️
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
-                <div class="trend-report-actions">
-                    <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
-                        📥 ダウンロード
-                    </button>
-                    ${state.isAdmin ? `
-                    <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
-                        🗑️
-                    </button>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    });
+            `;
+        });
 
-    html += '</div>';
+        html += '</div>';
+    }
 
     // 管理者のみアップロードボタンを表示
     if (state.isAdmin) {
