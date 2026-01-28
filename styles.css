@@ -3637,6 +3637,7 @@ body {
 }
 
 #reportsGroupContent.collapsed {
+    display: none;
     padding: 0;
 }
 
