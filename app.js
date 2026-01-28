@@ -3828,6 +3828,7 @@ function initAdvisorToggle() {
 
     // グループトグルの初期化
     initAdvisorGroupToggle();
+    initReportsGroupToggle();
 }
 
 // 発注・スケジュール情報グループのトグル
@@ -3840,6 +3841,25 @@ function initAdvisorGroupToggle() {
         groupHeader.onclick = () => {
             groupToggle.classList.toggle('collapsed');
             groupContent.classList.toggle('collapsed');
+        };
+    }
+}
+
+// レポートグループのトグル
+function initReportsGroupToggle() {
+    const section = document.getElementById('reportsGroupSection');
+    if (!section) return;
+
+    const header = section.querySelector(':scope > .advisor-header');
+    const toggle = document.getElementById('reportsGroupToggle');
+    const content = document.getElementById('reportsGroupContent');
+
+    if (header && toggle && content) {
+        header.onclick = (e) => {
+            e.stopPropagation();
+            toggle.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
         };
     }
 }
@@ -4318,9 +4338,11 @@ function initNewProductToggle() {
     const content = document.getElementById('newProductContent');
 
     if (header && toggle && content) {
-        header.onclick = () => {
+        header.onclick = (e) => {
+            e.stopPropagation();
             toggle.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
         };
     }
 }
@@ -4806,7 +4828,8 @@ function initTrendReportToggle() {
     const toggle = section.querySelector('.advisor-toggle');
 
     if (header && content && toggle) {
-        header.onclick = () => {
+        header.onclick = (e) => {
+            e.stopPropagation();
             content.classList.toggle('collapsed');
             toggle.classList.toggle('collapsed');
             toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';

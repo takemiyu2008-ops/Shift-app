@@ -3607,6 +3607,72 @@ body {
     border-radius: 0;
 }
 
+/* レポートグループ */
+.reports-group-section {
+    background: var(--bg-secondary);
+}
+
+.reports-group-section > .advisor-header {
+    background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+    color: white;
+}
+
+.reports-group-section > .advisor-header .advisor-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.reports-group-section > .advisor-header .advisor-toggle {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.reports-group-section > .advisor-header .advisor-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* レポートグループ内のコンテンツ */
+#reportsGroupContent {
+    padding: 0;
+    background: var(--bg-tertiary);
+}
+
+#reportsGroupContent.collapsed {
+    padding: 0;
+}
+
+/* サブレポートのスタイル */
+.sub-report {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    background: var(--bg-secondary);
+}
+
+.sub-report:last-child {
+    border-bottom: none !important;
+}
+
+.sub-report .sub-header {
+    padding: 12px 16px 12px 32px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sub-report .sub-header .advisor-icon {
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+}
+
+.sub-report .sub-header .advisor-title {
+    font-size: 0.9rem;
+}
+
+.sub-report .advisor-content {
+    padding-left: 32px;
+}
+
 /* モバイル対応 */
 @media (max-width: 768px) {
     .advisor-group-header {
@@ -3619,6 +3685,14 @@ body {
 
     .advisor-group-title {
         font-size: 1rem;
+    }
+
+    .sub-report .sub-header {
+        padding: 10px 12px 10px 24px;
+    }
+
+    .sub-report .advisor-content {
+        padding-left: 24px;
     }
 }
 /* ========================================
