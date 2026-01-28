@@ -3850,56 +3850,41 @@ function initAdvisorGroupToggle() {
 
 // レポートグループのトグル
 function initReportsGroupToggle() {
-    const header = document.getElementById('reportsGroupHeader');
+    const section = document.getElementById('reportsGroupSection');
+    if (!section) {
+        console.log('reportsGroupSection not found');
+        return;
+    }
+
+    const header = section.querySelector('.advisor-header');
     const toggle = document.getElementById('reportsGroupToggle');
     const content = document.getElementById('reportsGroupContent');
 
-    console.log('initReportsGroupToggle called:', { header, toggle, content });
+    console.log('initReportsGroupToggle:', { section, header, toggle, content });
 
-    if (header && toggle && content) {
-        // 既存のイベントリスナーを削除するためにcloneで置き換え
-        const newHeader = header.cloneNode(true);
-        header.parentNode.replaceChild(newHeader, header);
-        
-        // 新しいヘッダーに対してイベントを設定
-        newHeader.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Reports header clicked');
-            
-            const currentToggle = document.getElementById('reportsGroupToggle');
-            const currentContent = document.getElementById('reportsGroupContent');
-            
-            if (currentContent.classList.contains('collapsed')) {
-                currentContent.classList.remove('collapsed');
-                currentToggle.textContent = '▲';
-                currentToggle.classList.remove('collapsed');
-            } else {
-                currentContent.classList.add('collapsed');
-                currentToggle.textContent = '▼';
-                currentToggle.classList.add('collapsed');
-            }
-        });
-        
-        // タッチイベントも追加
-        newHeader.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const currentToggle = document.getElementById('reportsGroupToggle');
-            const currentContent = document.getElementById('reportsGroupContent');
-            
-            if (currentContent.classList.contains('collapsed')) {
-                currentContent.classList.remove('collapsed');
-                currentToggle.textContent = '▲';
-                currentToggle.classList.remove('collapsed');
-            } else {
-                currentContent.classList.add('collapsed');
-                currentToggle.textContent = '▼';
-                currentToggle.classList.add('collapsed');
-            }
-        }, { passive: false });
+    if (!header || !toggle || !content) {
+        console.log('Missing elements for reports toggle');
+        return;
     }
+
+    // ヘッダークリックでトグル
+    header.style.cursor = 'pointer';
+    header.onclick = function(e) {
+        e.stopPropagation();
+        console.log('Reports header clicked, current collapsed:', content.classList.contains('collapsed'));
+        
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            content.style.display = 'block';
+            toggle.textContent = '▲';
+            toggle.classList.remove('collapsed');
+        } else {
+            content.classList.add('collapsed');
+            content.style.display = 'none';
+            toggle.textContent = '▼';
+            toggle.classList.add('collapsed');
+        }
+    };
 }
 
 // 拡張版発注アドバイザーを描画
