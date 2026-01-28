@@ -3631,12 +3631,14 @@ body {
 }
 
 /* レポートグループ内のコンテンツ */
-#reportsGroupContent {
+#reportsGroupContent,
+.reports-group-content {
     padding: 0;
     background: var(--bg-tertiary);
 }
 
-#reportsGroupContent.collapsed {
+#reportsGroupContent.collapsed,
+.reports-group-content.collapsed {
     display: none !important;
     padding: 0;
 }

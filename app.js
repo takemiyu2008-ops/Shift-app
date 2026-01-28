@@ -2838,6 +2838,9 @@ function init() {
     initPopoverEvents();
     initEventModal();
     initAdvisorGroupToggle(); // グループトグルを初期化
+    initReportsGroupToggle(); // レポートグループのトグルを初期化
+    initTrendReportToggle(); // 週刊トレンドレポートのトグルを初期化
+    initNewProductToggle(); // 新商品レポートのトグルを初期化
     loadData();
     render();
 
@@ -3847,20 +3850,55 @@ function initAdvisorGroupToggle() {
 
 // レポートグループのトグル
 function initReportsGroupToggle() {
-    const section = document.getElementById('reportsGroupSection');
-    if (!section) return;
-
-    const header = section.querySelector(':scope > .advisor-header');
+    const header = document.getElementById('reportsGroupHeader');
     const toggle = document.getElementById('reportsGroupToggle');
     const content = document.getElementById('reportsGroupContent');
 
+    console.log('initReportsGroupToggle called:', { header, toggle, content });
+
     if (header && toggle && content) {
-        header.onclick = (e) => {
+        // 既存のイベントリスナーを削除するためにcloneで置き換え
+        const newHeader = header.cloneNode(true);
+        header.parentNode.replaceChild(newHeader, header);
+        
+        // 新しいヘッダーに対してイベントを設定
+        newHeader.addEventListener('click', function(e) {
+            e.preventDefault();
             e.stopPropagation();
-            toggle.classList.toggle('collapsed');
-            content.classList.toggle('collapsed');
-            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
-        };
+            console.log('Reports header clicked');
+            
+            const currentToggle = document.getElementById('reportsGroupToggle');
+            const currentContent = document.getElementById('reportsGroupContent');
+            
+            if (currentContent.classList.contains('collapsed')) {
+                currentContent.classList.remove('collapsed');
+                currentToggle.textContent = '▲';
+                currentToggle.classList.remove('collapsed');
+            } else {
+                currentContent.classList.add('collapsed');
+                currentToggle.textContent = '▼';
+                currentToggle.classList.add('collapsed');
+            }
+        });
+        
+        // タッチイベントも追加
+        newHeader.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const currentToggle = document.getElementById('reportsGroupToggle');
+            const currentContent = document.getElementById('reportsGroupContent');
+            
+            if (currentContent.classList.contains('collapsed')) {
+                currentContent.classList.remove('collapsed');
+                currentToggle.textContent = '▲';
+                currentToggle.classList.remove('collapsed');
+            } else {
+                currentContent.classList.add('collapsed');
+                currentToggle.textContent = '▼';
+                currentToggle.classList.add('collapsed');
+            }
+        }, { passive: false });
     }
 }
 
