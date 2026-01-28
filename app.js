@@ -4794,48 +4794,39 @@ function renderTrendReports() {
     // 常にセクションを表示
     section.style.display = 'block';
 
-    // 1ヶ月以内のレポートのみ表示
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const reports = state.trendReports || [];
     
-    const recentReports = (state.trendReports || [])
-        .filter(r => new Date(r.uploadedAt) >= oneMonthAgo)
-        .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    // 更新日時順にソート（新しい順）
+    const sortedReports = [...reports].sort((a, b) => 
+        new Date(b.updatedAt || b.createdAt || b.uploadedAt) - new Date(a.updatedAt || a.createdAt || a.uploadedAt)
+    );
 
     let html = '';
 
-    if (recentReports.length === 0) {
+    if (sortedReports.length === 0) {
         html = '<div class="no-reports-message"><p>📭 現在、週刊トレンドレポートはありません</p></div>';
     } else {
         html = '<div class="trend-reports-list">';
         
-        recentReports.forEach(report => {
-            const uploadDate = new Date(report.uploadedAt);
-            const dateStr = `${uploadDate.getFullYear()}/${uploadDate.getMonth() + 1}/${uploadDate.getDate()}`;
-            const isNew = (new Date() - uploadDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+        sortedReports.forEach(report => {
+            const reportDate = new Date(report.updatedAt || report.createdAt || report.uploadedAt);
+            const dateStr = `${reportDate.getFullYear()}/${reportDate.getMonth() + 1}/${reportDate.getDate()}`;
+            const isNew = (new Date() - reportDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
             
             html += `
-                <div class="trend-report-item">
-                    <div class="trend-report-info">
-                        <div class="trend-report-title">
-                            ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-                            📄 ${report.title}
-                        </div>
-                        <div class="trend-report-meta">
-                            <span class="report-date">📅 ${dateStr}</span>
-                            <span class="report-size">${formatFileSize(report.fileSize)}</span>
-                        </div>
+                <div class="trend-report-card">
+                    <div class="report-header">
+                        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                        <span class="report-title">${report.title}</span>
+                        <span class="report-date">📅 ${dateStr}</span>
                     </div>
-                    <div class="trend-report-actions">
-                        <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
-                            📥 ダウンロード
-                        </button>
-                        ${state.isAdmin ? `
-                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
-                            🗑️
-                        </button>
-                        ` : ''}
-                    </div>
+                    <div class="report-content">${(report.content || '').replace(/\n/g, '<br>')}</div>
+                    ${state.isAdmin ? `
+                        <div class="report-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">🗑️ 削除</button>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         });
@@ -4843,12 +4834,12 @@ function renderTrendReports() {
         html += '</div>';
     }
 
-    // 管理者のみアップロードボタンを表示
+    // 管理者のみ追加ボタンを表示
     if (state.isAdmin) {
         html += `
             <div class="trend-report-upload-section">
-                <button class="btn btn-primary" onclick="openTrendReportUploadModal()">
-                    📤 新しいレポートをアップロード
+                <button class="btn btn-primary" onclick="openAddTrendReportModal()">
+                    + 週刊トレンドレポート追加
                 </button>
             </div>
         `;
@@ -5104,6 +5095,125 @@ function deleteTrendReport(reportId) {
     state.trendReports = state.trendReports.filter(r => r.id !== reportId);
     saveToFirebase('trendReports', state.trendReports);
     renderTrendReports();
+}
+
+// 週刊トレンドレポート追加モーダル（記述式）
+function openAddTrendReportModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay category-modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal category-modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">📊 週刊トレンドレポート追加</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <form class="modal-body" onsubmit="submitTrendReport(event, this)">
+                <div class="form-group">
+                    <label>タイトル <span class="required">*</span></label>
+                    <input type="text" name="title" placeholder="例: 週刊トレンドレポート 2026年1月27日号" required>
+                </div>
+                <div class="form-group">
+                    <label>内容 <span class="required">*</span></label>
+                    <textarea name="content" rows="15" placeholder="トレンド情報を入力してください..." required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    document.body.appendChild(modal);
+}
+
+// 週刊トレンドレポート編集モーダル（記述式）
+function openEditTrendReportModal(reportId) {
+    const report = state.trendReports.find(r => r.id === reportId);
+    if (!report) return;
+
+    // HTMLエスケープ関数
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    };
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay category-modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal category-modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">📊 週刊トレンドレポート編集</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <form class="modal-body" onsubmit="submitTrendReport(event, this, '${reportId}')">
+                <div class="form-group">
+                    <label>タイトル <span class="required">*</span></label>
+                    <input type="text" name="title" value="${escapeHtml(report.title)}" required>
+                </div>
+                <div class="form-group">
+                    <label>内容 <span class="required">*</span></label>
+                    <textarea name="content" rows="15" required>${escapeHtml(report.content || '')}</textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    document.body.appendChild(modal);
+}
+
+// 週刊トレンドレポート送信（記述式）
+function submitTrendReport(event, form, reportId = null) {
+    event.preventDefault();
+    
+    const title = form.title.value.trim();
+    const content = form.content.value.trim();
+    
+    if (!title || !content) {
+        alert('タイトルと内容を入力してください。');
+        return;
+    }
+    
+    if (reportId) {
+        // 編集
+        const index = state.trendReports.findIndex(r => r.id === reportId);
+        if (index !== -1) {
+            state.trendReports[index] = {
+                ...state.trendReports[index],
+                title,
+                content,
+                updatedAt: new Date().toISOString()
+            };
+        }
+    } else {
+        // 新規追加
+        const report = {
+            id: Date.now().toString(),
+            title,
+            content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        state.trendReports.push(report);
+    }
+    
+    saveToFirebase('trendReports', state.trendReports);
+    form.closest('.modal-overlay').remove();
+    renderTrendReports();
+    alert(reportId ? 'レポートを更新しました。' : 'レポートを追加しました。');
 }
 
 // ========================================
