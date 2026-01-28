@@ -4290,8 +4290,10 @@ function renderTrendReportsAdmin(container) {
         html += '<p class="no-data-message">週刊トレンドレポートがまだ登録されていません。<br>「+ 週刊トレンドレポート追加」ボタンから追加してください。</p>';
     } else {
         sortedReports.forEach(report => {
-            const reportDate = new Date(report.updatedAt || report.createdAt || report.uploadedAt);
-            const dateStr = `${reportDate.getFullYear()}/${reportDate.getMonth() + 1}/${reportDate.getDate()}`;
+            const createdDate = new Date(report.createdAt || report.uploadedAt);
+            const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
+            const updatedDate = report.updatedAt ? new Date(report.updatedAt) : null;
+            const updatedStr = updatedDate ? `${updatedDate.getFullYear()}/${updatedDate.getMonth() + 1}/${updatedDate.getDate()}` : null;
             
             // 古い形式（ファイルアップロード）か新しい形式（記述式）かを判定
             const isOldFormat = report.fileData && !report.content;
@@ -4301,15 +4303,14 @@ function renderTrendReportsAdmin(container) {
                     <div class="admin-card-header">
                         <div class="admin-card-title">${report.title}</div>
                         <div class="admin-card-meta">
-                            <span>📅 ${dateStr}</span>
-                            ${isOldFormat ? '<span style="color:#f59e0b;">⚠️ 旧形式（ファイル）</span>' : ''}
+                            <span>📅 作成: ${dateStr}</span>
+                            ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
+                            ${isOldFormat ? '<span style="color:#f59e0b;">⚠️ 旧形式</span>' : ''}
                         </div>
                     </div>
                     <div class="admin-card-content">
                         ${isOldFormat 
-                            ? `<p style="color:var(--text-muted);">このレポートはファイル形式で保存されています。記述式に変更するには、削除して新規作成してください。</p>
-                               <p>ファイル名: ${report.fileName || '不明'}</p>
-                               <p>サイズ: ${formatFileSize(report.fileSize) || '不明'}</p>`
+                            ? `<p style="color:var(--text-muted);">このレポートはファイル形式です。記述式に変更するには削除して新規作成してください。<br>ファイル: ${report.fileName || '不明'} (${formatFileSize(report.fileSize) || '不明'})</p>`
                             : (report.content || '').replace(/\n/g, '<br>')
                         }
                     </div>
