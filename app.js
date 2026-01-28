@@ -1574,6 +1574,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'productCategories') {
         // 商品分類管理
         renderProductCategoriesPanel(c);
+    } else if (state.activeAdminTab === 'trendReports') {
+        // 週刊トレンドレポート管理
+        renderTrendReportsAdmin(c);
     } else if (state.activeAdminTab === 'newProductReport') {
         // 新商品レポート管理
         renderNewProductReportAdmin(c);
@@ -4263,6 +4266,70 @@ function initNonDailyToggle() {
 // ========================================
 
 // 管理者用 新商品レポート管理画面
+// 週刊トレンドレポート管理画面
+function renderTrendReportsAdmin(container) {
+    const reports = state.trendReports || [];
+    
+    // 更新日時順にソート（新しい順）
+    const sortedReports = [...reports].sort((a, b) => 
+        new Date(b.updatedAt || b.createdAt || b.uploadedAt) - new Date(a.updatedAt || a.createdAt || a.uploadedAt)
+    );
+
+    let html = `
+        <div class="new-product-admin-container">
+            <div class="new-product-admin-header">
+                <h3>📊 週刊トレンドレポート管理</h3>
+                <p class="header-description">週刊トレンドレポートを登録・管理します。登録した内容は「発注・スケジュール情報」→「レポート」に表示されます。</p>
+                <button class="btn btn-primary" onclick="openAddTrendReportModal()">+ 週刊トレンドレポート追加</button>
+            </div>
+            
+            <div class="new-product-admin-list">
+    `;
+
+    if (sortedReports.length === 0) {
+        html += '<p class="no-data-message">週刊トレンドレポートがまだ登録されていません。<br>「+ 週刊トレンドレポート追加」ボタンから追加してください。</p>';
+    } else {
+        sortedReports.forEach(report => {
+            const reportDate = new Date(report.updatedAt || report.createdAt || report.uploadedAt);
+            const dateStr = `${reportDate.getFullYear()}/${reportDate.getMonth() + 1}/${reportDate.getDate()}`;
+            
+            // 古い形式（ファイルアップロード）か新しい形式（記述式）かを判定
+            const isOldFormat = report.fileData && !report.content;
+            
+            html += `
+                <div class="new-product-admin-card">
+                    <div class="admin-card-header">
+                        <div class="admin-card-title">${report.title}</div>
+                        <div class="admin-card-meta">
+                            <span>📅 ${dateStr}</span>
+                            ${isOldFormat ? '<span style="color:#f59e0b;">⚠️ 旧形式（ファイル）</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="admin-card-content">
+                        ${isOldFormat 
+                            ? `<p style="color:var(--text-muted);">このレポートはファイル形式で保存されています。記述式に変更するには、削除して新規作成してください。</p>
+                               <p>ファイル名: ${report.fileName || '不明'}</p>
+                               <p>サイズ: ${formatFileSize(report.fileSize) || '不明'}</p>`
+                            : (report.content || '').replace(/\n/g, '<br>')
+                        }
+                    </div>
+                    <div class="admin-card-actions">
+                        ${!isOldFormat ? `<button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">🗑️ 削除</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
 function renderNewProductReportAdmin(container) {
     const reports = state.newProductReports || [];
     
@@ -4811,24 +4878,56 @@ function renderTrendReports() {
         sortedReports.forEach(report => {
             const reportDate = new Date(report.updatedAt || report.createdAt || report.uploadedAt);
             const dateStr = `${reportDate.getFullYear()}/${reportDate.getMonth() + 1}/${reportDate.getDate()}`;
-            const isNew = (new Date() - reportDate) < 7 * 24 * 60 * 60 * 1000; // 1週間以内は「NEW」表示
+            const isNew = (new Date() - reportDate) < 7 * 24 * 60 * 60 * 1000;
             
-            html += `
-                <div class="trend-report-card">
-                    <div class="report-header">
-                        ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-                        <span class="report-title">${report.title}</span>
-                        <span class="report-date">📅 ${dateStr}</span>
-                    </div>
-                    <div class="report-content">${(report.content || '').replace(/\n/g, '<br>')}</div>
-                    ${state.isAdmin ? `
-                        <div class="report-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">🗑️ 削除</button>
+            // 旧形式（ファイルアップロード）か新形式（記述式）かを判定
+            const isOldFormat = report.fileData && !report.content;
+            
+            if (isOldFormat) {
+                // 旧形式：ダウンロードボタン表示
+                html += `
+                    <div class="trend-report-item">
+                        <div class="trend-report-info">
+                            <div class="trend-report-title">
+                                ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                                📄 ${report.title}
+                            </div>
+                            <div class="trend-report-meta">
+                                <span class="report-date">📅 ${dateStr}</span>
+                                <span class="report-size">${formatFileSize(report.fileSize)}</span>
+                            </div>
                         </div>
-                    ` : ''}
-                </div>
-            `;
+                        <div class="trend-report-actions">
+                            <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
+                                📥 ダウンロード
+                            </button>
+                            ${state.isAdmin ? `
+                            <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
+                                🗑️
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 新形式：記述式表示
+                html += `
+                    <div class="trend-report-card">
+                        <div class="report-header">
+                            ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+                            <span class="report-title">${report.title}</span>
+                            <span class="report-date">📅 ${dateStr}</span>
+                        </div>
+                        <div class="report-content">${(report.content || '').replace(/\n/g, '<br>')}</div>
+                        ${state.isAdmin ? `
+                            <div class="report-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">🗑️ 削除</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
         });
 
         html += '</div>';
