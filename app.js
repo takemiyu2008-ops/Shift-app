@@ -5073,7 +5073,7 @@ function deleteTrendReport(reportId) {
 // 発注担当者データ
 const ORDER_STAFF = [
     { id: 1, name: '市原', role: 'マネージャー/日勤', categories: ['tobacco'] },
-    { id: 2, name: '篠原', role: '社員/夕勤', categories: ['deli', 'ff', 'drink'] },
+    { id: 2, name: '篠原', role: '社員/夕勤', categories: ['deli', 'ff', 'drink', 'pastry', 'frozenIce'] },
     { id: 3, name: '橋本', role: '社員/日勤', categories: ['supply', 'noodle', 'goods', 'frozen'] },
     { id: 4, name: '森下', role: 'スタッフ/日勤', categories: ['rice', 'sevenPDeli', 'deliOther', 'milk', 'frozen'] },
     { id: 5, name: '高橋', role: 'スタッフ/日勤', categories: ['bread'] },
@@ -5097,6 +5097,8 @@ const ORDER_ADVICE_CATEGORIES = [
     { id: 'deliOther', name: 'デリテッセン（その他）', icon: '🥡', items: ['その他デリカ'], color: '#34D399' },
     { id: 'goods', name: '雑貨類', icon: '🛒', items: ['雑貨'], color: '#8B5CF6' },
     { id: 'frozen', name: 'フローズン（フライヤー、焼成パン）', icon: '🧊', items: ['フライヤー', '焼成パン'], color: '#06B6D4' },
+    { id: 'frozenIce', name: 'フローズン（アイス、冷凍食品）', icon: '🍦', items: ['アイス', '冷凍食品'], color: '#0EA5E9' },
+    { id: 'pastry', name: 'ペストリー', icon: '🥐', items: ['ドーナツ', 'パイ', 'デニッシュ'], color: '#D97706' },
     { id: 'bread', name: '調理パン', icon: '🥪', items: ['サンドイッチ', 'ロール類', 'ブリトー'], color: '#EAB308' },
     { id: 'processed', name: '加工食品（調味料類、珍味）', icon: '🫙', items: ['調味料', '珍味'], color: '#A855F7' },
     { id: 'sweetsChoco', name: 'お菓子（チョコレート、和菓子類）', icon: '🍫', items: ['チョコレート', '和菓子'], color: '#EC4899' },
