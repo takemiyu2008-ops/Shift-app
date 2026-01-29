@@ -5818,26 +5818,36 @@ body {
 .shift-selection-checkbox {
     width: 20px;
     height: 20px;
+    min-width: 20px;
+    flex-shrink: 0;
     cursor: pointer;
     accent-color: var(--primary);
 }
 
 .shift-selection-info {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    overflow: hidden;
 }
 
 .shift-selection-date {
     font-weight: 600;
     font-size: 0.95rem;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .shift-selection-time {
     font-size: 0.9rem;
     color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .shift-selection-badge {
@@ -5846,6 +5856,8 @@ body {
     border-radius: 10px;
     background: var(--primary);
     color: white;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .shift-selection-badge.fixed {
