@@ -5777,3 +5777,177 @@ body {
         min-width: auto;
     }
 }
+
+/* シフト選択リスト（有給申請・休日申請用） */
+.shift-selection-list {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    background: var(--bg-tertiary);
+}
+
+.shift-selection-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shift-selection-item:last-child {
+    margin-bottom: 0;
+}
+
+.shift-selection-item:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.shift-selection-item.selected {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.shift-selection-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.shift-selection-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.shift-selection-date {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.shift-selection-time {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.shift-selection-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: white;
+}
+
+.shift-selection-badge.fixed {
+    background: #f59e0b;
+}
+
+.shift-selection-badge.overnight {
+    background: #6366f1;
+}
+
+.no-shift-message {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px;
+    font-size: 0.9rem;
+}
+
+.form-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+/* 休日申請の時間帯選択 */
+#holidayTimeRangeGroup {
+    background: var(--bg-tertiary);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    margin-top: 12px;
+}
+
+/* 大きめモーダル */
+.modal.modal-lg {
+    max-width: 600px;
+}
+
+@media (max-width: 768px) {
+    .shift-selection-list {
+        max-height: 280px;
+    }
+    
+    .shift-selection-item {
+        padding: 10px;
+    }
+    
+    .modal.modal-lg {
+        max-width: 95%;
+    }
+}
+
+/* 管理パネル内の選択シフトリスト */
+.selected-shifts-list {
+    margin: 8px 0;
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.selected-shifts-list .shift-item {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.selected-shifts-list .shift-item:last-child {
+    margin-bottom: 0;
+}
+
+.shift-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.shift-badge.fixed {
+    background: #f59e0b;
+    color: white;
+}
+
+.shift-badge.overnight {
+    background: #6366f1;
+    color: white;
+}
+
+.custom-time {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* 日曜日・土曜日のスタイル */
+.shift-selection-date.sunday {
+    color: #ef4444;
+}
+
+.shift-selection-date.saturday {
+    color: #3b82f6;
+}

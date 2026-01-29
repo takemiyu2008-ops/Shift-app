@@ -58,6 +58,8 @@ const state = {
 
 // 利用統計の機能カテゴリ定義
 const USAGE_FEATURES = {
+    // アプリ閲覧
+    'app_view': { name: 'アプリ閲覧', category: 'アクセス', icon: '👁️' },
     // シフト関連
     'view_shift': { name: 'シフト表閲覧', category: 'シフト管理', icon: '📅' },
     'add_shift': { name: 'シフト追加', category: 'シフト管理', icon: '➕' },
@@ -1114,7 +1116,313 @@ function addChangeRequest(d) {
         saveToFirebase('messages', state.messages);
     }
 }
-function addLeaveRequest(d) { const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d }; state.leaveRequests.push(r); saveToFirebase('leaveRequests', state.leaveRequests); trackUsage('request_leave', d.name); }
+
+// 有給申請（互換性維持用の単一関数）
+function addLeaveRequest(d) { 
+    const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d }; 
+    state.leaveRequests.push(r); 
+    saveToFirebase('leaveRequests', state.leaveRequests); 
+    trackUsage('request_leave', d.name); 
+}
+
+// 複数シフトの有給申請
+function addLeaveRequestMultiple(name, selectedShifts) {
+    const shiftsInfo = selectedShifts.map(s => ({
+        date: s.date,
+        startHour: s.startHour,
+        endHour: s.endHour,
+        overnight: s.overnight || false,
+        isFixed: s.isFixed || false,
+        fixedShiftId: s.fixedShiftId || null
+    }));
+    
+    // 日付でソート
+    shiftsInfo.sort((a, b) => a.date.localeCompare(b.date));
+    
+    // 開始日と終了日を取得
+    const startDate = shiftsInfo[0].date;
+    const endDate = shiftsInfo[shiftsInfo.length - 1].date;
+    
+    const r = {
+        id: Date.now().toString(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        name: name,
+        startDate: startDate,
+        endDate: endDate,
+        selectedShifts: shiftsInfo,
+        reason: '有給休暇'
+    };
+    
+    state.leaveRequests.push(r);
+    saveToFirebase('leaveRequests', state.leaveRequests);
+    trackUsage('request_leave', name);
+    
+    // 管理者に通知
+    const title = '🏖️ 有給申請';
+    const shiftDates = shiftsInfo.map(s => {
+        const d = new Date(s.date);
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        return `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+    }).join('\n');
+    const content = `${name}さんから有給申請がありました。\n\n【申請シフト】\n${shiftDates}`;
+    state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: name, title, content, createdAt: new Date().toISOString(), read: false });
+    saveToFirebase('messages', state.messages);
+}
+
+// 複数シフトの休日申請
+function addHolidayRequestMultiple(name, selectedShifts, options) {
+    const shiftsInfo = selectedShifts.map(s => ({
+        date: s.date,
+        startHour: options.customStartTime ? parseFloat(options.customStartTime) : s.startHour,
+        endHour: options.customEndTime ? parseFloat(options.customEndTime) : s.endHour,
+        originalStartHour: s.startHour,
+        originalEndHour: s.endHour,
+        overnight: s.overnight || false,
+        isFixed: s.isFixed || false,
+        fixedShiftId: s.fixedShiftId || null
+    }));
+    
+    // 日付でソート
+    shiftsInfo.sort((a, b) => a.date.localeCompare(b.date));
+    
+    // 開始日と終了日を取得
+    const startDate = shiftsInfo[0].date;
+    const endDate = shiftsInfo[shiftsInfo.length - 1].date;
+    
+    const r = {
+        id: Date.now().toString(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        name: name,
+        startDate: startDate,
+        endDate: endDate,
+        selectedShifts: shiftsInfo,
+        swapRequested: options.swapRequested,
+        swapPartner: options.swapPartner,
+        reason: options.reason,
+        hasCustomTime: !!(options.customStartTime || options.customEndTime)
+    };
+    
+    state.holidayRequests.push(r);
+    saveToFirebase('holidayRequests', state.holidayRequests);
+    trackUsage('request_holiday', name);
+    
+    // 管理者に通知
+    const title = '🏠 休日申請';
+    const shiftDates = shiftsInfo.map(s => {
+        const d = new Date(s.date);
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        return `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+    }).join('\n');
+    let content = `${name}さんから休日申請がありました。\n\n【申請シフト】\n${shiftDates}\n\n理由: ${options.reason}`;
+    if (options.swapRequested && options.swapPartner) {
+        content += `\nシフト交代: ${options.swapPartner}さんと交代`;
+    }
+    state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: name, title, content, createdAt: new Date().toISOString(), read: false });
+    saveToFirebase('messages', state.messages);
+}
+
+// 有給申請用のシフトリストを更新
+function updateLeaveShiftList() {
+    const name = document.getElementById('leaveName').value;
+    const container = document.getElementById('leaveShiftList');
+    
+    if (!name) {
+        container.innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        return;
+    }
+    
+    const shifts = getEmployeeShiftsForPeriod(name, 4); // 4週間分
+    
+    if (shifts.length === 0) {
+        container.innerHTML = '<p class="no-shift-message">該当するシフトがありません</p>';
+        return;
+    }
+    
+    container.innerHTML = shifts.map(s => {
+        const d = new Date(s.date);
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayClass = d.getDay() === 0 ? 'sunday' : (d.getDay() === 6 ? 'saturday' : '');
+        const badges = [];
+        if (s.isFixed) badges.push('<span class="shift-selection-badge fixed">固定</span>');
+        if (s.overnight) badges.push('<span class="shift-selection-badge overnight">夜勤</span>');
+        
+        const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
+        
+        return `
+            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)">
+                <input type="checkbox" class="shift-selection-checkbox">
+                <div class="shift-selection-info">
+                    <span class="shift-selection-date ${dayClass}">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）</span>
+                    <span class="shift-selection-time">${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}</span>
+                </div>
+                ${badges.join('')}
+            </div>
+        `;
+    }).join('');
+}
+
+// 休日申請用のシフトリストを更新
+function updateHolidayShiftList() {
+    const name = document.getElementById('holidayName').value;
+    const container = document.getElementById('holidayShiftList');
+    const timeRangeGroup = document.getElementById('holidayTimeRangeGroup');
+    
+    if (!name) {
+        container.innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        timeRangeGroup.style.display = 'none';
+        return;
+    }
+    
+    const shifts = getEmployeeShiftsForPeriod(name, 4); // 4週間分
+    
+    if (shifts.length === 0) {
+        container.innerHTML = '<p class="no-shift-message">該当するシフトがありません</p>';
+        timeRangeGroup.style.display = 'none';
+        return;
+    }
+    
+    container.innerHTML = shifts.map(s => {
+        const d = new Date(s.date);
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayClass = d.getDay() === 0 ? 'sunday' : (d.getDay() === 6 ? 'saturday' : '');
+        const badges = [];
+        if (s.isFixed) badges.push('<span class="shift-selection-badge fixed">固定</span>');
+        if (s.overnight) badges.push('<span class="shift-selection-badge overnight">夜勤</span>');
+        
+        const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
+        
+        return `
+            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')">
+                <input type="checkbox" class="shift-selection-checkbox">
+                <div class="shift-selection-info">
+                    <span class="shift-selection-date ${dayClass}">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）</span>
+                    <span class="shift-selection-time">${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}</span>
+                </div>
+                ${badges.join('')}
+            </div>
+        `;
+    }).join('');
+    
+    // 時間帯選択を表示
+    timeRangeGroup.style.display = 'block';
+    updateHolidayTimeOptions();
+}
+
+// シフト選択の切り替え
+function toggleShiftSelection(element, type) {
+    const checkbox = element.querySelector('.shift-selection-checkbox');
+    checkbox.checked = !checkbox.checked;
+    element.classList.toggle('selected', checkbox.checked);
+    
+    // 休日申請の場合、時間選択を更新
+    if (type === 'holiday') {
+        updateHolidayTimeOptions();
+    }
+}
+
+// 休日申請の時間選択オプションを更新
+function updateHolidayTimeOptions() {
+    const startSelect = document.getElementById('holidayStartTime');
+    const endSelect = document.getElementById('holidayEndTime');
+    
+    // 選択されたシフトを取得
+    const selectedItems = document.querySelectorAll('#holidayShiftList .shift-selection-checkbox:checked');
+    
+    if (selectedItems.length === 0) {
+        startSelect.innerHTML = '<option value="">シフト開始時刻</option>';
+        endSelect.innerHTML = '<option value="">シフト終了時刻</option>';
+        return;
+    }
+    
+    // 最初に選択されたシフトを基準にする
+    const firstItem = selectedItems[0].closest('.shift-selection-item');
+    const shiftData = JSON.parse(firstItem.dataset.shiftInfo);
+    
+    // 開始時刻の選択肢を生成
+    startSelect.innerHTML = '<option value="">シフト開始時刻</option>';
+    for (let h = shiftData.startHour; h < shiftData.endHour; h += 0.5) {
+        startSelect.innerHTML += `<option value="${h}">${formatTime(h)}</option>`;
+    }
+    
+    // 終了時刻の選択肢を生成
+    endSelect.innerHTML = '<option value="">シフト終了時刻</option>';
+    for (let h = shiftData.startHour + 0.5; h <= shiftData.endHour; h += 0.5) {
+        endSelect.innerHTML += `<option value="${h}">${formatTime(h)}</option>`;
+    }
+}
+
+// 従業員のシフトを期間分取得
+function getEmployeeShiftsForPeriod(employeeName, weeks) {
+    const shifts = [];
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + (weeks * 7));
+    
+    // 通常シフトを収集
+    state.shifts.forEach(s => {
+        if (s.name === employeeName && !s.hidden && !s.isLeaveOverride) {
+            const shiftDate = new Date(s.date);
+            if (shiftDate >= today && shiftDate <= endDate) {
+                shifts.push({
+                    date: s.date,
+                    startHour: s.startHour,
+                    endHour: s.endHour,
+                    overnight: s.overnight || false,
+                    isFixed: false,
+                    shiftId: s.id
+                });
+            }
+        }
+    });
+    
+    // 固定シフトを収集（今日から指定週間分）
+    const currentDate = new Date(today);
+    while (currentDate <= endDate) {
+        const dateStr = formatDate(currentDate);
+        const dayOfWeek = currentDate.getDay();
+        
+        // この日に既に通常シフトがあるか確認
+        const hasNormalShift = shifts.some(s => s.date === dateStr);
+        
+        if (!hasNormalShift) {
+            // 固定シフトを探す
+            state.fixedShifts.forEach(f => {
+                if (f.name === employeeName && f.dayOfWeek === dayOfWeek) {
+                    // 有給や休日で上書きされていないか確認
+                    const isOverridden = state.shifts.some(s => 
+                        s.date === dateStr && 
+                        s.fixedShiftOverride === f.id && 
+                        (s.isLeaveOverride || s.hidden)
+                    );
+                    
+                    if (!isOverridden) {
+                        // 単日上書きがあるか確認
+                        const override = state.shiftOverrides.find(o => o.fixedShiftId === f.id && o.date === dateStr);
+                        
+                        shifts.push({
+                            date: dateStr,
+                            startHour: override ? override.startHour : f.startHour,
+                            endHour: override ? override.endHour : f.endHour,
+                            overnight: override ? (override.overnight || false) : (f.overnight || false),
+                            isFixed: true,
+                            fixedShiftId: f.id
+                        });
+                    }
+                }
+            });
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // 日付でソート
+    shifts.sort((a, b) => a.date.localeCompare(b.date));
+    
+    return shifts;
+}
+
 function addSwapRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
     state.swapRequests.push(r);
@@ -1351,78 +1659,33 @@ function approveRequest(type, id) {
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
             
-            // 有給期間中の該当者のシフトを削除
-            const startDate = new Date(r.startDate);
-            const endDate = new Date(r.endDate);
+            console.log('有給承認処理:', { name: r.name, startDate: r.startDate, endDate: r.endDate, selectedShifts: r.selectedShifts });
             
-            console.log('有給承認処理:', { name: r.name, startDate: r.startDate, endDate: r.endDate });
-            
-            // 各日のシフト時間情報を保存（ガントチャート表示用）
-            r.shiftTimes = {};
-            const currentDateForShift = new Date(startDate);
-            while (currentDateForShift <= endDate) {
-                const dateStr = formatDate(currentDateForShift);
-                const dayOfWeek = currentDateForShift.getDay();
+            // 選択シフト形式かどうかで処理を分岐
+            if (r.selectedShifts && r.selectedShifts.length > 0) {
+                // 新形式：選択されたシフトのみを処理
+                r.shiftTimes = {};
                 
-                // その日の通常シフトを探す
-                const normalShift = state.shifts.find(s => s.date === dateStr && s.name === r.name);
-                if (normalShift) {
-                    r.shiftTimes[dateStr] = {
-                        startHour: normalShift.startHour,
-                        endHour: normalShift.endHour,
-                        overnight: normalShift.overnight || false
-                    };
-                } else {
-                    // 固定シフトを探す
-                    const fixedShift = state.fixedShifts.find(f => f.name === r.name && f.dayOfWeek === dayOfWeek);
-                    if (fixedShift) {
-                        r.shiftTimes[dateStr] = {
-                            startHour: fixedShift.startHour,
-                            endHour: fixedShift.endHour,
-                            overnight: fixedShift.overnight || false
-                        };
-                    }
-                }
-                currentDateForShift.setDate(currentDateForShift.getDate() + 1);
-            }
-            
-            // 通常シフトから該当者・該当期間のシフトを削除
-            const beforeCount = state.shifts.length;
-            state.shifts = state.shifts.filter(s => {
-                const shiftDate = new Date(s.date);
-                const isInRange = shiftDate >= startDate && shiftDate <= endDate;
-                const isSamePerson = s.name === r.name;
-                if (isInRange && isSamePerson) {
-                    console.log('削除対象シフト:', s);
-                }
-                // 該当者かつ期間内のシフトは削除（falseを返す）
-                return !(isInRange && isSamePerson);
-            });
-            console.log('通常シフト削除:', beforeCount, '->', state.shifts.length);
-            
-            // 固定シフトの場合：該当日に「削除」マークのシフトを追加して上書き
-            // （固定シフト自体は消せないので、その日だけ非表示にする）
-            const fixedShiftsToOverride = state.fixedShifts.filter(f => f.name === r.name);
-            console.log('固定シフト対象:', fixedShiftsToOverride);
-            
-            if (fixedShiftsToOverride.length > 0) {
-                // 有給期間の各日をループ
-                const currentDate = new Date(startDate);
-                while (currentDate <= endDate) {
-                    const dateStr = formatDate(currentDate);
-                    const dayOfWeek = currentDate.getDay();
+                r.selectedShifts.forEach(shiftInfo => {
+                    const dateStr = shiftInfo.date;
                     
-                    // その日に該当する固定シフトがあるか確認
-                    fixedShiftsToOverride.forEach(fixed => {
-                        if (fixed.dayOfWeek === dayOfWeek) {
-                            // 既に通常シフトで上書きされていないか確認
-                            const existingOverride = state.shifts.find(s => 
-                                s.date === dateStr && 
-                                s.fixedShiftOverride === fixed.id
-                            );
-                            
-                            if (!existingOverride) {
-                                // 固定シフトを「削除」として上書きするシフトを追加
+                    // シフト時間情報を保存（ガントチャート表示用）
+                    r.shiftTimes[dateStr] = {
+                        startHour: shiftInfo.startHour,
+                        endHour: shiftInfo.endHour,
+                        overnight: shiftInfo.overnight || false
+                    };
+                    
+                    if (shiftInfo.isFixed && shiftInfo.fixedShiftId) {
+                        // 固定シフトの場合：上書きシフトを追加
+                        const existingOverride = state.shifts.find(s => 
+                            s.date === dateStr && 
+                            s.fixedShiftOverride === shiftInfo.fixedShiftId
+                        );
+                        
+                        if (!existingOverride) {
+                            const fixed = state.fixedShifts.find(f => f.id === shiftInfo.fixedShiftId);
+                            if (fixed) {
                                 state.shifts.push({
                                     id: 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                                     date: dateStr,
@@ -1430,16 +1693,105 @@ function approveRequest(type, id) {
                                     startHour: fixed.startHour,
                                     endHour: fixed.endHour,
                                     color: fixed.color,
-                                    fixedShiftOverride: fixed.id,
-                                    isLeaveOverride: true, // 有給による上書きマーク
-                                    hidden: true // 非表示フラグ
+                                    fixedShiftOverride: shiftInfo.fixedShiftId,
+                                    isLeaveOverride: true,
+                                    hidden: true
                                 });
-                                console.log('固定シフト上書き追加:', dateStr, fixed.name);
+                                console.log('固定シフト上書き追加:', dateStr);
                             }
                         }
-                    });
+                    } else {
+                        // 通常シフトの場合：該当シフトを削除
+                        state.shifts = state.shifts.filter(s => {
+                            const isTarget = s.date === dateStr && s.name === r.name;
+                            if (isTarget) console.log('削除対象シフト:', s);
+                            return !isTarget;
+                        });
+                    }
+                });
+            } else {
+                // 従来形式：期間内の全シフトを処理
+                const startDate = new Date(r.startDate);
+                const endDate = new Date(r.endDate);
+                
+                // 各日のシフト時間情報を保存（ガントチャート表示用）
+                r.shiftTimes = {};
+                const currentDateForShift = new Date(startDate);
+                while (currentDateForShift <= endDate) {
+                    const dateStr = formatDate(currentDateForShift);
+                    const dayOfWeek = currentDateForShift.getDay();
                     
-                    currentDate.setDate(currentDate.getDate() + 1);
+                    // その日の通常シフトを探す
+                    const normalShift = state.shifts.find(s => s.date === dateStr && s.name === r.name);
+                    if (normalShift) {
+                        r.shiftTimes[dateStr] = {
+                            startHour: normalShift.startHour,
+                            endHour: normalShift.endHour,
+                            overnight: normalShift.overnight || false
+                        };
+                    } else {
+                        // 固定シフトを探す
+                        const fixedShift = state.fixedShifts.find(f => f.name === r.name && f.dayOfWeek === dayOfWeek);
+                        if (fixedShift) {
+                            r.shiftTimes[dateStr] = {
+                                startHour: fixedShift.startHour,
+                                endHour: fixedShift.endHour,
+                                overnight: fixedShift.overnight || false
+                            };
+                        }
+                    }
+                    currentDateForShift.setDate(currentDateForShift.getDate() + 1);
+                }
+                
+                // 通常シフトから該当者・該当期間のシフトを削除
+                const beforeCount = state.shifts.length;
+                state.shifts = state.shifts.filter(s => {
+                    const shiftDate = new Date(s.date);
+                    const isInRange = shiftDate >= startDate && shiftDate <= endDate;
+                    const isSamePerson = s.name === r.name;
+                    if (isInRange && isSamePerson) {
+                        console.log('削除対象シフト:', s);
+                    }
+                    return !(isInRange && isSamePerson);
+                });
+                console.log('通常シフト削除:', beforeCount, '->', state.shifts.length);
+                
+                // 固定シフトの場合：該当日に「削除」マークのシフトを追加して上書き
+                const fixedShiftsToOverride = state.fixedShifts.filter(f => f.name === r.name);
+                console.log('固定シフト対象:', fixedShiftsToOverride);
+                
+                if (fixedShiftsToOverride.length > 0) {
+                    const currentDate = new Date(startDate);
+                    while (currentDate <= endDate) {
+                        const dateStr = formatDate(currentDate);
+                        const dayOfWeek = currentDate.getDay();
+                        
+                        fixedShiftsToOverride.forEach(fixed => {
+                            if (fixed.dayOfWeek === dayOfWeek) {
+                                const existingOverride = state.shifts.find(s => 
+                                    s.date === dateStr && 
+                                    s.fixedShiftOverride === fixed.id
+                                );
+                                
+                                if (!existingOverride) {
+                                    state.shifts.push({
+                                        id: 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                                        date: dateStr,
+                                        name: r.name,
+                                        startHour: fixed.startHour,
+                                        endHour: fixed.endHour,
+                                        color: fixed.color,
+                                        fixedShiftOverride: fixed.id,
+                                        isLeaveOverride: true,
+                                        hidden: true
+                                    });
+                                    console.log('固定シフト上書き追加:', dateStr, fixed.name);
+                                }
+                            }
+                        });
+                        
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
                 }
             }
             
@@ -1514,6 +1866,19 @@ function approveRequest(type, id) {
             r.status = 'approved';
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
+            
+            // 選択シフト形式の場合、shiftTimes情報を作成
+            if (r.selectedShifts && r.selectedShifts.length > 0) {
+                r.shiftTimes = {};
+                r.selectedShifts.forEach(shiftInfo => {
+                    r.shiftTimes[shiftInfo.date] = {
+                        startHour: shiftInfo.startHour,
+                        endHour: shiftInfo.endHour,
+                        overnight: shiftInfo.overnight || false
+                    };
+                });
+            }
+            
             saveToFirebase('holidayRequests', state.holidayRequests);
             alert('休日申請を承認しました。');
         }
@@ -1632,7 +1997,26 @@ function renderAdminPanel() {
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
         reqs.forEach(r => {
             const card = document.createElement('div'); card.className = 'request-card';
-            card.innerHTML = `<div class="request-info"><h4>${r.name} - 有給申請</h4><p>期間: ${r.startDate} 〜 ${r.endDate}</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('leave','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('leave','${r.id}')">却下</button></div>`;
+            
+            // 選択されたシフト情報を表示
+            let shiftsHtml = '';
+            if (r.selectedShifts && r.selectedShifts.length > 0) {
+                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                shiftsHtml = '<div class="selected-shifts-list">' + 
+                    r.selectedShifts.map(s => {
+                        const d = new Date(s.date);
+                        const badges = [];
+                        if (s.isFixed) badges.push('<span class="shift-badge fixed">固定</span>');
+                        if (s.overnight) badges.push('<span class="shift-badge overnight">夜勤</span>');
+                        return `<div class="shift-item">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${formatTime(s.startHour)}-${formatTime(s.endHour)} ${badges.join('')}</div>`;
+                    }).join('') + 
+                '</div>';
+            } else {
+                // 従来の開始日〜終了日形式
+                shiftsHtml = `<p>期間: ${r.startDate} 〜 ${r.endDate}</p>`;
+            }
+            
+            card.innerHTML = `<div class="request-info"><h4>🏖️ ${r.name} - 有給申請</h4>${shiftsHtml}<p>理由: ${r.reason || '有給休暇'}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('leave','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('leave','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'holidayRequests') {
@@ -1640,8 +2024,30 @@ function renderAdminPanel() {
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
         reqs.forEach(r => {
             const card = document.createElement('div'); card.className = 'request-card';
+            
+            // 選択されたシフト情報を表示
+            let shiftsHtml = '';
+            if (r.selectedShifts && r.selectedShifts.length > 0) {
+                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                shiftsHtml = '<div class="selected-shifts-list">' + 
+                    r.selectedShifts.map(s => {
+                        const d = new Date(s.date);
+                        const badges = [];
+                        if (s.isFixed) badges.push('<span class="shift-badge fixed">固定</span>');
+                        if (s.overnight) badges.push('<span class="shift-badge overnight">夜勤</span>');
+                        const timeDisplay = s.originalStartHour !== undefined && (s.startHour !== s.originalStartHour || s.endHour !== s.originalEndHour) 
+                            ? `${formatTime(s.startHour)}-${formatTime(s.endHour)} <span class="custom-time">(元: ${formatTime(s.originalStartHour)}-${formatTime(s.originalEndHour)})</span>`
+                            : `${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+                        return `<div class="shift-item">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${timeDisplay} ${badges.join('')}</div>`;
+                    }).join('') + 
+                '</div>';
+            } else {
+                // 従来の開始日〜終了日形式
+                shiftsHtml = `<p>期間: ${r.startDate} 〜 ${r.endDate}</p>`;
+            }
+            
             let swapInfo = r.swapRequested && r.swapPartner ? `<p>シフト交代: ${r.swapPartner}さんと交代</p>` : '<p>シフト交代: なし</p>';
-            card.innerHTML = `<div class="request-info"><h4>🏠 ${r.name} - 休日申請</h4><p>期間: ${r.startDate} 〜 ${r.endDate}</p>${swapInfo}<p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('holiday','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('holiday','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>🏠 ${r.name} - 休日申請</h4>${shiftsHtml}${swapInfo}<p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('holiday','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('holiday','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'employees') {
@@ -2198,15 +2604,20 @@ function initEventListeners() {
         updateSwapShiftOptions(e.target.value);
     };
 
-    document.getElementById('requestLeaveBtn').onclick = () => { document.getElementById('leaveStartDate').value = formatDate(new Date()); document.getElementById('leaveEndDate').value = formatDate(new Date()); openModal(document.getElementById('leaveModalOverlay')); };
+    document.getElementById('requestLeaveBtn').onclick = () => { 
+        document.getElementById('leaveName').value = '';
+        document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        openModal(document.getElementById('leaveModalOverlay')); 
+    };
     document.getElementById('leaveModalClose').onclick = () => closeModal(document.getElementById('leaveModalOverlay'));
     document.getElementById('leaveCancelBtn').onclick = () => closeModal(document.getElementById('leaveModalOverlay'));
     document.getElementById('leaveModalOverlay').onclick = e => { if (e.target.id === 'leaveModalOverlay') closeModal(document.getElementById('leaveModalOverlay')); };
 
     // 休日申請モーダル
     document.getElementById('requestHolidayBtn').onclick = () => {
-        document.getElementById('holidayStartDate').value = formatDate(new Date());
-        document.getElementById('holidayEndDate').value = formatDate(new Date());
+        document.getElementById('holidayName').value = '';
+        document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        document.getElementById('holidayTimeRangeGroup').style.display = 'none';
         document.getElementById('holidaySwapPartnerGroup').style.display = 'none';
         document.querySelectorAll('input[name="holidaySwapRequested"]').forEach(r => {
             if (r.value === 'no') r.checked = true;
@@ -2350,30 +2761,68 @@ function initEventListeners() {
 
     document.getElementById('leaveForm').onsubmit = e => {
         e.preventDefault();
-        const d = { name: document.getElementById('leaveName').value, startDate: document.getElementById('leaveStartDate').value, endDate: document.getElementById('leaveEndDate').value };
-        if (d.startDate > d.endDate) { alert('終了日は開始日以降に'); return; }
-        addLeaveRequest(d);
+        const name = document.getElementById('leaveName').value;
+        
+        // 選択されたシフトを取得
+        const selectedShifts = [];
+        document.querySelectorAll('#leaveShiftList .shift-selection-checkbox:checked').forEach(cb => {
+            const item = cb.closest('.shift-selection-item');
+            const shiftData = JSON.parse(item.dataset.shiftInfo);
+            selectedShifts.push(shiftData);
+        });
+        
+        if (selectedShifts.length === 0) {
+            alert('有給を取得したいシフトを1つ以上選択してください');
+            return;
+        }
+        
+        // 複数シフトの有給申請を作成
+        addLeaveRequestMultiple(name, selectedShifts);
         closeModal(document.getElementById('leaveModalOverlay'));
         document.getElementById('leaveForm').reset();
+        document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
         alert('有給申請を送信しました');
     };
 
     document.getElementById('holidayForm').onsubmit = e => {
         e.preventDefault();
+        const name = document.getElementById('holidayName').value;
         const swapRequested = document.querySelector('input[name="holidaySwapRequested"]:checked').value === 'yes';
-        const d = {
-            name: document.getElementById('holidayName').value,
-            startDate: document.getElementById('holidayStartDate').value,
-            endDate: document.getElementById('holidayEndDate').value,
+        
+        // 選択されたシフトを取得
+        const selectedShifts = [];
+        document.querySelectorAll('#holidayShiftList .shift-selection-checkbox:checked').forEach(cb => {
+            const item = cb.closest('.shift-selection-item');
+            const shiftData = JSON.parse(item.dataset.shiftInfo);
+            selectedShifts.push(shiftData);
+        });
+        
+        if (selectedShifts.length === 0) {
+            alert('休日を申請したいシフトを1つ以上選択してください');
+            return;
+        }
+        
+        // 時間帯指定の取得
+        const customStartTime = document.getElementById('holidayStartTime').value;
+        const customEndTime = document.getElementById('holidayEndTime').value;
+        
+        if (swapRequested && !document.getElementById('holidaySwapPartner').value) { 
+            alert('シフト交代相手を選択してください'); 
+            return; 
+        }
+        
+        // 複数シフトの休日申請を作成
+        addHolidayRequestMultiple(name, selectedShifts, {
             swapRequested: swapRequested,
             swapPartner: swapRequested ? document.getElementById('holidaySwapPartner').value : null,
-            reason: document.getElementById('holidayReason').value.trim()
-        };
-        if (d.startDate > d.endDate) { alert('終了日は開始日以降に'); return; }
-        if (d.swapRequested && !d.swapPartner) { alert('シフト交代相手を選択してください'); return; }
-        addHolidayRequest(d);
+            reason: document.getElementById('holidayReason').value.trim(),
+            customStartTime: customStartTime || null,
+            customEndTime: customEndTime || null
+        });
         closeModal(document.getElementById('holidayModalOverlay'));
         document.getElementById('holidayForm').reset();
+        document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        document.getElementById('holidayTimeRangeGroup').style.display = 'none';
         alert('休日申請を送信しました');
     };
 
@@ -3015,6 +3464,9 @@ function initPopoverEvents() {
 
 // 初期化
 function init() {
+    // アプリ閲覧をトラッキング
+    trackUsage('app_view', '匿名');
+    
     initTimeSelects();
     initEventListeners();
     initZoomControls();
