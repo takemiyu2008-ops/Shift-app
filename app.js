@@ -1243,22 +1243,21 @@ function updateLeaveShiftList() {
     container.innerHTML = shifts.map(s => {
         const d = new Date(s.date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        const dayClass = d.getDay() === 0 ? 'sunday' : (d.getDay() === 6 ? 'saturday' : '');
         const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
         const badges = [];
-        if (s.isFixed) badges.push('<span class="shift-selection-badge fixed">固定</span>');
-        if (s.overnight) badges.push('<span class="shift-selection-badge overnight">夜勤</span>');
+        if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">固定</span>');
+        if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">夜勤</span>');
         
         const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
         const dateText = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
         const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
         
         return `
-            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)">
-                <input type="checkbox" class="shift-selection-checkbox">
-                <div class="shift-selection-info">
-                    <span class="shift-selection-date ${dayClass}" style="color: ${dayColor}; display: block;">${dateText}</span>
-                    <span class="shift-selection-time" style="color: #94a3b8; display: block;">${timeText}</span>
+            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #1e293b; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; width: 100%; box-sizing: border-box;">
+                <input type="checkbox" class="shift-selection-checkbox" style="width: 20px; height: 20px; min-width: 20px; max-width: 20px; flex-shrink: 0; padding: 0; margin: 0; cursor: pointer;">
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-weight: 600; font-size: 0.95rem; color: ${dayColor}; display: block;">${dateText}</span>
+                    <span style="font-size: 0.9rem; color: #94a3b8; display: block;">${timeText}</span>
                 </div>
                 ${badges.join('')}
             </div>
@@ -1289,22 +1288,21 @@ function updateHolidayShiftList() {
     container.innerHTML = shifts.map(s => {
         const d = new Date(s.date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        const dayClass = d.getDay() === 0 ? 'sunday' : (d.getDay() === 6 ? 'saturday' : '');
         const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
         const badges = [];
-        if (s.isFixed) badges.push('<span class="shift-selection-badge fixed">固定</span>');
-        if (s.overnight) badges.push('<span class="shift-selection-badge overnight">夜勤</span>');
+        if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">固定</span>');
+        if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">夜勤</span>');
         
         const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
         const dateText = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
         const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
         
         return `
-            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')">
-                <input type="checkbox" class="shift-selection-checkbox">
-                <div class="shift-selection-info">
-                    <span class="shift-selection-date ${dayClass}" style="color: ${dayColor}; display: block;">${dateText}</span>
-                    <span class="shift-selection-time" style="color: #94a3b8; display: block;">${timeText}</span>
+            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #1e293b; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; width: 100%; box-sizing: border-box;">
+                <input type="checkbox" class="shift-selection-checkbox" style="width: 20px; height: 20px; min-width: 20px; max-width: 20px; flex-shrink: 0; padding: 0; margin: 0; cursor: pointer;">
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-weight: 600; font-size: 0.95rem; color: ${dayColor}; display: block;">${dateText}</span>
+                    <span style="font-size: 0.9rem; color: #94a3b8; display: block;">${timeText}</span>
                 </div>
                 ${badges.join('')}
             </div>
