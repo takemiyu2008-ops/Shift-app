@@ -7510,18 +7510,60 @@ function renderUsageStats(container) {
         byFeature[s.featureId].users.add(s.userName);
     });
     
-    // ユーザー別集計
+    // ユーザー別集計（機能ごとの詳細も含む）
     const byUser = {};
     filtered.forEach(s => {
         if (!byUser[s.userName]) {
             byUser[s.userName] = {
                 userName: s.userName,
                 count: 0,
-                features: new Set()
+                features: new Set(),
+                featureDetails: {}, // 機能ごとの詳細
+                categoryDetails: {}, // カテゴリごとの詳細
+                recentActions: [] // 最近のアクション
             };
         }
         byUser[s.userName].count++;
         byUser[s.userName].features.add(s.featureId);
+        
+        // 機能ごとの使用回数を記録
+        if (!byUser[s.userName].featureDetails[s.featureId]) {
+            byUser[s.userName].featureDetails[s.featureId] = {
+                featureId: s.featureId,
+                featureName: s.featureName,
+                category: s.category,
+                count: 0,
+                lastUsed: null
+            };
+        }
+        byUser[s.userName].featureDetails[s.featureId].count++;
+        byUser[s.userName].featureDetails[s.featureId].lastUsed = s.timestamp;
+        
+        // カテゴリごとの使用回数を記録
+        if (!byUser[s.userName].categoryDetails[s.category]) {
+            byUser[s.userName].categoryDetails[s.category] = {
+                category: s.category,
+                count: 0,
+                features: new Set()
+            };
+        }
+        byUser[s.userName].categoryDetails[s.category].count++;
+        byUser[s.userName].categoryDetails[s.category].features.add(s.featureId);
+        
+        // 最近のアクション（最新20件まで）
+        if (byUser[s.userName].recentActions.length < 20) {
+            byUser[s.userName].recentActions.push({
+                featureId: s.featureId,
+                featureName: s.featureName,
+                category: s.category,
+                timestamp: s.timestamp
+            });
+        }
+    });
+    
+    // 各ユーザーの最近のアクションを時系列でソート（新しい順）
+    Object.values(byUser).forEach(u => {
+        u.recentActions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     });
     
     // カテゴリ別集計
@@ -7656,27 +7698,203 @@ function renderUsageByUser(container, byUser) {
     const maxCount = sorted[0]?.count || 1;
     
     let html = '<div class="usage-user-list">';
-    sorted.forEach(u => {
+    sorted.forEach((u, index) => {
         const percentage = (u.count / maxCount * 100).toFixed(0);
+        const userId = `user-detail-${index}`;
+        
+        // カテゴリ別の使用状況をソート
+        const sortedCategories = Object.values(u.categoryDetails || {}).sort((a, b) => b.count - a.count);
+        
+        // 機能別の使用状況をソート
+        const sortedFeatures = Object.values(u.featureDetails || {}).sort((a, b) => b.count - a.count);
         
         html += `
-            <div class="usage-user-item">
-                <div class="user-info">
-                    <div class="user-avatar">${u.userName.charAt(0)}</div>
-                    <span class="user-name">${u.userName}</span>
-                </div>
-                <div class="user-stats">
-                    <div class="usage-bar-container">
-                        <div class="usage-bar" style="width: ${percentage}%"></div>
+            <div class="usage-user-card">
+                <div class="usage-user-item" onclick="toggleUserDetail('${userId}')">
+                    <div class="user-info">
+                        <div class="user-avatar">${u.userName.charAt(0)}</div>
+                        <div class="user-name-section">
+                            <span class="user-name">${u.userName}</span>
+                            <span class="user-summary">${sortedCategories.slice(0, 2).map(c => c.category).join('・') || '-'}</span>
+                        </div>
                     </div>
-                    <span class="usage-count">${u.count}回</span>
-                    <span class="usage-features">${u.features.size}機能</span>
+                    <div class="user-stats">
+                        <div class="usage-bar-container">
+                            <div class="usage-bar" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="usage-count">${u.count}回</span>
+                        <span class="usage-features">${u.features.size}機能</span>
+                        <span class="user-expand-icon" id="${userId}-icon">▼</span>
+                    </div>
+                </div>
+                
+                <div class="user-detail-panel" id="${userId}" style="display: none;">
+                    <div class="user-detail-tabs">
+                        <button class="user-detail-tab active" onclick="switchUserDetailTab('${userId}', 'category', event)">カテゴリ別</button>
+                        <button class="user-detail-tab" onclick="switchUserDetailTab('${userId}', 'feature', event)">機能別</button>
+                        <button class="user-detail-tab" onclick="switchUserDetailTab('${userId}', 'recent', event)">最近の操作</button>
+                    </div>
+                    
+                    <div class="user-detail-content" id="${userId}-category">
+                        ${renderUserCategoryDetail(sortedCategories)}
+                    </div>
+                    
+                    <div class="user-detail-content" id="${userId}-feature" style="display: none;">
+                        ${renderUserFeatureDetail(sortedFeatures)}
+                    </div>
+                    
+                    <div class="user-detail-content" id="${userId}-recent" style="display: none;">
+                        ${renderUserRecentActions(u.recentActions || [])}
+                    </div>
                 </div>
             </div>
         `;
     });
     html += '</div>';
     container.innerHTML = html;
+}
+
+// ユーザー詳細の展開/折りたたみ
+function toggleUserDetail(userId) {
+    const panel = document.getElementById(userId);
+    const icon = document.getElementById(`${userId}-icon`);
+    if (panel) {
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            if (icon) icon.textContent = '▲';
+        } else {
+            panel.style.display = 'none';
+            if (icon) icon.textContent = '▼';
+        }
+    }
+}
+
+// ユーザー詳細タブの切り替え
+function switchUserDetailTab(userId, tab, event) {
+    // タブボタンのアクティブ状態を切り替え
+    const tabContainer = event.target.parentElement;
+    tabContainer.querySelectorAll('.user-detail-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // コンテンツの表示/非表示を切り替え
+    ['category', 'feature', 'recent'].forEach(t => {
+        const content = document.getElementById(`${userId}-${t}`);
+        if (content) {
+            content.style.display = t === tab ? 'block' : 'none';
+        }
+    });
+}
+
+// カテゴリ別詳細をレンダリング
+function renderUserCategoryDetail(categories) {
+    if (!categories || categories.length === 0) {
+        return '<p class="no-data-message">データがありません</p>';
+    }
+    
+    const maxCount = categories[0]?.count || 1;
+    
+    let html = '<div class="user-category-detail-list">';
+    categories.forEach(c => {
+        const percentage = (c.count / maxCount * 100).toFixed(0);
+        html += `
+            <div class="user-category-detail-item">
+                <div class="category-detail-name">${c.category}</div>
+                <div class="category-detail-stats">
+                    <div class="mini-bar-container">
+                        <div class="mini-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="category-detail-count">${c.count}回</span>
+                    <span class="category-detail-features">${c.features.size}機能</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
+// 機能別詳細をレンダリング
+function renderUserFeatureDetail(features) {
+    if (!features || features.length === 0) {
+        return '<p class="no-data-message">データがありません</p>';
+    }
+    
+    const maxCount = features[0]?.count || 1;
+    
+    let html = '<div class="user-feature-detail-list">';
+    features.forEach(f => {
+        const feature = USAGE_FEATURES[f.featureId];
+        const icon = feature?.icon || '📌';
+        const percentage = (f.count / maxCount * 100).toFixed(0);
+        const lastUsed = f.lastUsed ? formatLastUsed(f.lastUsed) : '-';
+        
+        html += `
+            <div class="user-feature-detail-item">
+                <div class="feature-detail-info">
+                    <span class="feature-detail-icon">${icon}</span>
+                    <div class="feature-detail-text">
+                        <span class="feature-detail-name">${f.featureName}</span>
+                        <span class="feature-detail-category">${f.category}</span>
+                    </div>
+                </div>
+                <div class="feature-detail-stats">
+                    <div class="mini-bar-container">
+                        <div class="mini-bar feature-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="feature-detail-count">${f.count}回</span>
+                    <span class="feature-detail-last">最終: ${lastUsed}</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
+// 最近のアクションをレンダリング
+function renderUserRecentActions(actions) {
+    if (!actions || actions.length === 0) {
+        return '<p class="no-data-message">データがありません</p>';
+    }
+    
+    let html = '<div class="user-recent-actions">';
+    actions.forEach(a => {
+        const feature = USAGE_FEATURES[a.featureId];
+        const icon = feature?.icon || '📌';
+        const time = new Date(a.timestamp);
+        const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
+        
+        html += `
+            <div class="user-recent-action-item">
+                <span class="recent-action-time">${timeStr}</span>
+                <span class="recent-action-icon">${icon}</span>
+                <span class="recent-action-name">${a.featureName}</span>
+                <span class="recent-action-category">${a.category}</span>
+            </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
+// 最終使用日時をフォーマット
+function formatLastUsed(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    // 1時間以内
+    if (diff < 3600000) {
+        const mins = Math.floor(diff / 60000);
+        return `${mins}分前`;
+    }
+    // 24時間以内
+    if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return `${hours}時間前`;
+    }
+    // それ以外
+    return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
 // カテゴリ別表示
