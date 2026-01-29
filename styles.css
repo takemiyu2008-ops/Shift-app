@@ -931,7 +931,7 @@ body {
 .leave-bar {
     position: absolute;
     left: 0;
-    right: 0;
+    width: 100%;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -946,6 +946,19 @@ body {
             rgba(16, 185, 129, 0.5) 10px,
             rgba(16, 185, 129, 0.5) 20px);
     border: 2px dashed var(--success);
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* 夜勤の翌日分有給バー */
+.leave-bar.overnight-continuation {
+    background: repeating-linear-gradient(45deg,
+            rgba(16, 185, 129, 0.2),
+            rgba(16, 185, 129, 0.2) 10px,
+            rgba(16, 185, 129, 0.4) 10px,
+            rgba(16, 185, 129, 0.4) 20px);
 }
 
 /* 休日バー */

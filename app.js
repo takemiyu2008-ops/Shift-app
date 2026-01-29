@@ -456,9 +456,71 @@ function renderGanttBody() {
             bar.className = 'leave-bar';
             bar.style.top = `${baseH + (maxLvl + 1 + idx) * perLvl}px`;
             bar.style.height = `${perLvl - 4}px`;
-            bar.textContent = `🏖️ ${l.name} 有給`;
+            
+            // シフト時間情報がある場合は、その時間に合わせて表示
+            let timeText = '';
+            if (l.shiftTimes && l.shiftTimes[dateStr]) {
+                const shiftTime = l.shiftTimes[dateStr];
+                let start = shiftTime.startHour;
+                let end = shiftTime.endHour;
+                const overnight = shiftTime.overnight;
+                
+                // 夜勤の場合は24時まで表示（翌日分は翌日に表示）
+                if (overnight) end = 24;
+                
+                const leftPercent = (start / 24) * 100;
+                const widthPercent = ((end - start) / 24) * 100;
+                bar.style.left = `${leftPercent}%`;
+                bar.style.width = `${widthPercent}%`;
+                
+                if (overnight) {
+                    timeText = ` ${formatTime(start)}-翌${formatTime(shiftTime.endHour)}`;
+                } else {
+                    timeText = ` ${formatTime(start)}-${formatTime(end)}`;
+                }
+            }
+            // シフト時間情報がない場合は全幅で表示（従来の動作）
+            
+            bar.textContent = `🏖️ ${l.name} 有給${timeText}`;
             timeline.appendChild(bar);
         });
+        
+        // 夜勤の有給の翌日分を表示
+        const overnightLeaves = state.leaveRequests.filter(l => {
+            if (l.status !== 'approved' || !l.shiftTimes) return false;
+            // 前日の日付を取得
+            const prevDate = new Date(dateStr);
+            prevDate.setDate(prevDate.getDate() - 1);
+            const prevDateStr = formatDate(prevDate);
+            // 前日のシフトが夜勤で、前日が有給期間内かチェック
+            return l.shiftTimes[prevDateStr] && 
+                   l.shiftTimes[prevDateStr].overnight &&
+                   prevDateStr >= l.startDate && 
+                   prevDateStr <= l.endDate;
+        });
+        
+        overnightLeaves.forEach((l, idx) => {
+            const prevDate = new Date(dateStr);
+            prevDate.setDate(prevDate.getDate() - 1);
+            const prevDateStr = formatDate(prevDate);
+            const shiftTime = l.shiftTimes[prevDateStr];
+            
+            const bar = document.createElement('div');
+            bar.className = 'leave-bar overnight-continuation';
+            bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
+            bar.style.height = `${perLvl - 4}px`;
+            
+            // 0時から終了時刻まで表示
+            const end = shiftTime.endHour;
+            const leftPercent = 0;
+            const widthPercent = (end / 24) * 100;
+            bar.style.left = `${leftPercent}%`;
+            bar.style.width = `${widthPercent}%`;
+            
+            bar.textContent = `🏖️ ${l.name} 有給 0:00-${formatTime(end)}`;
+            timeline.appendChild(bar);
+        });
+        barCount += overnightLeaves.length;
 
         // 休日
         const holidays = state.holidayRequests.filter(h => h.status === 'approved' && dateStr >= h.startDate && dateStr <= h.endDate);
@@ -1210,6 +1272,35 @@ function approveRequest(type, id) {
             const endDate = new Date(r.endDate);
             
             console.log('有給承認処理:', { name: r.name, startDate: r.startDate, endDate: r.endDate });
+            
+            // 各日のシフト時間情報を保存（ガントチャート表示用）
+            r.shiftTimes = {};
+            const currentDateForShift = new Date(startDate);
+            while (currentDateForShift <= endDate) {
+                const dateStr = formatDate(currentDateForShift);
+                const dayOfWeek = currentDateForShift.getDay();
+                
+                // その日の通常シフトを探す
+                const normalShift = state.shifts.find(s => s.date === dateStr && s.name === r.name);
+                if (normalShift) {
+                    r.shiftTimes[dateStr] = {
+                        startHour: normalShift.startHour,
+                        endHour: normalShift.endHour,
+                        overnight: normalShift.overnight || false
+                    };
+                } else {
+                    // 固定シフトを探す
+                    const fixedShift = state.fixedShifts.find(f => f.name === r.name && f.dayOfWeek === dayOfWeek);
+                    if (fixedShift) {
+                        r.shiftTimes[dateStr] = {
+                            startHour: fixedShift.startHour,
+                            endHour: fixedShift.endHour,
+                            overnight: fixedShift.overnight || false
+                        };
+                    }
+                }
+                currentDateForShift.setDate(currentDateForShift.getDate() + 1);
+            }
             
             // 通常シフトから該当者・該当期間のシフトを削除
             const beforeCount = state.shifts.length;
