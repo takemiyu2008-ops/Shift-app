@@ -52,8 +52,78 @@ const state = {
     categoryMemos: [], // カテゴリ別メモ
     selectedAdvisorCategory: null, // 選択中のアドバイザーカテゴリ
     productCategories: [], // 商品分類データ（PMA/情報分類/小分類）
-    selectedPmaId: null // 選択中のPMA ID
+    selectedPmaId: null, // 選択中のPMA ID
+    usageStats: [] // 利用統計データ
 };
+
+// 利用統計の機能カテゴリ定義
+const USAGE_FEATURES = {
+    // シフト関連
+    'view_shift': { name: 'シフト表閲覧', category: 'シフト管理', icon: '📅' },
+    'add_shift': { name: 'シフト追加', category: 'シフト管理', icon: '➕' },
+    'edit_shift': { name: 'シフト編集', category: 'シフト管理', icon: '✏️' },
+    'delete_shift': { name: 'シフト削除', category: 'シフト管理', icon: '🗑️' },
+    'request_change': { name: 'シフト変更申請', category: 'シフト管理', icon: '🔄' },
+    'request_swap': { name: 'シフト交代依頼', category: 'シフト管理', icon: '🤝' },
+    'request_leave': { name: '有給申請', category: 'シフト管理', icon: '🏖️' },
+    'request_holiday': { name: '休日申請', category: 'シフト管理', icon: '🏠' },
+    'create_halfday': { name: '半休作成', category: 'シフト管理', icon: '🌅' },
+    // 発注・スケジュール管理
+    'view_order_advice': { name: '発注アドバイス閲覧', category: '発注・スケジュール管理', icon: '📦' },
+    'submit_order_feedback': { name: '発注フィードバック送信', category: '発注・スケジュール管理', icon: '📝' },
+    'view_daily_checklist': { name: '日次チェックリスト確認', category: '発注・スケジュール管理', icon: '✅' },
+    'update_daily_checklist': { name: '日次チェックリスト更新', category: '発注・スケジュール管理', icon: '☑️' },
+    // 非デイリー発注参考情報
+    'view_non_daily': { name: '非デイリー参考情報閲覧', category: '非デイリー発注参考情報', icon: '📈' },
+    'add_non_daily': { name: '非デイリー参考情報追加', category: '非デイリー発注参考情報', icon: '➕' },
+    'edit_non_daily': { name: '非デイリー参考情報編集', category: '非デイリー発注参考情報', icon: '✏️' },
+    'delete_non_daily': { name: '非デイリー参考情報削除', category: '非デイリー発注参考情報', icon: '🗑️' },
+    // 店舗スケジュール
+    'view_daily_events': { name: '店舗スケジュール閲覧', category: '店舗スケジュール', icon: '📅' },
+    'add_daily_event': { name: '店舗スケジュール追加', category: '店舗スケジュール', icon: '➕' },
+    'edit_daily_event': { name: '店舗スケジュール編集', category: '店舗スケジュール', icon: '✏️' },
+    'delete_daily_event': { name: '店舗スケジュール削除', category: '店舗スケジュール', icon: '🗑️' },
+    // レポート
+    'view_trend_report': { name: 'トレンドレポート閲覧', category: 'レポート', icon: '📊' },
+    'add_trend_report': { name: 'トレンドレポート追加', category: 'レポート', icon: '➕' },
+    'edit_trend_report': { name: 'トレンドレポート編集', category: 'レポート', icon: '✏️' },
+    'delete_trend_report': { name: 'トレンドレポート削除', category: 'レポート', icon: '🗑️' },
+    'view_new_product': { name: '新商品レポート閲覧', category: 'レポート', icon: '🆕' },
+    'add_new_product': { name: '新商品レポート追加', category: 'レポート', icon: '➕' },
+    'edit_new_product': { name: '新商品レポート編集', category: 'レポート', icon: '✏️' },
+    'delete_new_product': { name: '新商品レポート削除', category: 'レポート', icon: '🗑️' },
+    // メッセージ
+    'view_messages': { name: 'メッセージ確認', category: 'コミュニケーション', icon: '📩' },
+    'send_broadcast': { name: '全員へ通知送信', category: 'コミュニケーション', icon: '📢' },
+    // 管理者機能
+    'admin_approve': { name: '申請承認', category: '管理者', icon: '✅' },
+    'admin_reject': { name: '申請却下', category: '管理者', icon: '❌' },
+    'manage_employees': { name: '従業員管理', category: '管理者', icon: '👥' },
+    'view_feedback_stats': { name: 'フィードバック集計閲覧', category: '管理者', icon: '📊' },
+    'manage_product_categories': { name: '商品分類管理', category: '管理者', icon: '📂' },
+    // その他
+    'export_pdf': { name: 'PDF出力', category: 'その他', icon: '📄' },
+    'print_shift': { name: 'シフト表印刷', category: 'その他', icon: '🖨️' }
+};
+
+// 利用統計を記録する関数
+function trackUsage(featureId, userName = null) {
+    const feature = USAGE_FEATURES[featureId];
+    if (!feature) return;
+    
+    const stat = {
+        id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
+        featureId: featureId,
+        featureName: feature.name,
+        category: feature.category,
+        userName: userName || '匿名',
+        timestamp: new Date().toISOString(),
+        date: formatDate(new Date())
+    };
+    
+    // Firebaseに保存
+    database.ref('usageStats/' + stat.id).set(stat);
+}
 
 // 店舗の位置情報（千葉県千葉市）
 const STORE_LOCATION = {
@@ -148,6 +218,14 @@ function loadData() {
     // dailyChecklistはオブジェクト形式で管理
     database.ref('dailyChecklist').on('value', snap => {
         state.dailyChecklist = snap.val() || {};
+    });
+    // 利用統計（管理者用）
+    database.ref('usageStats').on('value', snap => {
+        const data = snap.val();
+        state.usageStats = data ? Object.values(data) : [];
+        if (state.isAdmin && state.activeAdminTab === 'usageStats') {
+            renderAdminPanel();
+        }
     });
 }
 
@@ -979,11 +1057,11 @@ function updateMessageBar() {
 }
 
 // CRUD操作
-function addShift(d) { const s = { id: Date.now().toString(), ...d }; state.shifts.push(s); saveToFirebase('shifts', state.shifts); }
-function updateShift(id, d) { const i = state.shifts.findIndex(s => s.id === id); if (i >= 0) { state.shifts[i] = { ...state.shifts[i], ...d }; saveToFirebase('shifts', state.shifts); } }
-function addFixedShift(d) { const s = { id: Date.now().toString(), dayOfWeek: getDayOfWeek(d.date), ...d }; delete s.date; state.fixedShifts.push(s); saveToFirebase('fixedShifts', state.fixedShifts); }
-function deleteShift(id) { state.shifts = state.shifts.filter(s => s.id !== id); saveToFirebase('shifts', state.shifts); }
-function deleteFixedShift(id) { state.fixedShifts = state.fixedShifts.filter(s => s.id !== id); saveToFirebase('fixedShifts', state.fixedShifts); }
+function addShift(d) { const s = { id: Date.now().toString(), ...d }; state.shifts.push(s); saveToFirebase('shifts', state.shifts); trackUsage('add_shift', d.name); }
+function updateShift(id, d) { const i = state.shifts.findIndex(s => s.id === id); if (i >= 0) { state.shifts[i] = { ...state.shifts[i], ...d }; saveToFirebase('shifts', state.shifts); trackUsage('edit_shift', d.name || state.shifts[i]?.name); } }
+function addFixedShift(d) { const s = { id: Date.now().toString(), dayOfWeek: getDayOfWeek(d.date), ...d }; delete s.date; state.fixedShifts.push(s); saveToFirebase('fixedShifts', state.fixedShifts); trackUsage('add_shift', d.name); }
+function deleteShift(id) { const shift = state.shifts.find(s => s.id === id); state.shifts = state.shifts.filter(s => s.id !== id); saveToFirebase('shifts', state.shifts); trackUsage('delete_shift', shift?.name); }
+function deleteFixedShift(id) { const shift = state.fixedShifts.find(s => s.id === id); state.fixedShifts = state.fixedShifts.filter(s => s.id !== id); saveToFirebase('fixedShifts', state.fixedShifts); trackUsage('delete_shift', shift?.name); }
 function updateFixedShift(id, d) {
     const i = state.fixedShifts.findIndex(s => s.id === id);
     if (i >= 0) {
@@ -1017,6 +1095,7 @@ function addChangeRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
     state.changeRequests.push(r);
     saveToFirebase('changeRequests', state.changeRequests);
+    trackUsage('request_change', d.applicant);
 
     // シフトの持ち主と管理者にメッセージを送信
     const shift = state.shifts.find(s => s.id === d.originalShiftId);
@@ -1035,11 +1114,12 @@ function addChangeRequest(d) {
         saveToFirebase('messages', state.messages);
     }
 }
-function addLeaveRequest(d) { const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d }; state.leaveRequests.push(r); saveToFirebase('leaveRequests', state.leaveRequests); }
+function addLeaveRequest(d) { const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d }; state.leaveRequests.push(r); saveToFirebase('leaveRequests', state.leaveRequests); trackUsage('request_leave', d.name); }
 function addSwapRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
     state.swapRequests.push(r);
     saveToFirebase('swapRequests', state.swapRequests);
+    trackUsage('request_swap', d.applicant);
 
     // シフト情報を取得（固定シフトの場合も対応）
     let shiftInfo = null;
@@ -1130,6 +1210,7 @@ function addHolidayRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
     state.holidayRequests.push(r);
     saveToFirebase('holidayRequests', state.holidayRequests);
+    trackUsage('request_holiday', d.name);
 
     // 管理者に通知
     const title = '🏠 休日申請';
@@ -1216,6 +1297,7 @@ function createHalfDayOff(s, halfDayType) {
     };
     state.holidayRequests.push(holidayRequest);
     saveToFirebase('holidayRequests', state.holidayRequests);
+    trackUsage('create_halfday', name);
 
     // シフトは削除せず、半休バーを表示する（シフトは残したまま）
     // 必要に応じてシフトを削除する場合はここに追加
@@ -1225,6 +1307,7 @@ function createHalfDayOff(s, halfDayType) {
     render();
 }
 function sendBroadcast(title, content) {
+    trackUsage('send_broadcast', '管理者');
     state.employees.forEach(e => {
         state.messages.push({ id: Date.now().toString() + e.id, to: e.name, from: '管理者', title, content, createdAt: new Date().toISOString(), read: false });
     });
@@ -1235,6 +1318,7 @@ function sendBroadcast(title, content) {
 function approveRequest(type, id) {
     const processedAt = new Date().toISOString();
     const processedBy = '管理者'; // 現在は管理者のみが承認可能
+    trackUsage('admin_approve', '管理者');
 
     if (type === 'change') {
         const r = state.changeRequests.find(x => x.id === id);
@@ -1439,6 +1523,7 @@ function approveRequest(type, id) {
 function rejectRequest(type, id) {
     const processedAt = new Date().toISOString();
     const processedBy = '管理者';
+    trackUsage('admin_reject', '管理者');
 
     let arr, refName;
     if (type === 'change') {
@@ -1671,6 +1756,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'newProductReport') {
         // 新商品レポート管理
         renderNewProductReportAdmin(c);
+    } else if (state.activeAdminTab === 'usageStats') {
+        // 利用統計
+        renderUsageStats(c);
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -2143,7 +2231,7 @@ function initEventListeners() {
     document.getElementById('pinModalOverlay').onclick = e => { if (e.target.id === 'pinModalOverlay') closeModal(document.getElementById('pinModalOverlay')); };
     document.getElementById('pinForm').onsubmit = e => { e.preventDefault(); if (verifyPin(document.getElementById('adminPin').value)) { closeModal(document.getElementById('pinModalOverlay')); switchToAdmin(); } else { document.getElementById('pinError').style.display = 'block'; document.getElementById('adminPin').value = ''; } };
 
-    document.getElementById('viewMessagesBtn').onclick = () => { renderMessages(); openModal(document.getElementById('messagesModalOverlay')); };
+    document.getElementById('viewMessagesBtn').onclick = () => { trackUsage('view_messages', '匿名'); renderMessages(); openModal(document.getElementById('messagesModalOverlay')); };
     document.getElementById('messagesModalClose').onclick = () => closeModal(document.getElementById('messagesModalOverlay'));
     document.getElementById('messagesModalOverlay').onclick = e => { if (e.target.id === 'messagesModalOverlay') closeModal(document.getElementById('messagesModalOverlay')); };
 
@@ -2435,6 +2523,7 @@ function initZoomControls() {
 // PDF出力・印刷機能
 // ========================================
 function exportToPdf() {
+    trackUsage('export_pdf', state.isAdmin ? '管理者' : '匿名');
     const element = document.querySelector('.app-container');
     if (!element) return;
 
@@ -2503,6 +2592,7 @@ function exportToPdf() {
 }
 
 function printShiftTable() {
+    trackUsage('print_shift', state.isAdmin ? '管理者' : '匿名');
     window.print();
 }
 
@@ -2990,6 +3080,7 @@ function addDailyEvent(data) {
     };
     state.dailyEvents.push(event);
     saveToFirebase('dailyEvents', state.dailyEvents);
+    trackUsage('add_daily_event', '管理者');
 }
 
 // イベント更新
@@ -2998,6 +3089,7 @@ function updateDailyEvent(id, data) {
     if (index >= 0) {
         state.dailyEvents[index] = { ...state.dailyEvents[index], ...data };
         saveToFirebase('dailyEvents', state.dailyEvents);
+        trackUsage('edit_daily_event', '管理者');
     }
 }
 
@@ -3098,6 +3190,7 @@ function closeEventPopover() {
 function confirmDeleteEvent(id) {
     const event = state.dailyEvents.find(e => e.id === id);
     if (event && confirm(`「${event.title}」を削除しますか？`)) {
+        trackUsage('delete_daily_event', '管理者');
         deleteDailyEvent(id);
         closeEventPopover();
         render();
@@ -4630,6 +4723,7 @@ function submitNewProductReport(event, form, reportId = null) {
             report.content = content;
             report.updatedAt = new Date().toISOString();
         }
+        trackUsage('edit_new_product', '管理者');
     } else {
         // 新規追加
         const newReport = {
@@ -4640,6 +4734,7 @@ function submitNewProductReport(event, form, reportId = null) {
             updatedAt: new Date().toISOString()
         };
         state.newProductReports.push(newReport);
+        trackUsage('add_new_product', '管理者');
     }
     
     saveToFirebase('newProductReports', state.newProductReports);
@@ -4653,6 +4748,7 @@ function deleteNewProductReport(reportId) {
     
     state.newProductReports = state.newProductReports.filter(r => r.id !== reportId);
     saveToFirebase('newProductReports', state.newProductReports);
+    trackUsage('delete_new_product', '管理者');
     renderNewProductReport();
 }
 
@@ -4766,6 +4862,7 @@ function addNonDailyAdvice(data) {
     };
     state.nonDailyAdvice.push(advice);
     saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+    trackUsage('add_non_daily', '管理者');
 }
 
 // 非デイリーアドバイスを更新
@@ -4778,6 +4875,7 @@ function updateNonDailyAdvice(id, data) {
             updatedAt: new Date().toISOString()
         };
         saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+        trackUsage('edit_non_daily', '管理者');
     }
 }
 
@@ -4786,6 +4884,7 @@ function deleteNonDailyAdvice(id) {
     if (confirm('このアドバイスを削除しますか？')) {
         state.nonDailyAdvice = state.nonDailyAdvice.filter(a => a.id !== id);
         saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+        trackUsage('delete_non_daily', '管理者');
         renderNonDailyAdvisor();
         if (state.isAdmin) renderAdminPanel();
     }
@@ -5285,6 +5384,7 @@ function deleteTrendReport(reportId) {
     
     state.trendReports = state.trendReports.filter(r => r.id !== reportId);
     saveToFirebase('trendReports', state.trendReports);
+    trackUsage('delete_trend_report', '管理者');
     renderTrendReports();
 }
 
@@ -5389,6 +5489,7 @@ function submitTrendReport(event, form, reportId = null) {
                 updatedAt: new Date().toISOString()
             };
         }
+        trackUsage('edit_trend_report', '管理者');
     } else {
         // 新規追加
         const report = {
@@ -5399,6 +5500,7 @@ function submitTrendReport(event, form, reportId = null) {
             updatedAt: new Date().toISOString()
         };
         state.trendReports.push(report);
+        trackUsage('add_trend_report', '管理者');
     }
     
     saveToFirebase('trendReports', state.trendReports);
@@ -5793,6 +5895,11 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
 
 // 発注アドバイス画面を表示
 function showOrderAdviceScreen() {
+    // 利用追跡
+    const staffName = state.orderAdvice.selectedStaffId ? 
+        (state.employees.find(e => e.id === state.orderAdvice.selectedStaffId)?.name || '匿名') : '匿名';
+    trackUsage('view_order_advice', staffName);
+    
     const mainContent = document.querySelector('.app-container');
     const existingScreen = document.getElementById('orderAdviceScreen');
     if (existingScreen) {
@@ -6892,6 +6999,369 @@ function loadOrderFeedback() {
             state.orderAdvice.feedbackData = data;
         }
     });
+}
+
+// ========================================
+// 利用統計機能
+// ========================================
+
+// 利用統計の表示関数
+function renderUsageStats(container) {
+    const stats = state.usageStats || [];
+    
+    // 期間フィルター用の日付を計算
+    const today = new Date();
+    const todayStr = formatDate(today);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = formatDate(weekAgo);
+    const monthAgo = new Date(today);
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    const monthAgoStr = formatDate(monthAgo);
+    
+    // 現在のフィルター設定を取得
+    const currentPeriod = state.usageStatsPeriod || 'week';
+    const currentView = state.usageStatsView || 'byFeature';
+    
+    // 期間でフィルター
+    let filtered = stats;
+    if (currentPeriod === 'today') {
+        filtered = stats.filter(s => s.date === todayStr);
+    } else if (currentPeriod === 'week') {
+        filtered = stats.filter(s => s.date >= weekAgoStr);
+    } else if (currentPeriod === 'month') {
+        filtered = stats.filter(s => s.date >= monthAgoStr);
+    }
+    
+    // サマリー統計を計算
+    const totalActions = filtered.length;
+    const uniqueUsers = [...new Set(filtered.map(s => s.userName))].length;
+    const uniqueFeatures = [...new Set(filtered.map(s => s.featureId))].length;
+    
+    // 機能別集計
+    const byFeature = {};
+    filtered.forEach(s => {
+        if (!byFeature[s.featureId]) {
+            byFeature[s.featureId] = {
+                featureId: s.featureId,
+                featureName: s.featureName,
+                category: s.category,
+                count: 0,
+                users: new Set()
+            };
+        }
+        byFeature[s.featureId].count++;
+        byFeature[s.featureId].users.add(s.userName);
+    });
+    
+    // ユーザー別集計
+    const byUser = {};
+    filtered.forEach(s => {
+        if (!byUser[s.userName]) {
+            byUser[s.userName] = {
+                userName: s.userName,
+                count: 0,
+                features: new Set()
+            };
+        }
+        byUser[s.userName].count++;
+        byUser[s.userName].features.add(s.featureId);
+    });
+    
+    // カテゴリ別集計
+    const byCategory = {};
+    filtered.forEach(s => {
+        if (!byCategory[s.category]) {
+            byCategory[s.category] = { count: 0, features: new Set() };
+        }
+        byCategory[s.category].count++;
+        byCategory[s.category].features.add(s.featureId);
+    });
+    
+    // 未使用機能を特定
+    const usedFeatures = new Set(filtered.map(s => s.featureId));
+    const unusedFeatures = Object.keys(USAGE_FEATURES).filter(f => !usedFeatures.has(f));
+    
+    container.innerHTML = `
+        <div class="usage-stats-container">
+            <div class="usage-stats-header">
+                <h3>📊 利用統計</h3>
+                <div class="usage-stats-controls">
+                    <div class="filter-group">
+                        <label>期間:</label>
+                        <select id="usagePeriodFilter" onchange="changeUsageStatsPeriod(this.value)">
+                            <option value="today" ${currentPeriod === 'today' ? 'selected' : ''}>今日</option>
+                            <option value="week" ${currentPeriod === 'week' ? 'selected' : ''}>過去7日間</option>
+                            <option value="month" ${currentPeriod === 'month' ? 'selected' : ''}>過去30日間</option>
+                            <option value="all" ${currentPeriod === 'all' ? 'selected' : ''}>全期間</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>表示:</label>
+                        <select id="usageViewFilter" onchange="changeUsageStatsView(this.value)">
+                            <option value="byFeature" ${currentView === 'byFeature' ? 'selected' : ''}>機能別</option>
+                            <option value="byUser" ${currentView === 'byUser' ? 'selected' : ''}>ユーザー別</option>
+                            <option value="byCategory" ${currentView === 'byCategory' ? 'selected' : ''}>カテゴリ別</option>
+                            <option value="unused" ${currentView === 'unused' ? 'selected' : ''}>未使用機能</option>
+                            <option value="timeline" ${currentView === 'timeline' ? 'selected' : ''}>タイムライン</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="clearUsageStats()">🗑️ データクリア</button>
+                </div>
+            </div>
+            
+            <div class="usage-stats-summary">
+                <div class="summary-card">
+                    <div class="summary-value">${totalActions}</div>
+                    <div class="summary-label">総アクション数</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${uniqueUsers}</div>
+                    <div class="summary-label">アクティブユーザー</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${uniqueFeatures}</div>
+                    <div class="summary-label">使用機能数</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${unusedFeatures.length}</div>
+                    <div class="summary-label">未使用機能</div>
+                </div>
+            </div>
+            
+            <div class="usage-stats-content" id="usageStatsContent"></div>
+        </div>
+    `;
+    
+    const contentEl = document.getElementById('usageStatsContent');
+    
+    if (currentView === 'byFeature') {
+        renderUsageByFeature(contentEl, byFeature);
+    } else if (currentView === 'byUser') {
+        renderUsageByUser(contentEl, byUser);
+    } else if (currentView === 'byCategory') {
+        renderUsageByCategory(contentEl, byCategory);
+    } else if (currentView === 'unused') {
+        renderUnusedFeatures(contentEl, unusedFeatures);
+    } else if (currentView === 'timeline') {
+        renderUsageTimeline(contentEl, filtered);
+    }
+}
+
+// 機能別表示
+function renderUsageByFeature(container, byFeature) {
+    const sorted = Object.values(byFeature).sort((a, b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        return;
+    }
+    
+    const maxCount = sorted[0]?.count || 1;
+    
+    let html = '<div class="usage-feature-list">';
+    sorted.forEach(f => {
+        const feature = USAGE_FEATURES[f.featureId];
+        const icon = feature?.icon || '📌';
+        const percentage = (f.count / maxCount * 100).toFixed(0);
+        
+        html += `
+            <div class="usage-feature-item">
+                <div class="feature-info">
+                    <span class="feature-icon">${icon}</span>
+                    <div class="feature-details">
+                        <span class="feature-name">${f.featureName}</span>
+                        <span class="feature-category">${f.category}</span>
+                    </div>
+                </div>
+                <div class="feature-stats">
+                    <div class="usage-bar-container">
+                        <div class="usage-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="usage-count">${f.count}回</span>
+                    <span class="usage-users">${f.users.size}人</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ユーザー別表示
+function renderUsageByUser(container, byUser) {
+    const sorted = Object.values(byUser).sort((a, b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        return;
+    }
+    
+    const maxCount = sorted[0]?.count || 1;
+    
+    let html = '<div class="usage-user-list">';
+    sorted.forEach(u => {
+        const percentage = (u.count / maxCount * 100).toFixed(0);
+        
+        html += `
+            <div class="usage-user-item">
+                <div class="user-info">
+                    <div class="user-avatar">${u.userName.charAt(0)}</div>
+                    <span class="user-name">${u.userName}</span>
+                </div>
+                <div class="user-stats">
+                    <div class="usage-bar-container">
+                        <div class="usage-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="usage-count">${u.count}回</span>
+                    <span class="usage-features">${u.features.size}機能</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// カテゴリ別表示
+function renderUsageByCategory(container, byCategory) {
+    const sorted = Object.entries(byCategory).sort((a, b) => b[1].count - a[1].count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        return;
+    }
+    
+    const maxCount = sorted[0]?.[1].count || 1;
+    
+    let html = '<div class="usage-category-list">';
+    sorted.forEach(([category, data]) => {
+        const percentage = (data.count / maxCount * 100).toFixed(0);
+        
+        html += `
+            <div class="usage-category-item">
+                <div class="category-info">
+                    <span class="category-name">${category}</span>
+                </div>
+                <div class="category-stats">
+                    <div class="usage-bar-container">
+                        <div class="usage-bar category-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <span class="usage-count">${data.count}回</span>
+                    <span class="usage-features">${data.features.size}機能</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 未使用機能表示
+function renderUnusedFeatures(container, unusedFeatures) {
+    if (unusedFeatures.length === 0) {
+        container.innerHTML = '<p class="success-message">🎉 すべての機能が使用されています！</p>';
+        return;
+    }
+    
+    // カテゴリごとにグループ化
+    const byCategory = {};
+    unusedFeatures.forEach(fId => {
+        const feature = USAGE_FEATURES[fId];
+        if (!feature) return;
+        if (!byCategory[feature.category]) {
+            byCategory[feature.category] = [];
+        }
+        byCategory[feature.category].push({ id: fId, ...feature });
+    });
+    
+    let html = '<div class="unused-features-list">';
+    html += '<p class="unused-description">以下の機能は選択期間中に使用されていません。削除または改善を検討してください。</p>';
+    
+    Object.entries(byCategory).forEach(([category, features]) => {
+        html += `
+            <div class="unused-category">
+                <h4 class="unused-category-title">${category}</h4>
+                <div class="unused-features-grid">
+                    ${features.map(f => `
+                        <div class="unused-feature-card">
+                            <span class="feature-icon">${f.icon}</span>
+                            <span class="feature-name">${f.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// タイムライン表示
+function renderUsageTimeline(container, filtered) {
+    const sorted = [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        return;
+    }
+    
+    // 最新100件のみ表示
+    const limited = sorted.slice(0, 100);
+    
+    let html = '<div class="usage-timeline">';
+    html += `<p class="timeline-info">最新${Math.min(sorted.length, 100)}件を表示 ${sorted.length > 100 ? `(全${sorted.length}件)` : ''}</p>`;
+    
+    let currentDate = '';
+    limited.forEach(s => {
+        const date = s.date;
+        if (date !== currentDate) {
+            if (currentDate) html += '</div>';
+            const d = new Date(date);
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            html += `<div class="timeline-date-header">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）</div>`;
+            html += '<div class="timeline-entries">';
+            currentDate = date;
+        }
+        
+        const feature = USAGE_FEATURES[s.featureId];
+        const icon = feature?.icon || '📌';
+        const time = new Date(s.timestamp);
+        const timeStr = `${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
+        
+        html += `
+            <div class="timeline-entry">
+                <span class="timeline-time">${timeStr}</span>
+                <span class="timeline-icon">${icon}</span>
+                <span class="timeline-feature">${s.featureName}</span>
+                <span class="timeline-user">${s.userName}</span>
+            </div>
+        `;
+    });
+    if (currentDate) html += '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 期間フィルター変更
+function changeUsageStatsPeriod(period) {
+    state.usageStatsPeriod = period;
+    renderAdminPanel();
+}
+
+// 表示切り替え
+function changeUsageStatsView(view) {
+    state.usageStatsView = view;
+    renderAdminPanel();
+}
+
+// 利用統計データクリア
+function clearUsageStats() {
+    if (!confirm('利用統計データをすべて削除しますか？この操作は取り消せません。')) return;
+    database.ref('usageStats').remove();
+    state.usageStats = [];
+    renderAdminPanel();
+    alert('利用統計データを削除しました');
 }
 
 // 発注アドバイスボタンのイベントリスナー

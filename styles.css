@@ -5448,3 +5448,332 @@ body {
         gap: 8px;
     }
 }
+: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.usage-stats-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.usage-stats-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.usage-stats-controls .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.usage-stats-controls label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.usage-stats-controls select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.usage-stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.usage-stats-summary .summary-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+}
+
+.usage-stats-summary .summary-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.usage-stats-summary .summary-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* 機能別表示 */
+.usage-feature-list,
+.usage-user-list,
+.usage-category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.usage-feature-item,
+.usage-user-item,
+.usage-category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    gap: 16px;
+}
+
+.feature-info,
+.user-info,
+.category-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+}
+
+.feature-icon {
+    font-size: 1.5rem;
+}
+
+.feature-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.feature-name,
+.user-name,
+.category-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.feature-category {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.feature-stats,
+.user-stats,
+.category-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.usage-bar-container {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 100px;
+}
+
+.usage-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.usage-bar.category-bar {
+    background: linear-gradient(90deg, var(--success), #34d399);
+}
+
+.usage-count,
+.usage-users,
+.usage-features {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    min-width: 50px;
+    text-align: right;
+}
+
+.usage-count {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* 未使用機能表示 */
+.unused-features-list {
+    padding: 16px;
+}
+
+.unused-description {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--danger);
+}
+
+.unused-category {
+    margin-bottom: 20px;
+}
+
+.unused-category-title {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.unused-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+}
+
+.unused-feature-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+}
+
+.unused-feature-card .feature-icon {
+    font-size: 1.2rem;
+    opacity: 0.6;
+}
+
+.unused-feature-card .feature-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.success-message {
+    text-align: center;
+    padding: 40px;
+    color: var(--success);
+    font-size: 1.1rem;
+}
+
+.no-data-message {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+}
+
+/* タイムライン表示 */
+.usage-timeline {
+    padding: 8px 0;
+}
+
+.timeline-info {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.timeline-date-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 12px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.timeline-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.timeline-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.timeline-time {
+    font-family: monospace;
+    color: var(--text-muted);
+    min-width: 45px;
+}
+
+.timeline-icon {
+    font-size: 1.1rem;
+}
+
+.timeline-feature {
+    flex: 1;
+    color: var(--text-primary);
+}
+
+.timeline-user {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .usage-stats-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .usage-stats-controls {
+        width: 100%;
+    }
+    
+    .usage-feature-item,
+    .usage-user-item,
+    .usage-category-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .feature-stats,
+    .user-stats,
+    .category-stats {
+        width: 100%;
+    }
+    
+    .feature-info,
+    .user-info,
+    .category-info {
+        min-width: auto;
+    }
+}
