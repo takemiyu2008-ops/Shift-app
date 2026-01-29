@@ -1961,6 +1961,14 @@ function renderAdminPanel() {
     updateAdminBadges();
     const c = document.getElementById('adminContent');
     c.innerHTML = '';
+    
+    // トレンドレポートタブの場合はmax-heightを解除
+    if (state.activeAdminTab === 'trendReports' || state.activeAdminTab === 'newProductReport') {
+        c.classList.add('trend-reports-content');
+    } else {
+        c.classList.remove('trend-reports-content');
+    }
+    
     if (state.activeAdminTab === 'shiftChanges') {
         const reqs = state.changeRequests.filter(r => r.status === 'pending');
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
@@ -4482,6 +4490,23 @@ function initAdvisorGroupToggle() {
     const groupHeader = document.getElementById('advisorGroupHeader');
     const groupToggle = document.getElementById('advisorGroupToggle');
     const groupContent = document.getElementById('advisorGroupContent');
+
+    if (groupHeader && groupToggle && groupContent) {
+        groupHeader.onclick = () => {
+            groupToggle.classList.toggle('collapsed');
+            groupContent.classList.toggle('collapsed');
+        };
+    }
+    
+    // 印刷画面グループのトグルも初期化
+    initPrintGroupToggle();
+}
+
+// 印刷画面グループのトグル
+function initPrintGroupToggle() {
+    const groupHeader = document.getElementById('printGroupHeader');
+    const groupToggle = document.getElementById('printGroupToggle');
+    const groupContent = document.getElementById('printGroupContent');
 
     if (groupHeader && groupToggle && groupContent) {
         groupHeader.onclick = () => {

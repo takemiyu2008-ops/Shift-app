@@ -377,8 +377,13 @@ body {
 }
 
 .admin-content {
-    max-height: 400px;
+    max-height: 600px;
     overflow-y: auto;
+}
+
+/* トレンドレポートタブ用（長文表示対応） */
+.admin-content.trend-reports-content {
+    max-height: none;
 }
 
 .request-card {
@@ -2788,6 +2793,8 @@ body {
     color: var(--text-primary);
     line-height: 1.7;
     white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .new-product-report-card .report-actions,
@@ -3597,6 +3604,42 @@ body {
 .advisor-group-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
+}
+
+/* 印刷画面グループ */
+.print-group {
+    margin-bottom: 16px;
+}
+
+.print-group .advisor-group-header {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.print-group .advisor-group-icon {
+    font-size: 1.2rem;
+}
+
+.pdf-section-inner {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pdf-section-inner .btn {
+    min-width: 120px;
+}
+
+@media (max-width: 768px) {
+    .pdf-section-inner {
+        flex-direction: column;
+    }
+    
+    .pdf-section-inner .btn {
+        width: 100%;
+    }
 }
 
 .advisor-group-toggle.collapsed {

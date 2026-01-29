@@ -101,26 +101,6 @@
             <button id="viewMessagesBtn" class="btn btn-sm btn-primary">確認</button>
         </div>
 
-        <!-- ズームコントロール & PDF出力 -->
-        <div class="zoom-controls">
-            <div class="zoom-section">
-                <span class="zoom-label">🔍 表示サイズ:</span>
-                <button id="zoomOut" class="zoom-btn">−</button>
-                <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider">
-                <button id="zoomIn" class="zoom-btn">+</button>
-                <span id="zoomValue" class="zoom-value">100%</span>
-                <button id="zoomReset" class="btn btn-sm btn-secondary">リセット</button>
-            </div>
-            <div class="pdf-section">
-                <button id="exportPdfBtn" class="btn btn-info">
-                    📄 PDF出力
-                </button>
-                <button id="printBtn" class="btn btn-secondary">
-                    🖨️ 印刷
-                </button>
-            </div>
-        </div>
-
         <!-- 発注・スケジュール情報グループ -->
         <div class="advisor-group" id="advisorGroup">
             <div class="advisor-group-header" id="advisorGroupHeader">
@@ -186,6 +166,37 @@
                         <!-- JSで動的に生成 -->
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 印刷画面グループ -->
+        <div class="advisor-group print-group" id="printGroup">
+            <div class="advisor-group-header" id="printGroupHeader">
+                <span class="advisor-group-icon">🖨️</span>
+                <span class="advisor-group-title">印刷画面（PDF出力、印刷）</span>
+                <button class="advisor-group-toggle" id="printGroupToggle">▼</button>
+            </div>
+            <div class="advisor-group-content collapsed" id="printGroupContent">
+                <div class="pdf-section-inner">
+                    <button id="exportPdfBtn" class="btn btn-info">
+                        📄 PDF出力
+                    </button>
+                    <button id="printBtn" class="btn btn-secondary">
+                        🖨️ 印刷
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ズームコントロール -->
+        <div class="zoom-controls">
+            <div class="zoom-section">
+                <span class="zoom-label">🔍 表示サイズ:</span>
+                <button id="zoomOut" class="zoom-btn">−</button>
+                <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider">
+                <button id="zoomIn" class="zoom-btn">+</button>
+                <span id="zoomValue" class="zoom-value">100%</span>
+                <button id="zoomReset" class="btn btn-sm btn-secondary">リセット</button>
             </div>
         </div>
 
