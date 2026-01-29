@@ -5799,6 +5799,7 @@ body {
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: all 0.2s ease;
+    width: 100%;
 }
 
 .shift-selection-item:last-child {
@@ -5830,24 +5831,23 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    overflow: hidden;
 }
 
 .shift-selection-date {
     font-weight: 600;
     font-size: 0.95rem;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #f8fafc !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .shift-selection-time {
     font-size: 0.9rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #94a3b8 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .shift-selection-badge {
@@ -5856,8 +5856,6 @@ body {
     border-radius: 10px;
     background: var(--primary);
     color: white;
-    flex-shrink: 0;
-    white-space: nowrap;
 }
 
 .shift-selection-badge.fixed {

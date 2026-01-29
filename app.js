@@ -1244,18 +1244,21 @@ function updateLeaveShiftList() {
         const d = new Date(s.date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
         const dayClass = d.getDay() === 0 ? 'sunday' : (d.getDay() === 6 ? 'saturday' : '');
+        const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
         const badges = [];
         if (s.isFixed) badges.push('<span class="shift-selection-badge fixed">固定</span>');
         if (s.overnight) badges.push('<span class="shift-selection-badge overnight">夜勤</span>');
         
         const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
+        const dateText = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
+        const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
         
         return `
             <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)">
                 <input type="checkbox" class="shift-selection-checkbox">
                 <div class="shift-selection-info">
-                    <span class="shift-selection-date ${dayClass}">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）</span>
-                    <span class="shift-selection-time">${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}</span>
+                    <span class="shift-selection-date ${dayClass}" style="color: ${dayColor}; display: block;">${dateText}</span>
+                    <span class="shift-selection-time" style="color: #94a3b8; display: block;">${timeText}</span>
                 </div>
                 ${badges.join('')}
             </div>
@@ -1287,18 +1290,21 @@ function updateHolidayShiftList() {
         const d = new Date(s.date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
         const dayClass = d.getDay() === 0 ? 'sunday' : (d.getDay() === 6 ? 'saturday' : '');
+        const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
         const badges = [];
         if (s.isFixed) badges.push('<span class="shift-selection-badge fixed">固定</span>');
         if (s.overnight) badges.push('<span class="shift-selection-badge overnight">夜勤</span>');
         
         const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
+        const dateText = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
+        const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
         
         return `
             <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')">
                 <input type="checkbox" class="shift-selection-checkbox">
                 <div class="shift-selection-info">
-                    <span class="shift-selection-date ${dayClass}">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）</span>
-                    <span class="shift-selection-time">${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}</span>
+                    <span class="shift-selection-date ${dayClass}" style="color: ${dayColor}; display: block;">${dateText}</span>
+                    <span class="shift-selection-time" style="color: #94a3b8; display: block;">${timeText}</span>
                 </div>
                 ${badges.join('')}
             </div>
