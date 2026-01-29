@@ -1190,7 +1190,7 @@ body {
     margin-bottom: 8px;
 }
 
-.form-group input,
+.form-group input:not(.shift-selection-checkbox),
 .form-group select,
 .form-group textarea {
     width: 100%;
@@ -1209,7 +1209,7 @@ body {
     user-select: text;
 }
 
-.form-group input:focus,
+.form-group input:not(.shift-selection-checkbox):focus,
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
@@ -5817,12 +5817,15 @@ body {
 }
 
 .shift-selection-checkbox {
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
     flex-shrink: 0;
     cursor: pointer;
     accent-color: var(--primary);
+    padding: 0 !important;
+    margin: 0;
 }
 
 .shift-selection-info {
