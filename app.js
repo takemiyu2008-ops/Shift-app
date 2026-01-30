@@ -8325,8 +8325,8 @@ const chatState = {
     dragOffset: { x: 0, y: 0 }
 };
 
-// 発注カテゴリリスト（HTMLから取得）
-const ORDER_CATEGORIES = [
+// 発注カテゴリリスト（チャット用）
+const CHAT_ORDER_CATEGORIES = [
     '米飯', '調理パン', '麺類その他', 'デザート', 
     'デリカテッセン（サラダ、惣菜）', '７Pデリカ', 'デリテッセン（その他）',
     '牛乳乳飲料', 'FF（おでん、中華まん）', 
