@@ -904,34 +904,6 @@ body {
     }
 }
 
-.shift-bar .delete-btn {
-    position: absolute;
-    right: 2px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    background: rgba(0, 0, 0, 0.3);
-    border: none;
-    border-radius: 50%;
-    color: white;
-    font-size: 11px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.shift-bar:hover .delete-btn {
-    opacity: 1;
-}
-
-.shift-bar .delete-btn:hover {
-    background: rgba(239, 68, 68, 0.8);
-}
-
 /* 有給バー */
 .leave-bar {
     position: absolute;
@@ -1497,12 +1469,6 @@ body {
         display: none;
     }
 
-    .shift-bar .delete-btn {
-        width: 22px;
-        height: 22px;
-        opacity: 0.8;
-    }
-
     /* スクロール改善 */
     .gantt-body {
         max-height: none;
@@ -1827,7 +1793,6 @@ body {
     .zoom-controls,
     .admin-panel,
     .message-bar,
-    .shift-bar .delete-btn,
     .shift-popover,
     .modal-overlay,
     .legend {
@@ -1925,8 +1890,7 @@ body {
 .pdf-export-mode .date-nav .nav-btn,
 .pdf-export-mode .zoom-controls,
 .pdf-export-mode .admin-panel,
-.pdf-export-mode .message-bar,
-.pdf-export-mode .shift-bar .delete-btn {
+.pdf-export-mode .message-bar {
     display: none !important;
 }
 

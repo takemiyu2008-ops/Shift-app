@@ -749,7 +749,7 @@ function createShiftBar(s, lvl) {
         bar.classList.add('swapped');
     }
 
-    bar.innerHTML = `${icons}<span class="shift-name">${s.name}</span><span class="shift-time">${time}</span><button class="delete-btn">×</button>`;
+    bar.innerHTML = `${icons}<span class="shift-name">${s.name}</span><span class="shift-time">${time}</span>`;
 
     // タッチ位置を保存するための変数
     let touchStartX = 0;
@@ -758,7 +758,6 @@ function createShiftBar(s, lvl) {
 
     // クリックイベント（デスクトップ用）
     bar.addEventListener('click', e => {
-        if (e.target.classList.contains('delete-btn')) return;
         // 確認ダイアログを表示してからポップオーバーを表示
         if (confirm('シフト内容を変更しますか？')) {
             showShiftPopover(s, e, bar);
@@ -793,11 +792,6 @@ function createShiftBar(s, lvl) {
         const touchDuration = Date.now() - touchStartTime;
         if (touchMoved || touchDuration > 500) return;
 
-        // 削除ボタンのタップは除外
-        const touch = e.changedTouches[0];
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (element && element.classList.contains('delete-btn')) return;
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -809,37 +803,6 @@ function createShiftBar(s, lvl) {
                 target: bar
             }, bar);
         }
-    }, { passive: false });
-
-    // 削除ボタン
-    const deleteBtn = bar.querySelector('.delete-btn');
-
-    // 削除処理のヘルパー関数
-    const handleShiftDelete = () => {
-        if (s.isFixed) {
-            // 固定シフトの場合
-            const parts = s.id.split('-');
-            deleteFixedShift(parts[1]);
-        } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
-            // 夜勤継続シフトの場合、元のシフトを削除
-            const originalId = s.id.replace('on-', '');
-            deleteShift(originalId);
-        } else {
-            // 通常シフトの場合
-            deleteShift(s.id);
-        }
-    };
-
-    deleteBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        handleShiftDelete();
-    });
-
-    // 削除ボタンのタッチイベント
-    deleteBtn.addEventListener('touchend', e => {
-        e.stopPropagation();
-        e.preventDefault();
-        handleShiftDelete();
     }, { passive: false });
 
     return bar;
