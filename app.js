@@ -8289,3 +8289,705 @@ if (orderAdviceBtnMobile) {
 
 // 初期化時にフィードバックデータを読み込み
 loadOrderFeedback();
+
+// ========================================
+// チャットボット機能
+// ========================================
+
+// チャット状態
+const chatState = {
+    currentRoom: 'general',
+    messages: {},
+    unreadCounts: {},
+    isOpen: false,
+    isMinimized: false,
+    currentUser: '',
+    position: { x: null, y: null },
+    isDragging: false,
+    dragOffset: { x: 0, y: 0 }
+};
+
+// 発注カテゴリリスト（HTMLから取得）
+const ORDER_CATEGORIES = [
+    '米飯', '調理パン', '麺類その他', 'デザート', 
+    'デリカテッセン（サラダ、惣菜）', '７Pデリカ', 'デリテッセン（その他）',
+    '牛乳乳飲料', 'FF（おでん、中華まん）', 
+    'お菓子（チョコレート、和菓子類）', 'お菓子（グミ、駄菓子、飴類）', 
+    'お菓子（ポテトチップス、箱スナック、米菓）',
+    '雑貨類', '消耗品', '加工食品（調味料類、珍味）', 
+    'ドリンク類', 'フローズン（アイス、冷凍食品）', 'フローズン（フライヤー、焼成パン）'
+];
+
+// ヘルプボットの応答データ
+const HELP_RESPONSES = {
+    greetings: [
+        'こんにちは！🐕 パピヨンヘルプボットです！\n何かお困りですか？',
+        'やあ！🐕 ヘルプボットだよ！\n下のカテゴリから選んでね！'
+    ],
+    categories: {
+        'シフト': {
+            keywords: ['シフト', '勤務', '出勤', '休み'],
+            response: `📅 **シフトについて**
+
+• **シフトを見る**: トップ画面のガントチャートで確認できます
+• **シフトを追加**: 「＋シフト追加」ボタンから
+• **シフトを変更**: シフトバーをタップ→「シフト変更申請」
+• **シフトを交代**: 「シフト交代依頼」ボタンから
+
+他に知りたいことはありますか？`
+        },
+        '有給・休日': {
+            keywords: ['有給', '休日', '休暇', '申請'],
+            response: `🏖️ **有給・休日申請について**
+
+• **有給申請**: 「有給申請」ボタンから申請できます
+• **休日申請**: 「休日申請」ボタンから申請できます
+• **半休**: 有給申請時に「午前半休」「午後半休」を選択
+• **承認状況**: 管理者が承認するとシフト表に反映されます
+
+申請後は管理者の承認をお待ちください。`
+        },
+        '発注': {
+            keywords: ['発注', '注文', '仕入れ', '納品'],
+            response: `📦 **発注について**
+
+• **発注アドバイス**: 画面下の「発注アドバイス」ボタンから確認
+• **カテゴリ別チェック**: 日次チェックリストで確認漏れを防止
+• **担当者連絡**: このチャットで発注カテゴリ別に連絡できます
+
+発注担当者への質問は、チャットタブから該当カテゴリを選んでください。`
+        },
+        'チャット': {
+            keywords: ['チャット', 'メッセージ', '連絡', '通知'],
+            response: `💬 **チャットの使い方**
+
+• **全体チャット**: 全スタッフへの連絡に使用
+• **発注カテゴリ別**: 各発注担当者への連絡に使用
+• **ヘルプ**: このボットに質問できます
+
+名前を選択してからメッセージを送信してください。`
+        },
+        '管理者機能': {
+            keywords: ['管理', '設定', 'PIN', '暗証番号'],
+            response: `⚙️ **管理者機能について**
+
+• **管理者モード**: 「役割切替」→ PIN入力でアクセス
+• **できること**: 
+  - シフト変更/有給/休日申請の承認・却下
+  - 従業員の追加・編集
+  - 店舗スケジュールの管理
+  - 各種レポートの管理
+
+管理者PINがわからない場合は店長にお問い合わせください。`
+        },
+        'その他': {
+            keywords: ['印刷', 'PDF', 'ズーム', '拡大'],
+            response: `🔧 **その他の機能**
+
+• **シフト表印刷**: ズームコントロールの「PDF出力」ボタン
+• **表示拡大/縮小**: スライダーで調整
+• **週の移動**: 「◀ 前週」「翌週 ▶」ボタン
+
+他にご質問があれば、お気軽にどうぞ！`
+        }
+    },
+    fallback: `🤔 すみません、よくわかりませんでした。
+
+以下のカテゴリから選んでいただくか、キーワードを入力してください：
+• シフト
+• 有給・休日
+• 発注
+• チャット
+• 管理者機能
+• その他`
+};
+
+// チャットの初期化
+function initChat() {
+    const floatBtn = document.getElementById('chatFloatBtn');
+    const chatWindow = document.getElementById('chatWindow');
+    const closeBtn = document.getElementById('chatCloseBtn');
+    const minimizeBtn = document.getElementById('chatMinimizeBtn');
+    const sendBtn = document.getElementById('chatSendBtn');
+    const chatInput = document.getElementById('chatInput');
+    const chatHeader = document.getElementById('chatHeader');
+    
+    // フローティングボタンのクリック
+    floatBtn.addEventListener('click', () => {
+        toggleChat();
+    });
+    
+    // 閉じるボタン
+    closeBtn.addEventListener('click', () => {
+        closeChat();
+    });
+    
+    // 最小化ボタン
+    minimizeBtn.addEventListener('click', () => {
+        toggleMinimize();
+    });
+    
+    // 送信ボタン
+    sendBtn.addEventListener('click', () => {
+        sendMessage();
+    });
+    
+    // Enterキーで送信
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    // ドラッグ機能の初期化
+    initChatDrag(chatHeader, chatWindow);
+    
+    // タブの初期化
+    initChatTabs();
+    
+    // ユーザー選択の初期化
+    updateChatUserSelect();
+    
+    // Firebaseからメッセージを読み込み
+    loadChatMessages();
+    
+    // ヘルプルームの初期メッセージ
+    setTimeout(() => {
+        if (!chatState.messages['help'] || chatState.messages['help'].length === 0) {
+            addBotMessage('help', getRandomGreeting());
+        }
+    }, 1000);
+}
+
+// ランダムな挨拶を取得
+function getRandomGreeting() {
+    const greetings = HELP_RESPONSES.greetings;
+    return greetings[Math.floor(Math.random() * greetings.length)];
+}
+
+// チャットのドラッグ機能
+function initChatDrag(header, chatWindow) {
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+    
+    header.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.chat-header-btn')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = chatWindow.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        chatWindow.style.transition = 'none';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+        
+        // 画面内に収める
+        const maxX = window.innerWidth - chatWindow.offsetWidth;
+        const maxY = window.innerHeight - chatWindow.offsetHeight;
+        newLeft = Math.max(0, Math.min(newLeft, maxX));
+        newTop = Math.max(0, Math.min(newTop, maxY));
+        
+        chatWindow.style.left = newLeft + 'px';
+        chatWindow.style.top = newTop + 'px';
+        chatWindow.style.right = 'auto';
+        chatWindow.style.bottom = 'auto';
+        
+        chatState.position = { x: newLeft, y: newTop };
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            chatWindow.style.transition = '';
+        }
+    });
+    
+    // タッチイベント対応
+    header.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.chat-header-btn')) return;
+        isDragging = true;
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        const rect = chatWindow.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        chatWindow.style.transition = 'none';
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+        
+        const maxX = window.innerWidth - chatWindow.offsetWidth;
+        const maxY = window.innerHeight - chatWindow.offsetHeight;
+        newLeft = Math.max(0, Math.min(newLeft, maxX));
+        newTop = Math.max(0, Math.min(newTop, maxY));
+        
+        chatWindow.style.left = newLeft + 'px';
+        chatWindow.style.top = newTop + 'px';
+        chatWindow.style.right = 'auto';
+        chatWindow.style.bottom = 'auto';
+        
+        chatState.position = { x: newLeft, y: newTop };
+    }, { passive: true });
+    
+    document.addEventListener('touchend', () => {
+        if (isDragging) {
+            isDragging = false;
+            chatWindow.style.transition = '';
+        }
+    });
+}
+
+// タブの初期化
+function initChatTabs() {
+    const tabsContainer = document.getElementById('chatTabs');
+    
+    // 発注カテゴリタブを追加（短縮名で表示）
+    const categoryShortNames = {
+        '米飯': '🍚米飯',
+        '調理パン': '🥐パン',
+        '麺類その他': '🍜麺類',
+        'デザート': '🍰デザート',
+        'デリカテッセン（サラダ、惣菜）': '🥗デリカ',
+        '７Pデリカ': '🍱7P',
+        'デリテッセン（その他）': '🍽️デリ他',
+        '牛乳乳飲料': '🥛乳飲料',
+        'FF（おでん、中華まん）': '🍢FF',
+        'お菓子（チョコレート、和菓子類）': '🍫菓子1',
+        'お菓子（グミ、駄菓子、飴類）': '🍬菓子2',
+        'お菓子（ポテトチップス、箱スナック、米菓）': '🍪菓子3',
+        '雑貨類': '🧴雑貨',
+        '消耗品': '📦消耗品',
+        '加工食品（調味料類、珍味）': '🧂加工食品',
+        'ドリンク類': '🥤ドリンク',
+        'フローズン（アイス、冷凍食品）': '🍦冷凍1',
+        'フローズン（フライヤー、焼成パン）': '🍟冷凍2'
+    };
+    
+    // 発注担当がいるカテゴリのみタブを追加
+    const categoriesWithStaff = new Set();
+    state.employees.forEach(emp => {
+        if (emp.orderCategories) {
+            emp.orderCategories.forEach(cat => categoriesWithStaff.add(cat));
+        }
+    });
+    
+    categoriesWithStaff.forEach(category => {
+        const shortName = categoryShortNames[category] || category.substring(0, 6);
+        const tab = document.createElement('button');
+        tab.className = 'chat-tab';
+        tab.dataset.room = `order_${category}`;
+        tab.textContent = shortName;
+        tab.title = category;
+        tabsContainer.appendChild(tab);
+    });
+    
+    // タブのクリックイベント
+    tabsContainer.querySelectorAll('.chat-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            switchRoom(tab.dataset.room);
+        });
+    });
+}
+
+// ルーム切り替え
+function switchRoom(roomId) {
+    chatState.currentRoom = roomId;
+    
+    // タブのアクティブ状態を更新
+    document.querySelectorAll('.chat-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.room === roomId);
+        // 未読バッジを消す
+        if (tab.dataset.room === roomId) {
+            const badge = tab.querySelector('.tab-badge');
+            if (badge) badge.remove();
+        }
+    });
+    
+    // 未読カウントをリセット
+    chatState.unreadCounts[roomId] = 0;
+    updateNotificationBadge();
+    
+    // メッセージを表示
+    renderMessages();
+    
+    // ヘルプルームの場合、ヘルプカテゴリを表示
+    if (roomId === 'help') {
+        showHelpCategories();
+    }
+}
+
+// メッセージを表示
+function renderMessages() {
+    const container = document.getElementById('chatMessages');
+    const messages = chatState.messages[chatState.currentRoom] || [];
+    
+    container.innerHTML = '';
+    
+    if (messages.length === 0) {
+        if (chatState.currentRoom === 'general') {
+            container.innerHTML = '<div class="chat-system-message">まだメッセージはありません。最初のメッセージを送ってみましょう！</div>';
+        } else if (chatState.currentRoom === 'help') {
+            // ヘルプボットの初期メッセージは別途追加
+        } else {
+            const categoryName = chatState.currentRoom.replace('order_', '');
+            container.innerHTML = `<div class="chat-system-message">📦 ${categoryName} の発注担当チャットです</div>`;
+        }
+    }
+    
+    let lastDate = '';
+    
+    messages.forEach(msg => {
+        // 日付区切り
+        const msgDate = new Date(msg.timestamp).toLocaleDateString('ja-JP');
+        if (msgDate !== lastDate) {
+            const divider = document.createElement('div');
+            divider.className = 'chat-date-divider';
+            divider.innerHTML = `<span>${msgDate}</span>`;
+            container.appendChild(divider);
+            lastDate = msgDate;
+        }
+        
+        const messageEl = createMessageElement(msg);
+        container.appendChild(messageEl);
+    });
+    
+    // スクロールを最下部に
+    container.scrollTop = container.scrollHeight;
+}
+
+// メッセージ要素を作成
+function createMessageElement(msg) {
+    const div = document.createElement('div');
+    const isOwn = msg.userName === chatState.currentUser;
+    const isBot = msg.isBot;
+    
+    div.className = `chat-message ${isBot ? 'bot' : (isOwn ? 'own' : 'other')}`;
+    if (isBot && chatState.currentRoom === 'help') {
+        div.classList.add('help');
+    }
+    
+    const time = new Date(msg.timestamp);
+    const timeStr = `${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
+    
+    const avatar = isBot ? '🐕' : msg.userName.charAt(0);
+    const avatarHtml = isOwn ? '' : `<div class="chat-message-avatar">${avatar}</div>`;
+    
+    div.innerHTML = `
+        <div class="chat-message-header">
+            ${avatarHtml}
+            <span class="chat-message-name">${isBot ? 'パピヨン' : msg.userName}</span>
+            <span class="chat-message-time">${timeStr}</span>
+        </div>
+        <div class="chat-message-bubble">${formatMessageContent(msg.content)}</div>
+    `;
+    
+    return div;
+}
+
+// メッセージ内容をフォーマット
+function formatMessageContent(content) {
+    // 簡易的なマークダウン処理
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>')
+        .replace(/• /g, '• ');
+}
+
+// メッセージを送信
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const userSelect = document.getElementById('chatUserSelect');
+    const content = input.value.trim();
+    
+    if (!content) return;
+    
+    const userName = userSelect.value;
+    if (!userName) {
+        alert('名前を選択してください');
+        return;
+    }
+    
+    chatState.currentUser = userName;
+    
+    const message = {
+        id: Date.now().toString(),
+        userName: userName,
+        content: content,
+        timestamp: new Date().toISOString(),
+        room: chatState.currentRoom
+    };
+    
+    // Firebaseに保存
+    database.ref(`chatMessages/${chatState.currentRoom}/${message.id}`).set(message);
+    
+    input.value = '';
+    
+    // ヘルプルームの場合、ボットが応答
+    if (chatState.currentRoom === 'help') {
+        setTimeout(() => {
+            const response = getBotResponse(content);
+            addBotMessage('help', response);
+        }, 500);
+    }
+}
+
+// ボットの応答を取得
+function getBotResponse(userMessage) {
+    const msg = userMessage.toLowerCase();
+    
+    // カテゴリキーワードをチェック
+    for (const [category, data] of Object.entries(HELP_RESPONSES.categories)) {
+        for (const keyword of data.keywords) {
+            if (msg.includes(keyword.toLowerCase())) {
+                return data.response;
+            }
+        }
+    }
+    
+    // 挨拶チェック
+    if (msg.includes('こんにちは') || msg.includes('やあ') || msg.includes('ヘルプ') || msg.includes('助けて')) {
+        return getRandomGreeting() + '\n\n' + getHelpCategoriesText();
+    }
+    
+    // ありがとうチェック
+    if (msg.includes('ありがとう') || msg.includes('サンキュー')) {
+        return 'どういたしまして！🐕\n他にお困りのことがあれば、いつでも聞いてね！';
+    }
+    
+    return HELP_RESPONSES.fallback;
+}
+
+// ヘルプカテゴリのテキストを取得
+function getHelpCategoriesText() {
+    return '【カテゴリ】\n• シフト\n• 有給・休日\n• 発注\n• チャット\n• 管理者機能\n• その他';
+}
+
+// ヘルプカテゴリボタンを表示
+function showHelpCategories() {
+    const container = document.getElementById('chatMessages');
+    
+    // 既にカテゴリボタンがある場合は追加しない
+    if (container.querySelector('.help-categories')) return;
+    
+    const categoriesDiv = document.createElement('div');
+    categoriesDiv.className = 'help-categories';
+    
+    Object.keys(HELP_RESPONSES.categories).forEach(category => {
+        const btn = document.createElement('button');
+        btn.className = 'help-category-btn';
+        btn.textContent = category;
+        btn.addEventListener('click', () => {
+            // ユーザーメッセージとして送信
+            const userSelect = document.getElementById('chatUserSelect');
+            if (!userSelect.value) {
+                alert('名前を選択してください');
+                return;
+            }
+            chatState.currentUser = userSelect.value;
+            
+            const userMessage = {
+                id: Date.now().toString(),
+                userName: chatState.currentUser,
+                content: category,
+                timestamp: new Date().toISOString(),
+                room: 'help'
+            };
+            
+            if (!chatState.messages['help']) chatState.messages['help'] = [];
+            chatState.messages['help'].push(userMessage);
+            renderMessages();
+            
+            setTimeout(() => {
+                addBotMessage('help', HELP_RESPONSES.categories[category].response);
+            }, 300);
+        });
+        categoriesDiv.appendChild(btn);
+    });
+    
+    container.appendChild(categoriesDiv);
+}
+
+// ボットメッセージを追加
+function addBotMessage(room, content) {
+    const message = {
+        id: Date.now().toString(),
+        userName: 'パピヨン',
+        content: content,
+        timestamp: new Date().toISOString(),
+        room: room,
+        isBot: true
+    };
+    
+    if (!chatState.messages[room]) chatState.messages[room] = [];
+    chatState.messages[room].push(message);
+    
+    if (chatState.currentRoom === room) {
+        renderMessages();
+        if (room === 'help') {
+            showHelpCategories();
+        }
+    }
+}
+
+// チャットメッセージをFirebaseから読み込み
+function loadChatMessages() {
+    database.ref('chatMessages').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            Object.keys(data).forEach(room => {
+                const messages = Object.values(data[room]).sort((a, b) => 
+                    new Date(a.timestamp) - new Date(b.timestamp)
+                );
+                
+                // 新しいメッセージがあるかチェック
+                const oldCount = chatState.messages[room]?.length || 0;
+                const newCount = messages.length;
+                
+                if (newCount > oldCount && chatState.isOpen && chatState.currentRoom !== room) {
+                    chatState.unreadCounts[room] = (chatState.unreadCounts[room] || 0) + (newCount - oldCount);
+                    updateTabBadge(room);
+                }
+                
+                chatState.messages[room] = messages;
+            });
+        }
+        
+        if (chatState.isOpen) {
+            renderMessages();
+        }
+        updateNotificationBadge();
+    });
+}
+
+// タブのバッジを更新
+function updateTabBadge(room) {
+    const tab = document.querySelector(`.chat-tab[data-room="${room}"]`);
+    if (!tab) return;
+    
+    let badge = tab.querySelector('.tab-badge');
+    const count = chatState.unreadCounts[room] || 0;
+    
+    if (count > 0) {
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'tab-badge';
+            tab.appendChild(badge);
+        }
+        badge.textContent = count > 99 ? '99+' : count;
+    } else if (badge) {
+        badge.remove();
+    }
+}
+
+// 通知バッジを更新
+function updateNotificationBadge() {
+    const badge = document.getElementById('chatNotificationBadge');
+    const total = Object.values(chatState.unreadCounts).reduce((a, b) => a + b, 0);
+    
+    if (total > 0 && !chatState.isOpen) {
+        badge.style.display = 'flex';
+        badge.textContent = total > 99 ? '99+' : total;
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// ユーザー選択を更新
+function updateChatUserSelect() {
+    const select = document.getElementById('chatUserSelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">名前を選択...</option>';
+    state.employees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.name;
+        option.textContent = emp.name;
+        select.appendChild(option);
+    });
+    
+    // 前回選択した名前を復元
+    if (chatState.currentUser) {
+        select.value = chatState.currentUser;
+    }
+}
+
+// チャットを開く/閉じる
+function toggleChat() {
+    const chatWindow = document.getElementById('chatWindow');
+    
+    if (chatState.isOpen) {
+        closeChat();
+    } else {
+        chatWindow.style.display = 'flex';
+        chatState.isOpen = true;
+        chatState.isMinimized = false;
+        chatWindow.classList.remove('minimized');
+        
+        // 未読をリセット
+        chatState.unreadCounts[chatState.currentRoom] = 0;
+        updateNotificationBadge();
+        updateTabBadge(chatState.currentRoom);
+        
+        renderMessages();
+        updateChatUserSelect();
+        
+        if (chatState.currentRoom === 'help') {
+            showHelpCategories();
+        }
+    }
+}
+
+// チャットを閉じる
+function closeChat() {
+    const chatWindow = document.getElementById('chatWindow');
+    chatWindow.style.display = 'none';
+    chatState.isOpen = false;
+}
+
+// 最小化/最大化
+function toggleMinimize() {
+    const chatWindow = document.getElementById('chatWindow');
+    chatState.isMinimized = !chatState.isMinimized;
+    chatWindow.classList.toggle('minimized', chatState.isMinimized);
+}
+
+// 従業員データ変更時にチャットユーザー選択を更新
+const originalLoadData = loadData;
+loadData = function() {
+    originalLoadData();
+};
+
+// 従業員リストの変更を監視してチャットユーザー選択を更新
+database.ref('employees').on('value', () => {
+    setTimeout(() => {
+        updateChatUserSelect();
+        // タブも更新
+        const tabsContainer = document.getElementById('chatTabs');
+        if (tabsContainer) {
+            // 発注カテゴリタブを再構築
+            const existingTabs = tabsContainer.querySelectorAll('.chat-tab[data-room^="order_"]');
+            existingTabs.forEach(tab => tab.remove());
+            initChatTabs();
+        }
+    }, 500);
+});
+
+// ページ読み込み時にチャットを初期化
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initChat, 1000);
+});

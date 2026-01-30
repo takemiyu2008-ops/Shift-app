@@ -813,6 +813,69 @@
         </div>
     </div>
 
+    <!-- チャットボット フローティングボタン（パピヨン） -->
+    <button class="chat-float-btn" id="chatFloatBtn" title="チャットを開く">
+        <svg class="papillon-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- 左耳（蝶々耳） -->
+            <ellipse cx="25" cy="25" rx="20" ry="28" fill="#f5e6d3" stroke="#8B4513" stroke-width="2"/>
+            <ellipse cx="25" cy="25" rx="14" ry="20" fill="#fff5eb"/>
+            <!-- 右耳（蝶々耳） -->
+            <ellipse cx="75" cy="25" rx="20" ry="28" fill="#f5e6d3" stroke="#8B4513" stroke-width="2"/>
+            <ellipse cx="75" cy="25" rx="14" ry="20" fill="#fff5eb"/>
+            <!-- 顔 -->
+            <ellipse cx="50" cy="58" rx="28" ry="26" fill="#f5e6d3" stroke="#8B4513" stroke-width="2"/>
+            <!-- 顔の白い部分 -->
+            <ellipse cx="50" cy="62" rx="18" ry="16" fill="white"/>
+            <!-- 目 -->
+            <ellipse cx="40" cy="52" rx="5" ry="6" fill="#2c1810"/>
+            <ellipse cx="60" cy="52" rx="5" ry="6" fill="#2c1810"/>
+            <!-- 目のハイライト -->
+            <circle cx="42" cy="50" r="2" fill="white"/>
+            <circle cx="62" cy="50" r="2" fill="white"/>
+            <!-- 鼻 -->
+            <ellipse cx="50" cy="65" rx="4" ry="3" fill="#2c1810"/>
+            <!-- 口 -->
+            <path d="M 44 72 Q 50 78 56 72" stroke="#2c1810" stroke-width="2" fill="none"/>
+            <!-- 舌 -->
+            <ellipse cx="50" cy="76" rx="4" ry="3" fill="#ff9999"/>
+        </svg>
+        <span class="chat-notification-badge" id="chatNotificationBadge" style="display:none">0</span>
+    </button>
+
+    <!-- チャットウィンドウ -->
+    <div class="chat-window" id="chatWindow" style="display:none">
+        <div class="chat-header" id="chatHeader">
+            <div class="chat-header-left">
+                <span class="chat-title">💬 チャット</span>
+            </div>
+            <div class="chat-header-right">
+                <button class="chat-header-btn" id="chatMinimizeBtn" title="最小化">─</button>
+                <button class="chat-header-btn" id="chatCloseBtn" title="閉じる">✕</button>
+            </div>
+        </div>
+        <div class="chat-tabs" id="chatTabs">
+            <button class="chat-tab active" data-room="general">👥 全体</button>
+            <button class="chat-tab" data-room="help">🤖 ヘルプ</button>
+            <!-- 発注カテゴリタブは動的に追加 -->
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-messages" id="chatMessages">
+                <!-- メッセージがここに表示される -->
+            </div>
+        </div>
+        <div class="chat-input-area" id="chatInputArea">
+            <div class="chat-user-select">
+                <select id="chatUserSelect">
+                    <option value="">名前を選択...</option>
+                </select>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="メッセージを入力..." maxlength="500">
+                <button class="chat-send-btn" id="chatSendBtn">送信</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 
