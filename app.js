@@ -424,7 +424,14 @@ function renderGanttBody() {
         const dayOverrides = state.shiftOverrides.filter(o => o.date === dateStr);
 
         // 固定シフト（ただし、同じ日・同じ時間帯に通常シフトがある場合は除外、有給上書きも除外）
-        const fixed = state.fixedShifts.filter(f => f.dayOfWeek === dayOfWeek).map(f => {
+        const fixed = state.fixedShifts.filter(f => {
+            // 曜日チェック
+            if (f.dayOfWeek !== dayOfWeek) return false;
+            // 有効期間チェック
+            if (f.startDate && dateStr < f.startDate) return false;
+            if (f.endDate && dateStr > f.endDate) return false;
+            return true;
+        }).map(f => {
             // 単日上書きがあるか確認
             const override = dayOverrides.find(o => o.fixedShiftId === f.id);
             if (override) {
@@ -470,7 +477,14 @@ function renderGanttBody() {
         // 前日の単日上書きデータを取得
         const prevDayOverrides = state.shiftOverrides.filter(o => o.date === prevStr);
             
-        const fixedOvernight = state.fixedShifts.filter(f => f.dayOfWeek === prevDow && f.overnight).map(f => {
+        const fixedOvernight = state.fixedShifts.filter(f => {
+            // 曜日・夜勤チェック
+            if (f.dayOfWeek !== prevDow || !f.overnight) return false;
+            // 有効期間チェック（前日の日付でチェック）
+            if (f.startDate && prevStr < f.startDate) return false;
+            if (f.endDate && prevStr > f.endDate) return false;
+            return true;
+        }).map(f => {
             // 単日上書きがあるか確認
             const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
             if (override && override.overnight) {
@@ -1024,16 +1038,44 @@ function updateMessageBar() {
 // CRUD操作
 function addShift(d) { const s = { id: Date.now().toString(), ...d }; state.shifts.push(s); saveToFirebase('shifts', state.shifts); trackUsage('add_shift', d.name); }
 function updateShift(id, d) { const i = state.shifts.findIndex(s => s.id === id); if (i >= 0) { state.shifts[i] = { ...state.shifts[i], ...d }; saveToFirebase('shifts', state.shifts); trackUsage('edit_shift', d.name || state.shifts[i]?.name); } }
-function addFixedShift(d) { const s = { id: Date.now().toString(), dayOfWeek: getDayOfWeek(d.date), ...d }; delete s.date; state.fixedShifts.push(s); saveToFirebase('fixedShifts', state.fixedShifts); trackUsage('add_shift', d.name); }
+function addFixedShift(d) { 
+    const s = { 
+        id: Date.now().toString(), 
+        dayOfWeek: getDayOfWeek(d.date), 
+        name: d.name,
+        startHour: d.startHour,
+        endHour: d.endHour,
+        color: d.color,
+        overnight: d.overnight,
+        startDate: d.fixedStartDate || null,
+        endDate: d.fixedEndDate || null,
+        createdAt: new Date().toISOString()
+    }; 
+    state.fixedShifts.push(s); 
+    saveToFirebase('fixedShifts', state.fixedShifts); 
+    trackUsage('add_shift', d.name); 
+}
 function deleteShift(id) { const shift = state.shifts.find(s => s.id === id); state.shifts = state.shifts.filter(s => s.id !== id); saveToFirebase('shifts', state.shifts); trackUsage('delete_shift', shift?.name); }
 function deleteFixedShift(id) { const shift = state.fixedShifts.find(s => s.id === id); state.fixedShifts = state.fixedShifts.filter(s => s.id !== id); saveToFirebase('fixedShifts', state.fixedShifts); trackUsage('delete_shift', shift?.name); }
 function updateFixedShift(id, d) {
     const i = state.fixedShifts.findIndex(s => s.id === id);
     if (i >= 0) {
-        const updated = { ...state.fixedShifts[i], ...d, dayOfWeek: getDayOfWeek(d.date) };
-        delete updated.date;
+        const updated = { 
+            ...state.fixedShifts[i], 
+            name: d.name,
+            startHour: d.startHour,
+            endHour: d.endHour,
+            color: d.color,
+            overnight: d.overnight,
+            dayOfWeek: getDayOfWeek(d.date),
+            updatedAt: new Date().toISOString()
+        };
+        // 有効期間が指定されている場合のみ更新
+        if (d.fixedStartDate !== undefined) updated.startDate = d.fixedStartDate;
+        if (d.fixedEndDate !== undefined) updated.endDate = d.fixedEndDate;
         state.fixedShifts[i] = updated;
         saveToFirebase('fixedShifts', state.fixedShifts);
+        trackUsage('edit_shift', d.name);
     }
 }
 
@@ -1919,6 +1961,160 @@ function updateAdminBadges() {
     });
 }
 
+// 固定シフト管理画面をレンダリング
+function renderFixedShiftManagement(container) {
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    
+    // 固定シフトを曜日でグループ化
+    const groupedByDay = {};
+    for (let i = 0; i < 7; i++) {
+        groupedByDay[i] = state.fixedShifts.filter(f => f.dayOfWeek === i);
+    }
+    
+    // 有効/無効を判定する関数
+    const isActive = (f) => {
+        const today = formatDate(new Date());
+        if (f.startDate && today < f.startDate) return false;
+        if (f.endDate && today > f.endDate) return false;
+        return true;
+    };
+    
+    // 統計情報
+    const totalFixed = state.fixedShifts.length;
+    const activeFixed = state.fixedShifts.filter(isActive).length;
+    const expiredFixed = state.fixedShifts.filter(f => f.endDate && formatDate(new Date()) > f.endDate).length;
+    
+    let html = `
+        <div class="fixed-shift-management">
+            <div class="fixed-shift-summary">
+                <div class="summary-item">
+                    <span class="summary-label">総固定シフト数</span>
+                    <span class="summary-value">${totalFixed}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">有効</span>
+                    <span class="summary-value active">${activeFixed}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">期限切れ</span>
+                    <span class="summary-value expired">${expiredFixed}</span>
+                </div>
+            </div>
+            
+            <div class="fixed-shift-list">
+    `;
+    
+    // 月曜日から始めて曜日ごとに表示
+    const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // 月火水木金土日
+    
+    dayOrder.forEach(dayIndex => {
+        const shifts = groupedByDay[dayIndex];
+        const dayName = dayNames[dayIndex];
+        const dayClass = dayIndex === 0 ? 'sunday' : dayIndex === 6 ? 'saturday' : '';
+        
+        html += `
+            <div class="fixed-shift-day-group">
+                <h4 class="day-header ${dayClass}">${dayName}曜日 (${shifts.length}件)</h4>
+        `;
+        
+        if (shifts.length === 0) {
+            html += `<p class="no-shifts">固定シフトなし</p>`;
+        } else {
+            shifts.forEach(f => {
+                const active = isActive(f);
+                const statusClass = active ? 'active' : 'inactive';
+                const statusText = active ? '有効' : (f.endDate && formatDate(new Date()) > f.endDate ? '期限切れ' : '開始前');
+                
+                const startDateStr = f.startDate ? f.startDate : '指定なし';
+                const endDateStr = f.endDate ? f.endDate : '無期限';
+                
+                html += `
+                    <div class="fixed-shift-card ${statusClass}">
+                        <div class="fixed-shift-color" style="background-color: ${f.color || '#6366f1'}"></div>
+                        <div class="fixed-shift-info">
+                            <div class="fixed-shift-name">${f.name}</div>
+                            <div class="fixed-shift-time">
+                                ${formatTime(f.startHour)} - ${formatTime(f.endHour)}
+                                ${f.overnight ? '<span class="overnight-badge">🌙夜勤</span>' : ''}
+                            </div>
+                            <div class="fixed-shift-period">
+                                <span class="period-label">有効期間:</span>
+                                <span class="period-value">${startDateStr} ～ ${endDateStr}</span>
+                            </div>
+                        </div>
+                        <div class="fixed-shift-status ${statusClass}">${statusText}</div>
+                        <div class="fixed-shift-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="openEditFixedShiftModal('${f.id}')">✏️ 編集</button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmDeleteFixedShift('${f.id}')">🗑️ 削除</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `</div>`;
+    });
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// 固定シフト編集モーダルを開く
+function openEditFixedShiftModal(id) {
+    const f = state.fixedShifts.find(s => s.id === id);
+    if (!f) return;
+    
+    // 曜日から日付を逆算（今週の該当曜日）
+    const today = new Date();
+    const currentDow = today.getDay();
+    const diff = f.dayOfWeek - currentDow;
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + diff);
+    
+    document.getElementById('shiftModalTitle').textContent = '固定シフト編集';
+    document.getElementById('shiftSubmitBtn').textContent = '更新';
+    document.getElementById('editShiftId').value = id;
+    document.getElementById('shiftDate').value = formatDate(targetDate);
+    updateShiftDateDay();
+    document.getElementById('shiftName').value = f.name;
+    document.getElementById('shiftStart').value = f.startHour;
+    document.getElementById('shiftEnd').value = f.endHour;
+    document.getElementById('overnightShift').checked = f.overnight || false;
+    document.getElementById('fixedShift').checked = true;
+    document.getElementById('fixedShift').disabled = true; // 固定シフト編集時はチェックを外せないように
+    
+    // 有効期間を設定
+    document.getElementById('fixedShiftPeriod').style.display = 'block';
+    document.getElementById('fixedStartDate').value = f.startDate || '';
+    document.getElementById('fixedEndDate').value = f.endDate || '';
+    document.getElementById('fixedNoEndDate').checked = !f.endDate;
+    document.getElementById('fixedEndDate').disabled = !f.endDate;
+    
+    // 色を設定
+    state.selectedColor = f.color || '#6366f1';
+    document.querySelectorAll('.color-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.color === state.selectedColor);
+    });
+    
+    openModal(document.getElementById('modalOverlay'));
+}
+
+// 固定シフト削除確認
+function confirmDeleteFixedShift(id) {
+    const f = state.fixedShifts.find(s => s.id === id);
+    if (!f) return;
+    
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    if (confirm(`${f.name}さんの${dayNames[f.dayOfWeek]}曜日の固定シフトを削除しますか？\n\n※この操作は取り消せません。`)) {
+        deleteFixedShift(id);
+        renderAdminPanel();
+    }
+}
+
 // 管理者パネル
 function renderAdminPanel() {
     updateAdminBadges();
@@ -2025,6 +2221,9 @@ function renderAdminPanel() {
             card.innerHTML = `<div class="request-info"><h4>🏠 ${r.name} - 休日申請</h4>${shiftsHtml}${swapInfo}<p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('holiday','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('holiday','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
+    } else if (state.activeAdminTab === 'fixedShiftManage') {
+        // 固定シフト管理
+        renderFixedShiftManagement(c);
     } else if (state.activeAdminTab === 'employees') {
         c.innerHTML = `<div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openAddEmployeeModal()">+ 従業員追加</button></div><div class="employee-list" id="employeeList"></div>`;
         const list = document.getElementById('employeeList');
@@ -2354,7 +2553,14 @@ function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updat
 
 // モーダル操作
 function openModal(o) { o.classList.add('active'); }
-function closeModal(o) { o.classList.remove('active'); }
+function closeModal(o) { 
+    o.classList.remove('active'); 
+    // シフトモーダルを閉じる時に固定シフト関連をリセット
+    if (o.id === 'modalOverlay') {
+        document.getElementById('fixedShift').disabled = false;
+        document.getElementById('fixedShiftPeriod').style.display = 'none';
+    }
+}
 
 function openEditShiftModal(s) {
     // 固定シフトや夜勤継続の場合、元のシフトを取得
@@ -2521,9 +2727,36 @@ function initEventListeners() {
         document.getElementById('shiftName').value = '';
         document.getElementById('overnightShift').checked = false;
         document.getElementById('fixedShift').checked = false;
+        document.getElementById('fixedShiftPeriod').style.display = 'none';
+        document.getElementById('fixedStartDate').value = '';
+        document.getElementById('fixedEndDate').value = '';
+        document.getElementById('fixedNoEndDate').checked = true;
+        document.getElementById('fixedEndDate').disabled = true;
         document.querySelectorAll('.color-option').forEach((o, i) => o.classList.toggle('selected', i === 0));
         state.selectedColor = '#6366f1';
         openModal(document.getElementById('modalOverlay'));
+    };
+
+    // 固定シフトチェックボックスのトグル
+    document.getElementById('fixedShift').onchange = (e) => {
+        const periodDiv = document.getElementById('fixedShiftPeriod');
+        periodDiv.style.display = e.target.checked ? 'block' : 'none';
+        if (e.target.checked) {
+            // 開始日のデフォルトを選択された日付に
+            const shiftDate = document.getElementById('shiftDate').value;
+            if (shiftDate && !document.getElementById('fixedStartDate').value) {
+                document.getElementById('fixedStartDate').value = shiftDate;
+            }
+        }
+    };
+
+    // 終了日なしチェックボックスのトグル
+    document.getElementById('fixedNoEndDate').onchange = (e) => {
+        const endDateInput = document.getElementById('fixedEndDate');
+        endDateInput.disabled = e.target.checked;
+        if (e.target.checked) {
+            endDateInput.value = '';
+        }
     };
 
     // 日付変更時に曜日を表示
@@ -2683,10 +2916,26 @@ function initEventListeners() {
         if (!d.overnight && d.startHour >= d.endHour) { alert('終了時刻は開始時刻より後に'); return; }
         if (d.overnight && d.startHour <= d.endHour) { alert('夜勤は終了時刻を翌日の時刻に'); return; }
 
+        // 固定シフトの場合、有効期間を追加
+        if (isFixedChecked) {
+            const fixedStartDate = document.getElementById('fixedStartDate').value;
+            const fixedNoEndDate = document.getElementById('fixedNoEndDate').checked;
+            const fixedEndDate = document.getElementById('fixedEndDate').value;
+            
+            d.fixedStartDate = fixedStartDate || null;
+            d.fixedEndDate = fixedNoEndDate ? null : (fixedEndDate || null);
+        }
+
         if (id) {
             // 編集の場合：固定シフトか通常シフトかを判定
             const isFixedShift = state.fixedShifts.some(s => s.id === id);
             if (isFixedShift) {
+                // 固定シフトの編集時も有効期間を取得
+                const fixedStartDate = document.getElementById('fixedStartDate').value;
+                const fixedNoEndDate = document.getElementById('fixedNoEndDate').checked;
+                const fixedEndDate = document.getElementById('fixedEndDate').value;
+                d.fixedStartDate = fixedStartDate || null;
+                d.fixedEndDate = fixedNoEndDate ? null : (fixedEndDate || null);
                 updateFixedShift(id, d);
             } else {
                 updateShift(id, d);
@@ -2698,6 +2947,9 @@ function initEventListeners() {
         }
         closeModal(document.getElementById('modalOverlay'));
         document.getElementById('shiftForm').reset();
+        // 有効期間セクションを非表示に戻す
+        document.getElementById('fixedShiftPeriod').style.display = 'none';
+        document.getElementById('fixedNoEndDate').checked = true;
     };
 
     document.getElementById('changeForm').onsubmit = e => {

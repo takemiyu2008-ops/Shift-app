@@ -75,6 +75,7 @@
                     <button class="admin-tab" data-tab="shiftSwaps">シフト交換</button>
                     <button class="admin-tab" data-tab="leaveRequests">有給申請</button>
                     <button class="admin-tab" data-tab="holidayRequests">休日申請</button>
+                    <button class="admin-tab" data-tab="fixedShiftManage">🔁 固定シフト管理</button>
                     <button class="admin-tab" data-tab="dailyEvents">📅 店舗スケジュール</button>
                     <button class="admin-tab" data-tab="nonDailyAdvice">📈 非デイリー参考情報</button>
                     <button class="admin-tab" data-tab="feedbackStats">📊 フィードバック集計</button>
@@ -351,6 +352,23 @@
                         <span class="checkbox-text">🔁 固定シフト（毎週繰り返し）</span>
                     </label>
                     <p class="form-hint">チェックすると、毎週同じ曜日・時間にシフトが自動表示されます</p>
+                    <div id="fixedShiftPeriod" class="fixed-shift-period" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fixedStartDate">開始日</label>
+                                <input type="date" id="fixedStartDate">
+                                <p class="form-hint">指定した日から有効</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="fixedEndDate">終了日</label>
+                                <input type="date" id="fixedEndDate">
+                                <label class="checkbox-label" style="margin-top: 4px;">
+                                    <input type="checkbox" id="fixedNoEndDate" checked>
+                                    <span class="checkbox-text">終了日なし（無期限）</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="cancelBtn">キャンセル</button>
