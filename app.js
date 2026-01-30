@@ -2549,18 +2549,7 @@ function clearAllMessages() {
     }
 }
 
-function render() { 
-    try {
-        renderTimeHeader(); 
-        renderGanttBody(); 
-        renderLegend(); 
-        updatePeriodDisplay(); 
-        updateMessageBar(); 
-        renderScheduleList(); 
-    } catch (error) {
-        console.error('render関数でエラー:', error);
-    }
-}
+function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList(); }
 
 // モーダル操作
 function openModal(o) { o.classList.add('active'); }
@@ -3702,41 +3691,34 @@ function initPopoverEvents() {
 
 // 初期化
 function init() {
-    console.log('init関数開始');
-    try {
-        // アプリ閲覧をトラッキング
-        trackUsage('app_view', '匿名');
-        
-        initTimeSelects();
-        initEventListeners();
-        initZoomControls();
-        initPdfExport();
-        initPopoverEvents();
-        initEventModal();
-        initAdvisorGroupToggle(); // グループトグルを初期化
-        initReportsGroupToggle(); // レポートグループのトグルを初期化
-        initTrendReportToggle(); // 週刊トレンドレポートのトグルを初期化
-        initNewProductToggle(); // 新商品レポートのトグルを初期化
-        loadData();
-        render();
-        console.log('render関数完了');
+    // アプリ閲覧をトラッキング
+    trackUsage('app_view', '匿名');
+    
+    initTimeSelects();
+    initEventListeners();
+    initZoomControls();
+    initPdfExport();
+    initPopoverEvents();
+    initEventModal();
+    initAdvisorGroupToggle(); // グループトグルを初期化
+    initReportsGroupToggle(); // レポートグループのトグルを初期化
+    initTrendReportToggle(); // 週刊トレンドレポートのトグルを初期化
+    initNewProductToggle(); // 新商品レポートのトグルを初期化
+    loadData();
+    render();
 
-        // 天気データを取得
-        fetchWeatherData();
+    // 天気データを取得
+    fetchWeatherData();
 
-        // ウィンドウリサイズ時にシフトバーを再描画
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                render();
-                applyZoom();
-            }, 100);
-        });
-        console.log('init関数完了');
-    } catch (error) {
-        console.error('init関数でエラー発生:', error);
-    }
+    // ウィンドウリサイズ時にシフトバーを再描画
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            render();
+            applyZoom();
+        }, 100);
+    });
 }
 
 // ========================================
@@ -8325,8 +8307,8 @@ const chatState = {
     dragOffset: { x: 0, y: 0 }
 };
 
-// 発注カテゴリリスト（チャット用）
-const CHAT_ORDER_CATEGORIES = [
+// 発注カテゴリリスト（HTMLから取得）
+const ORDER_CATEGORIES = [
     '米飯', '調理パン', '麺類その他', 'デザート', 
     'デリカテッセン（サラダ、惣菜）', '７Pデリカ', 'デリテッセン（その他）',
     '牛乳乳飲料', 'FF（おでん、中華まん）', 
@@ -8430,99 +8412,36 @@ function initChat() {
     const chatInput = document.getElementById('chatInput');
     const chatHeader = document.getElementById('chatHeader');
     
-    if (!floatBtn || !chatWindow) {
-        console.error('チャット要素が見つかりません');
-        return;
-    }
-    
-    // フローティングボタンのドラッグ機能を初期化
-    initFloatBtnDrag(floatBtn);
-    
-    // フローティングボタンのクリック（デスクトップ用）
-    floatBtn.addEventListener('click', (e) => {
-        // ドラッグ中はクリックを無視
-        if (floatBtn.dataset.dragging === 'true') {
-            floatBtn.dataset.dragging = 'false';
-            return;
-        }
+    // フローティングボタンのクリック
+    floatBtn.addEventListener('click', () => {
         toggleChat();
     });
     
-    // フローティングボタンのタッチ（モバイル用）- タップ判定を改善
-    let floatBtnTouchStart = { x: 0, y: 0, time: 0 };
-    let floatBtnTouchMoved = false;
-    
-    floatBtn.addEventListener('touchstart', (e) => {
-        floatBtnTouchMoved = false;
-        floatBtnTouchStart.x = e.touches[0].clientX;
-        floatBtnTouchStart.y = e.touches[0].clientY;
-        floatBtnTouchStart.time = Date.now();
-    }, { passive: true });
-    
-    floatBtn.addEventListener('touchmove', (e) => {
-        const dx = Math.abs(e.touches[0].clientX - floatBtnTouchStart.x);
-        const dy = Math.abs(e.touches[0].clientY - floatBtnTouchStart.y);
-        if (dx > 10 || dy > 10) {
-            floatBtnTouchMoved = true;
-        }
-    }, { passive: true });
-    
-    floatBtn.addEventListener('touchend', (e) => {
-        const duration = Date.now() - floatBtnTouchStart.time;
-        // タップ判定：移動が少なく、短時間のタッチ
-        if (!floatBtnTouchMoved && duration < 300) {
-            e.preventDefault();
-            toggleChat();
-        }
-    }, { passive: false });
-    
     // 閉じるボタン
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            closeChat();
-        });
-        closeBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            closeChat();
-        }, { passive: false });
-    }
+    closeBtn.addEventListener('click', () => {
+        closeChat();
+    });
     
     // 最小化ボタン
-    if (minimizeBtn) {
-        minimizeBtn.addEventListener('click', () => {
-            toggleMinimize();
-        });
-        minimizeBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            toggleMinimize();
-        }, { passive: false });
-    }
+    minimizeBtn.addEventListener('click', () => {
+        toggleMinimize();
+    });
     
     // 送信ボタン
-    if (sendBtn) {
-        sendBtn.addEventListener('click', () => {
-            sendMessage();
-        });
-        sendBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            sendMessage();
-        }, { passive: false });
-    }
+    sendBtn.addEventListener('click', () => {
+        sendMessage();
+    });
     
     // Enterキーで送信
-    if (chatInput) {
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    }
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
     
-    // チャットウィンドウのドラッグ機能の初期化
-    if (chatHeader) {
-        initChatDrag(chatHeader, chatWindow);
-    }
+    // ドラッグ機能の初期化
+    initChatDrag(chatHeader, chatWindow);
     
     // タブの初期化
     initChatTabs();
@@ -8539,108 +8458,6 @@ function initChat() {
             addBotMessage('help', getRandomGreeting());
         }
     }, 1000);
-    
-    console.log('チャット初期化完了');
-}
-
-// フローティングボタンのドラッグ機能
-function initFloatBtnDrag(floatBtn) {
-    let isDragging = false;
-    let startX, startY, startLeft, startBottom;
-    let hasMoved = false;
-    
-    // マウスイベント
-    floatBtn.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        hasMoved = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = floatBtn.getBoundingClientRect();
-        startLeft = rect.left;
-        startBottom = window.innerHeight - rect.bottom;
-        floatBtn.style.transition = 'none';
-        e.preventDefault();
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-            hasMoved = true;
-            floatBtn.dataset.dragging = 'true';
-        }
-        
-        let newLeft = startLeft + dx;
-        let newBottom = startBottom - dy;
-        
-        // 画面内に収める
-        const maxX = window.innerWidth - floatBtn.offsetWidth - 10;
-        const maxY = window.innerHeight - floatBtn.offsetHeight - 10;
-        newLeft = Math.max(10, Math.min(newLeft, maxX));
-        newBottom = Math.max(10, Math.min(newBottom, maxY));
-        
-        floatBtn.style.left = newLeft + 'px';
-        floatBtn.style.bottom = newBottom + 'px';
-        floatBtn.style.right = 'auto';
-    });
-    
-    document.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            floatBtn.style.transition = '';
-            if (!hasMoved) {
-                floatBtn.dataset.dragging = 'false';
-            }
-        }
-    });
-    
-    // タッチイベント
-    let touchStartX, touchStartY, touchStartLeft, touchStartBottom;
-    let touchHasMoved = false;
-    
-    floatBtn.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        const rect = floatBtn.getBoundingClientRect();
-        touchStartLeft = rect.left;
-        touchStartBottom = window.innerHeight - rect.bottom;
-        touchHasMoved = false;
-        floatBtn.style.transition = 'none';
-    }, { passive: true });
-    
-    floatBtn.addEventListener('touchmove', (e) => {
-        if (e.touches.length !== 1) return;
-        const touch = e.touches[0];
-        const dx = touch.clientX - touchStartX;
-        const dy = touch.clientY - touchStartY;
-        
-        // 少しでも動いたらドラッグ開始
-        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-            touchHasMoved = true;
-            e.preventDefault();
-            
-            let newLeft = touchStartLeft + dx;
-            let newBottom = touchStartBottom - dy;
-            
-            // 画面内に収める
-            const maxX = window.innerWidth - floatBtn.offsetWidth - 10;
-            const maxY = window.innerHeight - floatBtn.offsetHeight - 10;
-            newLeft = Math.max(10, Math.min(newLeft, maxX));
-            newBottom = Math.max(10, Math.min(newBottom, maxY));
-            
-            floatBtn.style.left = newLeft + 'px';
-            floatBtn.style.bottom = newBottom + 'px';
-            floatBtn.style.right = 'auto';
-        }
-    }, { passive: false });
-    
-    floatBtn.addEventListener('touchend', () => {
-        floatBtn.style.transition = '';
-    }, { passive: true });
 }
 
 // ランダムな挨拶を取得
@@ -9111,14 +8928,7 @@ function updateChatUserSelect() {
 
 // チャットを開く/閉じる
 function toggleChat() {
-    console.log('toggleChat呼び出し');
     const chatWindow = document.getElementById('chatWindow');
-    const floatBtn = document.getElementById('chatFloatBtn');
-    
-    if (!chatWindow) {
-        console.error('chatWindowが見つかりません');
-        return;
-    }
     
     if (chatState.isOpen) {
         closeChat();
@@ -9127,11 +8937,6 @@ function toggleChat() {
         chatState.isOpen = true;
         chatState.isMinimized = false;
         chatWindow.classList.remove('minimized');
-        
-        // モバイルではフローティングボタンを非表示に
-        if (window.innerWidth <= 768 && floatBtn) {
-            floatBtn.style.display = 'none';
-        }
         
         // 未読をリセット
         chatState.unreadCounts[chatState.currentRoom] = 0;
@@ -9144,27 +8949,14 @@ function toggleChat() {
         if (chatState.currentRoom === 'help') {
             showHelpCategories();
         }
-        
-        console.log('チャットを開きました');
     }
 }
 
 // チャットを閉じる
 function closeChat() {
     const chatWindow = document.getElementById('chatWindow');
-    const floatBtn = document.getElementById('chatFloatBtn');
-    
-    if (chatWindow) {
-        chatWindow.style.display = 'none';
-    }
+    chatWindow.style.display = 'none';
     chatState.isOpen = false;
-    
-    // モバイルでフローティングボタンを再表示
-    if (floatBtn) {
-        floatBtn.style.display = 'flex';
-    }
-    
-    console.log('チャットを閉じました');
 }
 
 // 最小化/最大化
