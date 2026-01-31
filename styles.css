@@ -3625,13 +3625,14 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0;
-    max-height: 2000px;
-    overflow: hidden;
+    max-height: 10000px;
+    overflow: visible;
     transition: max-height 0.3s ease-out, padding 0.3s ease-out;
 }
 
 .advisor-group-content.collapsed {
     max-height: 0;
+    overflow: hidden;
 }
 
 /* グループ内のセクション */
@@ -3751,6 +3752,27 @@ body {
 
     .sub-report .advisor-content {
         padding-left: 24px;
+    }
+
+    /* モバイルでトレンドレポートの長文が切れないように */
+    .advisor-group-content {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .advisor-group-content.collapsed {
+        max-height: 0;
+        overflow: hidden;
+    }
+
+    .trend-reports-list {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .trend-report-card .report-content {
+        max-height: none;
+        overflow: visible;
     }
 }
 /* ========================================
