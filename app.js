@@ -2597,6 +2597,31 @@ function openEditShiftModal(s) {
     document.getElementById('shiftEnd').value = actualShift.endHour;
     document.getElementById('overnightShift').checked = actualShift.overnight || false;
     document.getElementById('fixedShift').checked = s.isFixed || false;
+    
+    // 固定シフトの場合は有効期間セクションを表示し、値を設定
+    const fixedShiftPeriod = document.getElementById('fixedShiftPeriod');
+    if (s.isFixed) {
+        fixedShiftPeriod.style.display = 'block';
+        document.getElementById('fixedShift').disabled = true; // 固定シフト編集時はチェックを外せない
+        document.getElementById('fixedStartDate').value = actualShift.startDate || '';
+        if (actualShift.endDate) {
+            document.getElementById('fixedNoEndDate').checked = false;
+            document.getElementById('fixedEndDate').value = actualShift.endDate;
+            document.getElementById('fixedEndDate').disabled = false;
+        } else {
+            document.getElementById('fixedNoEndDate').checked = true;
+            document.getElementById('fixedEndDate').value = '';
+            document.getElementById('fixedEndDate').disabled = true;
+        }
+    } else {
+        fixedShiftPeriod.style.display = 'none';
+        document.getElementById('fixedShift').disabled = false; // 通常シフト編集時は固定シフトに変換可能
+        document.getElementById('fixedStartDate').value = actualShift.date || s.date;
+        document.getElementById('fixedNoEndDate').checked = true;
+        document.getElementById('fixedEndDate').value = '';
+        document.getElementById('fixedEndDate').disabled = true;
+    }
+    
     document.querySelectorAll('.color-option').forEach(o => { o.classList.toggle('selected', o.dataset.color === actualShift.color); });
     state.selectedColor = actualShift.color;
     openModal(document.getElementById('modalOverlay'));
@@ -2928,8 +2953,10 @@ function initEventListeners() {
 
         if (id) {
             // 編集の場合：固定シフトか通常シフトかを判定
-            const isFixedShift = state.fixedShifts.some(s => s.id === id);
-            if (isFixedShift) {
+            const isCurrentlyFixedShift = state.fixedShifts.some(s => s.id === id);
+            const isCurrentlyNormalShift = state.shifts.some(s => s.id === id);
+            
+            if (isCurrentlyFixedShift) {
                 // 固定シフトの編集時も有効期間を取得
                 const fixedStartDate = document.getElementById('fixedStartDate').value;
                 const fixedNoEndDate = document.getElementById('fixedNoEndDate').checked;
@@ -2937,6 +2964,12 @@ function initEventListeners() {
                 d.fixedStartDate = fixedStartDate || null;
                 d.fixedEndDate = fixedNoEndDate ? null : (fixedEndDate || null);
                 updateFixedShift(id, d);
+            } else if (isCurrentlyNormalShift && isFixedChecked) {
+                // 通常シフトを固定シフトに変換する場合
+                // 1. 通常シフトを削除
+                deleteShift(id);
+                // 2. 固定シフトとして新規追加
+                addFixedShift(d);
             } else {
                 updateShift(id, d);
             }

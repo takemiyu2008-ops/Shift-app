@@ -851,9 +851,14 @@ body {
 
 .shift-bar .shift-time {
     margin-left: auto;
-    padding-left: 4px;
-    font-size: 0.7rem;
-    opacity: 0.9;
+    padding-left: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+    padding: 1px 5px;
+    white-space: nowrap;
 }
 
 .shift-bar .fixed-icon,
@@ -1466,7 +1471,9 @@ body {
     }
 
     .shift-bar .shift-time {
-        display: none;
+        display: inline-block;
+        font-size: 0.65rem;
+        padding: 1px 3px;
     }
 
     /* スクロール改善 */
