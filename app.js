@@ -36,8 +36,8 @@ const state = {
     swapRequests: [],
     dailyEvents: [],
     nonDailyAdvice: [], // 非デイリー発注アドバイス
-    trendReports: [], // 週刊トレンドレポート
-    newProductReports: [], // 定期コンビニ新商品レポート
+    trendReports: [], // コンビニ3社 新商品ヒット予測レポート
+    newProductReports: [], // 週次インテリジェンス（マクロ環境）
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
@@ -90,10 +90,10 @@ const USAGE_FEATURES = {
     'add_trend_report': { name: 'トレンドレポート追加', category: 'レポート', icon: '➕' },
     'edit_trend_report': { name: 'トレンドレポート編集', category: 'レポート', icon: '✏️' },
     'delete_trend_report': { name: 'トレンドレポート削除', category: 'レポート', icon: '🗑️' },
-    'view_new_product': { name: '新商品レポート閲覧', category: 'レポート', icon: '🆕' },
-    'add_new_product': { name: '新商品レポート追加', category: 'レポート', icon: '➕' },
-    'edit_new_product': { name: '新商品レポート編集', category: 'レポート', icon: '✏️' },
-    'delete_new_product': { name: '新商品レポート削除', category: 'レポート', icon: '🗑️' },
+    'view_new_product': { name: '週次インテリジェンス（マクロ環境）閲覧', category: 'レポート', icon: '🆕' },
+    'add_new_product': { name: '週次インテリジェンス（マクロ環境）追加', category: 'レポート', icon: '➕' },
+    'edit_new_product': { name: '週次インテリジェンス（マクロ環境）編集', category: 'レポート', icon: '✏️' },
+    'delete_new_product': { name: '週次インテリジェンス（マクロ環境）削除', category: 'レポート', icon: '🗑️' },
     // メッセージ
     'view_messages': { name: 'メッセージ確認', category: 'コミュニケーション', icon: '📩' },
     'send_broadcast': { name: '全員へ通知送信', category: 'コミュニケーション', icon: '📢' },
@@ -2331,10 +2331,10 @@ function renderAdminPanel() {
         // 商品分類管理
         renderProductCategoriesPanel(c);
     } else if (state.activeAdminTab === 'trendReports') {
-        // 週刊トレンドレポート管理
+        // コンビニ3社 新商品ヒット予測レポート管理
         renderTrendReportsAdmin(c);
     } else if (state.activeAdminTab === 'newProductReport') {
-        // 新商品レポート管理
+        // 週次インテリジェンス（マクロ環境）管理
         renderNewProductReportAdmin(c);
     } else if (state.activeAdminTab === 'usageStats') {
         // 利用統計
@@ -3735,8 +3735,8 @@ function init() {
     initEventModal();
     initAdvisorGroupToggle(); // グループトグルを初期化
     initReportsGroupToggle(); // レポートグループのトグルを初期化
-    initTrendReportToggle(); // 週刊トレンドレポートのトグルを初期化
-    initNewProductToggle(); // 新商品レポートのトグルを初期化
+    initTrendReportToggle(); // コンビニ3社 新商品ヒット予測レポートのトグルを初期化
+    initNewProductToggle(); // 週次インテリジェンス（マクロ環境）のトグルを初期化
     loadData();
     render();
 
@@ -5185,11 +5185,11 @@ function initNonDailyToggle() {
 }
 
 // ========================================
-// 定期コンビニ新商品レポート
+// 週次インテリジェンス（マクロ環境）
 // ========================================
 
-// 管理者用 新商品レポート管理画面
-// 週刊トレンドレポート管理画面
+// 管理者用 週次インテリジェンス（マクロ環境）管理画面
+// コンビニ3社 新商品ヒット予測レポート管理画面
 function renderTrendReportsAdmin(container) {
     const reports = state.trendReports || [];
     
@@ -5201,16 +5201,16 @@ function renderTrendReportsAdmin(container) {
     let html = `
         <div class="new-product-admin-container">
             <div class="new-product-admin-header">
-                <h3>📊 週刊トレンドレポート管理</h3>
-                <p class="header-description">週刊トレンドレポートを登録・管理します。登録した内容は「発注・スケジュール情報」→「レポート」に表示されます。</p>
-                <button class="btn btn-primary" onclick="openAddTrendReportModal()">+ 週刊トレンドレポート追加</button>
+                <h3>📊 コンビニ3社 新商品ヒット予測レポート管理</h3>
+                <p class="header-description">コンビニ3社 新商品ヒット予測レポートを登録・管理します。登録した内容は「発注・スケジュール情報」→「レポート」に表示されます。</p>
+                <button class="btn btn-primary" onclick="openAddTrendReportModal()">+ コンビニ3社 新商品ヒット予測レポート追加</button>
             </div>
             
             <div class="new-product-admin-list">
     `;
 
     if (sortedReports.length === 0) {
-        html += '<p class="no-data-message">週刊トレンドレポートがまだ登録されていません。<br>「+ 週刊トレンドレポート追加」ボタンから追加してください。</p>';
+        html += '<p class="no-data-message">コンビニ3社 新商品ヒット予測レポートがまだ登録されていません。<br>「+ コンビニ3社 新商品ヒット予測レポート追加」ボタンから追加してください。</p>';
     } else {
         sortedReports.forEach(report => {
             const createdDate = new Date(report.createdAt || report.uploadedAt);
@@ -5265,16 +5265,16 @@ function renderNewProductReportAdmin(container) {
     let html = `
         <div class="new-product-admin-container">
             <div class="new-product-admin-header">
-                <h3>🆕 定期コンビニ新商品レポート管理</h3>
+                <h3>🆕 週次インテリジェンス（マクロ環境）管理</h3>
                 <p class="header-description">新商品の情報を登録・管理します。登録した内容は「発注・スケジュール情報」に表示されます。</p>
-                <button class="btn btn-primary" onclick="openAddNewProductReportModal()">+ 新商品レポート追加</button>
+                <button class="btn btn-primary" onclick="openAddNewProductReportModal()">+ 週次インテリジェンス（マクロ環境）追加</button>
             </div>
             
             <div class="new-product-admin-list">
     `;
 
     if (sortedReports.length === 0) {
-        html += '<p class="no-data-message">新商品レポートがまだ登録されていません。<br>「+ 新商品レポート追加」ボタンから追加してください。</p>';
+        html += '<p class="no-data-message">週次インテリジェンス（マクロ環境）がまだ登録されていません。<br>「+ 週次インテリジェンス（マクロ環境）追加」ボタンから追加してください。</p>';
     } else {
         sortedReports.forEach(report => {
             const createdDate = new Date(report.createdAt);
@@ -5309,7 +5309,7 @@ function renderNewProductReportAdmin(container) {
     container.innerHTML = html;
 }
 
-// 新商品レポートを描画（フロント表示用）
+// 週次インテリジェンス（マクロ環境）を描画（フロント表示用）
 function renderNewProductReport() {
     const container = document.getElementById('newProductReportSection');
     const content = document.getElementById('newProductContent');
@@ -5325,7 +5325,7 @@ function renderNewProductReport() {
     let html = '';
 
     if (sortedReports.length === 0) {
-        html += '<p class="no-report-message">新商品レポートはまだありません。</p>';
+        html += '<p class="no-report-message">週次インテリジェンス（マクロ環境）はまだありません。</p>';
     } else {
         html += '<div class="new-product-reports-list">';
         sortedReports.forEach(report => {
@@ -5357,7 +5357,7 @@ function renderNewProductReport() {
     initNewProductToggle();
 }
 
-// 新商品レポートのトグル機能を初期化
+// 週次インテリジェンス（マクロ環境）のトグル機能を初期化
 function initNewProductToggle() {
     const container = document.getElementById('newProductReportSection');
     if (!container) return;
@@ -5376,14 +5376,14 @@ function initNewProductToggle() {
     }
 }
 
-// 新商品レポート追加モーダルを開く
+// 週次インテリジェンス（マクロ環境）追加モーダルを開く
 function openAddNewProductReportModal() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">🆕 新商品レポート追加</h2>
+                <h2 class="modal-title">🆕 週次インテリジェンス（マクロ環境）追加</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
             <form class="modal-body" onsubmit="submitNewProductReport(event, this)">
@@ -5410,7 +5410,7 @@ function openAddNewProductReportModal() {
     document.body.appendChild(modal);
 }
 
-// 新商品レポート編集モーダルを開く
+// 週次インテリジェンス（マクロ環境）編集モーダルを開く
 function openEditNewProductReportModal(reportId) {
     const report = state.newProductReports.find(r => r.id === reportId);
     if (!report) return;
@@ -5420,7 +5420,7 @@ function openEditNewProductReportModal(reportId) {
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">🆕 新商品レポート編集</h2>
+                <h2 class="modal-title">🆕 週次インテリジェンス（マクロ環境）編集</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
             <form class="modal-body" onsubmit="submitNewProductReport(event, this, '${reportId}')">
@@ -5447,7 +5447,7 @@ function openEditNewProductReportModal(reportId) {
     document.body.appendChild(modal);
 }
 
-// 新商品レポート送信
+// 週次インテリジェンス（マクロ環境）送信
 function submitNewProductReport(event, form, reportId = null) {
     event.preventDefault();
     const formData = new FormData(form);
@@ -5481,7 +5481,7 @@ function submitNewProductReport(event, form, reportId = null) {
     renderNewProductReport();
 }
 
-// 新商品レポート削除
+// 週次インテリジェンス（マクロ環境）削除
 function deleteNewProductReport(reportId) {
     if (!confirm('このレポートを削除しますか？')) return;
     
@@ -5800,10 +5800,10 @@ function filterNonDailyByCategory(category) {
 }
 
 // ========================================
-// 週刊トレンドレポート機能
+// コンビニ3社 新商品ヒット予測レポート機能
 // ========================================
 
-// 週刊トレンドレポートを描画
+// コンビニ3社 新商品ヒット予測レポートを描画
 function renderTrendReports() {
     const section = document.getElementById('trendReportSection');
     const content = document.getElementById('trendReportContent');
@@ -5822,7 +5822,7 @@ function renderTrendReports() {
     let html = '';
 
     if (sortedReports.length === 0) {
-        html = '<div class="no-reports-message"><p>📭 現在、週刊トレンドレポートはありません</p></div>';
+        html = '<div class="no-reports-message"><p>📭 現在、コンビニ3社 新商品ヒット予測レポートはありません</p></div>';
     } else {
         html = '<div class="trend-reports-list">';
         
@@ -5889,7 +5889,7 @@ function renderTrendReports() {
         html += `
             <div class="trend-report-upload-section">
                 <button class="btn btn-primary" onclick="openAddTrendReportModal()">
-                    + 週刊トレンドレポート追加
+                    + コンビニ3社 新商品ヒット予測レポート追加
                 </button>
             </div>
         `;
@@ -5935,14 +5935,14 @@ function openTrendReportUploadModal() {
     overlay.innerHTML = `
         <div class="modal category-modal" style="max-width: 450px;">
             <div class="modal-header">
-                <h2 class="modal-title">📤 週刊トレンドレポートをアップロード</h2>
+                <h2 class="modal-title">📤 コンビニ3社 新商品ヒット予測レポートをアップロード</h2>
                 <button class="modal-close" onclick="closeTrendReportUploadModal()">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
                     <label>レポートタイトル</label>
                     <input type="text" id="trendReportTitle" class="form-control" 
-                           placeholder="例: 週刊トレンドレポート 2026年1月27日号" required>
+                           placeholder="例: コンビニ3社 新商品ヒット予測レポート 2026年1月27日号" required>
                 </div>
                 
                 <div class="form-group">
@@ -6014,7 +6014,7 @@ function handleTrendReportFileSelect(event) {
     const titleInput = document.getElementById('trendReportTitle');
     if (!titleInput.value) {
         const today = new Date();
-        titleInput.value = `週刊トレンドレポート ${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日号`;
+        titleInput.value = `コンビニ3社 新商品ヒット予測レポート ${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日号`;
     }
 }
 
@@ -6148,20 +6148,20 @@ function deleteTrendReport(reportId) {
     renderTrendReports();
 }
 
-// 週刊トレンドレポート追加モーダル（記述式）
+// コンビニ3社 新商品ヒット予測レポート追加モーダル（記述式）
 function openAddTrendReportModal() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">📊 週刊トレンドレポート追加</h2>
+                <h2 class="modal-title">📊 コンビニ3社 新商品ヒット予測レポート追加</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
             <form class="modal-body" onsubmit="submitTrendReport(event, this)">
                 <div class="form-group">
                     <label>タイトル <span class="required">*</span></label>
-                    <input type="text" name="title" placeholder="例: 週刊トレンドレポート 2026年1月27日号" required>
+                    <input type="text" name="title" placeholder="例: コンビニ3社 新商品ヒット予測レポート 2026年1月27日号" required>
                 </div>
                 <div class="form-group">
                     <label>内容 <span class="required">*</span></label>
@@ -6182,7 +6182,7 @@ function openAddTrendReportModal() {
     document.body.appendChild(modal);
 }
 
-// 週刊トレンドレポート編集モーダル（記述式）
+// コンビニ3社 新商品ヒット予測レポート編集モーダル（記述式）
 function openEditTrendReportModal(reportId) {
     const report = state.trendReports.find(r => r.id === reportId);
     if (!report) return;
@@ -6199,7 +6199,7 @@ function openEditTrendReportModal(reportId) {
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">📊 週刊トレンドレポート編集</h2>
+                <h2 class="modal-title">📊 コンビニ3社 新商品ヒット予測レポート編集</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
             <form class="modal-body" onsubmit="submitTrendReport(event, this, '${reportId}')">
@@ -6226,7 +6226,7 @@ function openEditTrendReportModal(reportId) {
     document.body.appendChild(modal);
 }
 
-// 週刊トレンドレポート送信（記述式）
+// コンビニ3社 新商品ヒット予測レポート送信（記述式）
 function submitTrendReport(event, form, reportId = null) {
     event.preventDefault();
     
