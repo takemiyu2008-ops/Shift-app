@@ -5612,10 +5612,24 @@ function updateNonDailyAdvice(id, data) {
 function deleteNonDailyAdvice(id) {
     if (confirm('このアドバイスを削除しますか？')) {
         state.nonDailyAdvice = state.nonDailyAdvice.filter(a => a.id !== id);
-        saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+        
+        // Firebaseに保存（空の場合はnullで明示的にクリア）
+        if (state.nonDailyAdvice.length === 0) {
+            database.ref('nonDailyAdvice').set(null);
+        } else {
+            saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
+        }
+        
         trackUsage('delete_non_daily', '管理者');
         renderNonDailyAdvisor();
-        if (state.isAdmin) renderAdminPanel();
+        
+        // 管理者パネルを確実に更新
+        if (state.isAdmin && state.activeAdminTab === 'nonDailyAdvice') {
+            const container = document.getElementById('adminContent');
+            if (container) {
+                renderNonDailyAdminPanel(container);
+            }
+        }
     }
 }
 
@@ -5690,7 +5704,7 @@ function openNonDailyAdviceForm(editId = null) {
 
     const formHtml = `
         <div class="modal-overlay active" id="nonDailyFormOverlay" onclick="if(event.target===this)closeNonDailyAdviceForm()">
-            <div class="modal">
+            <div class="modal modal-lg">
                 <div class="modal-header">
                     <h2 class="modal-title">📈 ${isEdit ? '参考情報編集' : '参考情報追加'}</h2>
                     <button class="modal-close" onclick="closeNonDailyAdviceForm()">×</button>
@@ -5706,7 +5720,7 @@ function openNonDailyAdviceForm(editId = null) {
                     </div>
                     <div class="form-group">
                         <label for="ndContent">内容</label>
-                        <textarea id="ndContent" placeholder="例：SNSで話題のXX味が人気。売り場での目立つ陳列を推奨。" rows="4" required>${advice?.content || ''}</textarea>
+                        <textarea id="ndContent" class="non-daily-content-textarea" placeholder="例：SNSで話題のXX味が人気。売り場での目立つ陳列を推奨。" rows="10" required>${advice?.content || ''}</textarea>
                     </div>
                     <div class="form-group">
                         <label for="ndSource">情報源（任意）</label>
