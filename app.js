@@ -5085,8 +5085,8 @@ function renderNonDailyAdvisor() {
     const content = document.getElementById('nonDailyContent');
     if (!container || !content) return;
 
-    // アドバイスがあれば表示
-    if (state.nonDailyAdvice.length === 0) {
+    // 管理者の場合はデータがなくても表示（追加できるように）
+    if (state.nonDailyAdvice.length === 0 && !state.isAdmin) {
         container.style.display = 'none';
         return;
     }
@@ -5116,6 +5116,16 @@ function renderNonDailyAdvisor() {
     ).join('')}
         </div>
     `;
+
+    // 管理者向けに追加ボタンを表示
+    if (state.isAdmin) {
+        const selectedCategory = currentFilter !== 'all' ? currentFilter : '';
+        html += `
+            <div class="non-daily-admin-actions">
+                <button class="btn btn-primary btn-sm" onclick="openNonDailyAdviceFormWithCategory('${selectedCategory}')">+ 新規追加</button>
+            </div>
+        `;
+    }
 
     html += '<div class="non-daily-advice-grid">';
 
@@ -5696,12 +5706,12 @@ function renderNonDailyAdminPanel(container) {
 }
 
 // 非デイリーアドバイス入力フォームを開く
-function openNonDailyAdviceForm(editId = null) {
+function openNonDailyAdviceForm(editId = null, defaultCategory = '') {
     const advice = editId ? state.nonDailyAdvice.find(a => a.id === editId) : null;
     const isEdit = !!advice;
 
     const categoryOptions = Object.entries(NON_DAILY_CATEGORIES)
-        .map(([key, val]) => `<option value="${key}" ${advice?.category === key ? 'selected' : ''}>${val.icon} ${val.name}</option>`)
+        .map(([key, val]) => `<option value="${key}" ${advice?.category === key || (!advice && defaultCategory === key) ? 'selected' : ''}>${val.icon} ${val.name}</option>`)
         .join('');
 
     const formHtml = `
@@ -5742,6 +5752,11 @@ function openNonDailyAdviceForm(editId = null) {
     div.id = 'nonDailyFormContainer';
     div.innerHTML = formHtml;
     document.body.appendChild(div);
+}
+
+// カテゴリを指定して非デイリーアドバイスフォームを開く
+function openNonDailyAdviceFormWithCategory(category) {
+    openNonDailyAdviceForm(null, category);
 }
 
 // 非デイリーアドバイスフォームを閉じる

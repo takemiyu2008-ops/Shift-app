@@ -6562,6 +6562,14 @@ body {
     resize: vertical;
 }
 
+/* 非デイリーアドバイス管理者アクション */
+.non-daily-admin-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 0;
+    margin-bottom: 8px;
+}
+
 @media (max-width: 768px) {
     .non-daily-content-textarea {
         min-height: 150px !important;
