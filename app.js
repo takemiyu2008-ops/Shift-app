@@ -5140,7 +5140,7 @@ function renderNonDailyAdvisor() {
                         </div>
                         ${state.isAdmin ? `
                         <div class="advice-card-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="editNonDailyAdvice('${advice.id}')">✏️ 編集</button>
+                            <button class="btn btn-sm btn-secondary" onclick="openNonDailyAdviceForm('${advice.id}')">✏️ 編集</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">🗑️ 削除</button>
                         </div>
                         ` : ''}
@@ -5621,6 +5621,8 @@ function deleteNonDailyAdvice(id) {
         }
         
         trackUsage('delete_non_daily', '管理者');
+        
+        // 一般ユーザー向け画面を更新
         renderNonDailyAdvisor();
         
         // 管理者パネルを確実に更新
