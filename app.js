@@ -516,12 +516,22 @@ function renderGanttBody() {
         const all = [...visibleDayShifts, ...visibleOvernight, ...fixed, ...fixedOvernight];
 
         // 承認済みの休日（全日休み）がある担当者のシフトを除外
-        const approvedHolidays = state.holidayRequests.filter(h =>
-            h.status === 'approved' &&
-            dateStr >= h.startDate &&
-            dateStr <= h.endDate &&
-            !h.halfDayType // 半休以外（全日休み）の場合のみ除外
-        );
+        const approvedHolidays = state.holidayRequests.filter(h => {
+            if (h.status !== 'approved') return false;
+            if (!(dateStr >= h.startDate && dateStr <= h.endDate)) return false;
+            if (h.halfDayType) return false; // 半休は除外対象外
+            
+            // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
+            if (h.shiftTimes && Object.keys(h.shiftTimes).length > 0) {
+                return !!h.shiftTimes[dateStr];
+            }
+            // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
+            if (h.selectedShifts && h.selectedShifts.length > 0) {
+                return h.selectedShifts.some(s => s.date === dateStr);
+            }
+            // どちらもない場合は従来の期間ベースの除外
+            return true;
+        });
         const holidayNames = approvedHolidays.map(h => h.name);
 
         // 承認済みの有給がある担当者のシフトも除外
@@ -617,7 +627,27 @@ function renderGanttBody() {
         barCount += overnightLeaves.length;
 
         // 休日
-        const holidays = state.holidayRequests.filter(h => h.status === 'approved' && dateStr >= h.startDate && dateStr <= h.endDate);
+        const holidays = state.holidayRequests.filter(h => {
+            if (h.status !== 'approved') return false;
+            if (!(dateStr >= h.startDate && dateStr <= h.endDate)) return false;
+            
+            // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
+            if (h.shiftTimes && Object.keys(h.shiftTimes).length > 0) {
+                const hasTime = !!h.shiftTimes[dateStr];
+                console.log(`[休日デバッグ] ${h.name} ${dateStr}: shiftTimes存在, 該当日=${hasTime}`, h.shiftTimes);
+                return hasTime;
+            }
+            // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
+            if (h.selectedShifts && h.selectedShifts.length > 0) {
+                const hasShift = h.selectedShifts.some(s => s.date === dateStr);
+                console.log(`[休日デバッグ] ${h.name} ${dateStr}: selectedShifts存在, 該当日=${hasShift}`, h.selectedShifts);
+                return hasShift;
+            }
+            // どちらもない場合は従来の期間ベースの表示
+            console.log(`[休日デバッグ] ${h.name} ${dateStr}: shiftTimes/selectedShifts無し、期間ベース表示`);
+            return true;
+        });
+        
         holidays.forEach((h, idx) => {
             const bar = document.createElement('div');
 
@@ -637,6 +667,7 @@ function renderGanttBody() {
             // 1. shiftTimes から日付ごとの時間情報を取得
             if (h.shiftTimes && h.shiftTimes[dateStr]) {
                 shiftTimeInfo = h.shiftTimes[dateStr];
+                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: shiftTimesから取得`, shiftTimeInfo);
             }
             // 2. selectedShifts から該当日の時間情報を取得
             else if (h.selectedShifts && h.selectedShifts.length > 0) {
@@ -647,6 +678,7 @@ function renderGanttBody() {
                         endHour: selectedShift.endHour,
                         overnight: selectedShift.overnight || false
                     };
+                    console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: selectedShiftsから取得`, shiftTimeInfo);
                 }
             }
             // 3. 直接プロパティから取得（従来の形式）
@@ -656,6 +688,9 @@ function renderGanttBody() {
                     endHour: h.endHour,
                     overnight: h.overnight || false
                 };
+                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: 直接プロパティから取得`, shiftTimeInfo);
+            } else {
+                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: 時間情報なし`, h);
             }
 
             // シフト時間情報がある場合は、その時間に合わせて表示
