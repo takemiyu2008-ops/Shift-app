@@ -631,12 +631,39 @@ function renderGanttBody() {
             }
             bar.dataset.holidayId = h.id;
 
+            // シフト時間情報を取得（優先順位: shiftTimes[日付] > selectedShifts > 直接プロパティ）
+            let shiftTimeInfo = null;
+            
+            // 1. shiftTimes から日付ごとの時間情報を取得
+            if (h.shiftTimes && h.shiftTimes[dateStr]) {
+                shiftTimeInfo = h.shiftTimes[dateStr];
+            }
+            // 2. selectedShifts から該当日の時間情報を取得
+            else if (h.selectedShifts && h.selectedShifts.length > 0) {
+                const selectedShift = h.selectedShifts.find(s => s.date === dateStr);
+                if (selectedShift) {
+                    shiftTimeInfo = {
+                        startHour: selectedShift.startHour,
+                        endHour: selectedShift.endHour,
+                        overnight: selectedShift.overnight || false
+                    };
+                }
+            }
+            // 3. 直接プロパティから取得（従来の形式）
+            else if (h.startHour !== undefined && h.endHour !== undefined) {
+                shiftTimeInfo = {
+                    startHour: h.startHour,
+                    endHour: h.endHour,
+                    overnight: h.overnight || false
+                };
+            }
+
             // シフト時間情報がある場合は、その時間に合わせて表示
-            if (h.startHour !== undefined && h.endHour !== undefined) {
-                let start = h.startHour;
-                let end = h.endHour;
+            if (shiftTimeInfo) {
+                let start = shiftTimeInfo.startHour;
+                let end = shiftTimeInfo.endHour;
                 // 夜勤の場合は24時まで表示
-                if (h.overnight) end = 24;
+                if (shiftTimeInfo.overnight) end = 24;
 
                 const leftPercent = (start / 24) * 100;
                 const widthPercent = ((end - start) / 24) * 100;
@@ -650,11 +677,11 @@ function renderGanttBody() {
 
             // 時間表示を追加
             let timeText = '';
-            if (h.startHour !== undefined && h.endHour !== undefined) {
-                if (h.overnight) {
-                    timeText = ` ${formatTime(h.startHour)}-翌${formatTime(h.endHour)}`;
+            if (shiftTimeInfo) {
+                if (shiftTimeInfo.overnight) {
+                    timeText = ` ${formatTime(shiftTimeInfo.startHour)}-翌${formatTime(shiftTimeInfo.endHour)}`;
                 } else {
-                    timeText = ` ${formatTime(h.startHour)}-${formatTime(h.endHour)}`;
+                    timeText = ` ${formatTime(shiftTimeInfo.startHour)}-${formatTime(shiftTimeInfo.endHour)}`;
                 }
             }
 
@@ -693,6 +720,78 @@ function renderGanttBody() {
             timeline.appendChild(bar);
         });
         barCount += holidays.length;
+        
+        // 夜勤の休日の翌日分を表示
+        const overnightHolidays = state.holidayRequests.filter(h => {
+            if (h.status !== 'approved') return false;
+            // 前日の日付を取得
+            const prevDate = new Date(dateStr);
+            prevDate.setDate(prevDate.getDate() - 1);
+            const prevDateStr = formatDate(prevDate);
+            
+            // 前日が休日期間内かチェック
+            if (!(prevDateStr >= h.startDate && prevDateStr <= h.endDate)) return false;
+            
+            // 前日のシフト時間情報を取得して夜勤かチェック
+            let prevShiftTime = null;
+            if (h.shiftTimes && h.shiftTimes[prevDateStr]) {
+                prevShiftTime = h.shiftTimes[prevDateStr];
+            } else if (h.selectedShifts && h.selectedShifts.length > 0) {
+                const selectedShift = h.selectedShifts.find(s => s.date === prevDateStr);
+                if (selectedShift) {
+                    prevShiftTime = {
+                        startHour: selectedShift.startHour,
+                        endHour: selectedShift.endHour,
+                        overnight: selectedShift.overnight || false
+                    };
+                }
+            } else if (h.startHour !== undefined && h.overnight) {
+                prevShiftTime = { startHour: h.startHour, endHour: h.endHour, overnight: h.overnight };
+            }
+            
+            return prevShiftTime && prevShiftTime.overnight;
+        });
+        
+        overnightHolidays.forEach((h, idx) => {
+            const prevDate = new Date(dateStr);
+            prevDate.setDate(prevDate.getDate() - 1);
+            const prevDateStr = formatDate(prevDate);
+            
+            // 前日のシフト時間情報を取得
+            let prevShiftTime = null;
+            if (h.shiftTimes && h.shiftTimes[prevDateStr]) {
+                prevShiftTime = h.shiftTimes[prevDateStr];
+            } else if (h.selectedShifts && h.selectedShifts.length > 0) {
+                const selectedShift = h.selectedShifts.find(s => s.date === prevDateStr);
+                if (selectedShift) {
+                    prevShiftTime = {
+                        startHour: selectedShift.startHour,
+                        endHour: selectedShift.endHour,
+                        overnight: selectedShift.overnight || false
+                    };
+                }
+            } else if (h.startHour !== undefined) {
+                prevShiftTime = { startHour: h.startHour, endHour: h.endHour, overnight: h.overnight };
+            }
+            
+            if (!prevShiftTime) return;
+            
+            const bar = document.createElement('div');
+            bar.className = 'holiday-bar overnight-continuation';
+            bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
+            bar.style.height = `${perLvl - 4}px`;
+            
+            // 0時から終了時刻まで表示
+            const end = prevShiftTime.endHour;
+            const leftPercent = 0;
+            const widthPercent = (end / 24) * 100;
+            bar.style.left = `${leftPercent}%`;
+            bar.style.width = `${widthPercent}%`;
+            
+            bar.textContent = `🏠 ${h.name} 休日 0:00-${formatTime(end)}`;
+            timeline.appendChild(bar);
+        });
+        barCount += overnightHolidays.length;
 
         timeline.style.minHeight = `${baseH + (maxLvl + 1 + barCount) * perLvl}px`;
 
