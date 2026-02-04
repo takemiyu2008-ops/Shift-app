@@ -365,6 +365,14 @@ function renderGanttBody() {
             </div>${lastYearHtml}`;
         }
 
+        // 給料日・年金支給日マークを追加
+        const payDayInfo = getPayDayInfo(date);
+        if (payDayInfo.length > 0) {
+            labelHTML += `<div class="payday-marks">${payDayInfo.map(p => 
+                `<span class="payday-mark ${p.type}" title="${p.label}">${p.icon} ${p.shortLabel}</span>`
+            ).join('')}</div>`;
+        }
+
         // この日のイベントを取得（期間内にある日付を含むイベント）
         const dayEvents = state.dailyEvents.filter(e => {
             const startDate = e.startDate || e.date; // 後方互換性
@@ -4138,6 +4146,97 @@ function initEventModal() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ========================================
+// 給料日・年金支給日関連の関数
+// ========================================
+
+// 給料日設定（デフォルト値）
+const PAYDAY_SETTINGS = {
+    salaryDays: [25], // 給料日（複数設定可能）
+    pensionEnabled: true // 年金支給日を表示するか
+};
+
+// 給料日・年金支給日の情報を取得
+function getPayDayInfo(date) {
+    const result = [];
+    const d = new Date(date);
+    const day = d.getDate();
+    const month = d.getMonth() + 1; // 1-12
+    const dayOfWeek = d.getDay(); // 0=日, 6=土
+    
+    // 給料日チェック
+    PAYDAY_SETTINGS.salaryDays.forEach(salaryDay => {
+        if (isPayDay(d, salaryDay)) {
+            result.push({
+                type: 'salary',
+                icon: '💰',
+                label: '給料日',
+                shortLabel: '給料日'
+            });
+        }
+    });
+    
+    // 年金支給日チェック（偶数月の15日、土日祝の場合は直前の平日）
+    if (PAYDAY_SETTINGS.pensionEnabled && isPensionDay(d)) {
+        result.push({
+            type: 'pension',
+            icon: '👴',
+            label: '年金支給日',
+            shortLabel: '年金'
+        });
+    }
+    
+    return result;
+}
+
+// 給料日かどうかを判定（土日の場合は直前の平日）
+function isPayDay(date, salaryDay) {
+    const d = new Date(date);
+    const day = d.getDate();
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    
+    // その月の給料日を計算
+    let payDate = new Date(year, month, salaryDay);
+    
+    // 給料日が存在しない場合（例：2月30日）は月末に調整
+    if (payDate.getMonth() !== month) {
+        payDate = new Date(year, month + 1, 0); // 月末日
+    }
+    
+    // 土日の場合は直前の平日に調整
+    while (payDate.getDay() === 0 || payDate.getDay() === 6) {
+        payDate.setDate(payDate.getDate() - 1);
+    }
+    
+    return d.getDate() === payDate.getDate() && 
+           d.getMonth() === payDate.getMonth() && 
+           d.getFullYear() === payDate.getFullYear();
+}
+
+// 年金支給日かどうかを判定（偶数月の15日、土日の場合は直前の平日）
+function isPensionDay(date) {
+    const d = new Date(date);
+    const month = d.getMonth() + 1; // 1-12
+    
+    // 偶数月のみ
+    if (month % 2 !== 0) return false;
+    
+    const year = d.getFullYear();
+    
+    // その月の15日を取得
+    let pensionDate = new Date(year, d.getMonth(), 15);
+    
+    // 土日の場合は直前の平日に調整
+    while (pensionDate.getDay() === 0 || pensionDate.getDay() === 6) {
+        pensionDate.setDate(pensionDate.getDate() - 1);
+    }
+    
+    return d.getDate() === pensionDate.getDate() && 
+           d.getMonth() === pensionDate.getMonth() && 
+           d.getFullYear() === pensionDate.getFullYear();
+}
 
 // ========================================
 // 天気予報関連の関数

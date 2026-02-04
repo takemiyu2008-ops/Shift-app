@@ -1510,6 +1510,17 @@ body {
     .legend {
         padding: 12px;
     }
+
+    /* 給料日・年金支給日マーク（モバイル） */
+    .payday-marks {
+        gap: 2px;
+        margin-top: 2px;
+    }
+
+    .payday-mark {
+        padding: 1px 4px;
+        font-size: 0.6rem;
+    }
 }
 
 /* ========================================
@@ -2274,6 +2285,38 @@ body {
 .temp-diff-minus {
     color: #22c55e;
     font-weight: 600;
+}
+
+/* 給料日・年金支給日マーク */
+.payday-marks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.payday-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.payday-mark.salary {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1e293b;
+    box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+.payday-mark.pension {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    color: #1e293b;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 }
 
 /* ========================================
