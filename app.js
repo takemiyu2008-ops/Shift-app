@@ -6416,7 +6416,7 @@ const ORDER_STAFF = [
     { id: 5, name: '高橋', role: 'スタッフ/日勤', categories: ['bread'] },
     { id: 6, name: '萩', role: 'スタッフ/日勤', categories: ['processed'] },
     { id: 7, name: '小宮山', role: 'スタッフ/夕勤', categories: ['sweetsChoco'] },
-    { id: 8, name: '加藤（男）', role: 'スタッフ/日勤', categories: ['dessert', 'sweetsGummy'] },
+    { id: 8, name: '加藤', role: 'スタッフ/日勤', categories: ['dessert', 'sweetsGummy'] },
     { id: 9, name: '中瀬', role: 'スタッフ/夕勤', categories: ['sweetsSnack'] },
 ];
 
