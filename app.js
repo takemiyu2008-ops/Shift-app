@@ -335,15 +335,19 @@ function renderGanttBody() {
         const row = document.createElement('div');
         row.className = 'gantt-row';
 
+        // 祝日判定を先に行う
+        const holidayName = getJapaneseHoliday(date);
+
         let dayClass = 'date-day';
-        if (dayOfWeek === 0) dayClass += ' sunday';
-        if (dayOfWeek === 6) dayClass += ' saturday';
+        if (dayOfWeek === 0 || holidayName) dayClass += ' sunday'; // 祝日も赤色に
+        else if (dayOfWeek === 6) dayClass += ' saturday';
 
         const label = document.createElement('div');
         label.className = 'gantt-date-label';
+        if (holidayName) label.classList.add('is-holiday');
 
         // 基本の日付表示
-        let labelHTML = `<span class="date-number">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
+        let labelHTML = `<span class="date-number${holidayName ? ' holiday' : ''}">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
 
         // 天気予報を追加
         const weather = state.weatherData[dateStr];
@@ -363,6 +367,11 @@ function renderGanttBody() {
                 <span class="weather-icon">${weatherInfo.icon}</span>
                 <span class="weather-temp"><span class="temp-max">${weather.tempMax}°</span>/<span class="temp-min">${weather.tempMin}°</span></span>
             </div>${lastYearHtml}`;
+        }
+
+        // 祝日表示を追加（holidayNameは上で既に取得済み）
+        if (holidayName) {
+            labelHTML += `<div class="holiday-mark" title="${holidayName}">🎌 ${holidayName}</div>`;
         }
 
         // 給料日・年金支給日マークを追加
@@ -4146,6 +4155,157 @@ function initEventModal() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ========================================
+// 日本の祝日関連の関数
+// ========================================
+
+// 日本の祝日を取得（2024年〜2030年対応）
+function getJapaneseHoliday(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const dateStr = `${month}/${day}`;
+    
+    // 固定祝日
+    const fixedHolidays = {
+        '1/1': '元日',
+        '2/11': '建国記念の日',
+        '2/23': '天皇誕生日',
+        '4/29': '昭和の日',
+        '5/3': '憲法記念日',
+        '5/4': 'みどりの日',
+        '5/5': 'こどもの日',
+        '8/11': '山の日',
+        '11/3': '文化の日',
+        '11/23': '勤労感謝の日'
+    };
+    
+    // 固定祝日チェック
+    if (fixedHolidays[dateStr]) {
+        return fixedHolidays[dateStr];
+    }
+    
+    // ハッピーマンデー（第n月曜日）
+    const dayOfWeek = d.getDay();
+    if (dayOfWeek === 1) { // 月曜日のみチェック
+        const weekNum = Math.ceil(day / 7);
+        
+        // 成人の日（1月第2月曜）
+        if (month === 1 && weekNum === 2) return '成人の日';
+        // 海の日（7月第3月曜）
+        if (month === 7 && weekNum === 3) return '海の日';
+        // 敬老の日（9月第3月曜）
+        if (month === 9 && weekNum === 3) return '敬老の日';
+        // スポーツの日（10月第2月曜）
+        if (month === 10 && weekNum === 2) return 'スポーツの日';
+    }
+    
+    // 春分の日（3月20日または21日）
+    if (month === 3) {
+        const vernalEquinox = calcVernalEquinox(year);
+        if (day === vernalEquinox) return '春分の日';
+    }
+    
+    // 秋分の日（9月22日または23日）
+    if (month === 9) {
+        const autumnalEquinox = calcAutumnalEquinox(year);
+        if (day === autumnalEquinox) return '秋分の日';
+    }
+    
+    // 振替休日チェック（祝日が日曜の場合、翌日が休み）
+    if (dayOfWeek === 1) { // 月曜日
+        const yesterday = new Date(d);
+        yesterday.setDate(day - 1);
+        const yesterdayHoliday = getHolidayName(yesterday);
+        if (yesterdayHoliday) {
+            return '振替休日';
+        }
+    }
+    
+    // 国民の休日（祝日に挟まれた平日）
+    if (month === 9) {
+        // 敬老の日と秋分の日に挟まれる場合
+        const keirouDay = getHappyMonday(year, 9, 3); // 9月第3月曜
+        const autumnalEquinox = calcAutumnalEquinox(year);
+        if (day > keirouDay && day < autumnalEquinox && autumnalEquinox - keirouDay === 2) {
+            return '国民の休日';
+        }
+    }
+    
+    return null;
+}
+
+// 祝日名を取得（振替休日判定用のヘルパー）
+function getHolidayName(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const dateStr = `${month}/${day}`;
+    
+    const fixedHolidays = {
+        '1/1': '元日',
+        '2/11': '建国記念の日',
+        '2/23': '天皇誕生日',
+        '4/29': '昭和の日',
+        '5/3': '憲法記念日',
+        '5/4': 'みどりの日',
+        '5/5': 'こどもの日',
+        '8/11': '山の日',
+        '11/3': '文化の日',
+        '11/23': '勤労感謝の日'
+    };
+    
+    if (fixedHolidays[dateStr]) return fixedHolidays[dateStr];
+    
+    // ハッピーマンデー
+    const dayOfWeek = d.getDay();
+    if (dayOfWeek === 1) {
+        const weekNum = Math.ceil(day / 7);
+        if (month === 1 && weekNum === 2) return '成人の日';
+        if (month === 7 && weekNum === 3) return '海の日';
+        if (month === 9 && weekNum === 3) return '敬老の日';
+        if (month === 10 && weekNum === 2) return 'スポーツの日';
+    }
+    
+    // 春分・秋分
+    if (month === 3 && day === calcVernalEquinox(year)) return '春分の日';
+    if (month === 9 && day === calcAutumnalEquinox(year)) return '秋分の日';
+    
+    return null;
+}
+
+// ハッピーマンデーの日付を計算
+function getHappyMonday(year, month, weekNum) {
+    const firstDay = new Date(year, month - 1, 1);
+    const firstMonday = firstDay.getDay() <= 1 
+        ? 1 + (1 - firstDay.getDay())
+        : 1 + (8 - firstDay.getDay());
+    return firstMonday + (weekNum - 1) * 7;
+}
+
+// 春分の日を計算（簡易版：2000年〜2099年対応）
+function calcVernalEquinox(year) {
+    if (year >= 2000 && year <= 2099) {
+        return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+    }
+    return 21; // デフォルト
+}
+
+// 秋分の日を計算（簡易版：2000年〜2099年対応）
+function calcAutumnalEquinox(year) {
+    if (year >= 2000 && year <= 2099) {
+        return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+    }
+    return 23; // デフォルト
+}
+
+// 祝日かどうかを判定（外部から呼び出し可能）
+function isJapaneseHoliday(date) {
+    return getJapaneseHoliday(date) !== null;
+}
 
 // ========================================
 // 給料日・年金支給日関連の関数
