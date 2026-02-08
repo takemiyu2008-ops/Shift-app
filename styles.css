@@ -751,7 +751,7 @@ body {
 .gantt-date-label {
     width: 120px;
     min-width: 120px;
-    padding: 16px;
+    padding: 10px 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -762,17 +762,19 @@ body {
     position: sticky;
     left: 0;
     z-index: 100;
+    /* 祝日マーク等がタイムライン側にはみ出さないようにする */
+    overflow: hidden;
 }
 
 .date-number {
-    font-size: 1.4rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
-    line-height: 1.2;
+    line-height: 1.1;
 }
 
 .date-day {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-secondary);
 }
@@ -789,7 +791,7 @@ body {
     flex: 1;
     display: flex;
     position: relative;
-    min-height: 80px;
+    min-height: 70px;
     /* 日付ラベルより低いz-indexを設定 */
     z-index: 1;
 }
@@ -1439,11 +1441,11 @@ body {
     }
 
     .date-number {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
     }
 
     .date-day {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
     }
 
     .time-cell,
@@ -2005,8 +2007,8 @@ body {
 .event-icons {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 4px;
+    gap: 3px;
+    margin-top: 2px;
     justify-content: center;
 }
 
@@ -2014,9 +2016,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    font-size: 0.85rem;
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
     background: var(--bg-tertiary);
     border-radius: 50%;
     cursor: pointer;
@@ -2246,19 +2248,19 @@ body {
     align-items: center;
     justify-content: center;
     gap: 2px;
-    margin-top: 4px;
-    padding: 2px 6px;
+    margin-top: 2px;
+    padding: 1px 4px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: default;
 }
 
 .weather-icon {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
 }
 
 .weather-temp {
-    font-size: 1rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--text-primary);
 }
@@ -2273,15 +2275,15 @@ body {
 
 /* 昨年比較表示 */
 .weather-last-year {
-    font-size: 0.85rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
-    margin-top: 3px;
+    margin-top: 1px;
     white-space: nowrap;
 }
 
 .weather-last-year .temp-max,
 .weather-last-year .temp-min {
-    font-size: 0.85rem;
+    font-size: 0.7rem;
 }
 
 .temp-diff-plus {
@@ -2298,16 +2300,19 @@ body {
 .holiday-mark {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 8px;
-    margin-top: 4px;
+    gap: 2px;
+    padding: 1px 5px;
+    margin-top: 2px;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #fff;
-    border-radius: 6px;
-    font-size: 0.7rem;
+    border-radius: 4px;
+    font-size: 0.6rem;
     font-weight: 600;
     white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .gantt-date-label.is-holiday {
@@ -2322,18 +2327,18 @@ body {
 .payday-marks {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 2px;
     justify-content: center;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .payday-mark {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-size: 0.7rem;
+    gap: 1px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 0.6rem;
     font-weight: 600;
     white-space: nowrap;
 }
