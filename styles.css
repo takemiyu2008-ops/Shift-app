@@ -1,4 +1,4 @@
-/* 接続状態表示 */
+/* æŽ¥ç¶šçŠ¶æ…‹è¡¨ç¤º */
 .connection-status {
     position: fixed;
     top: 16px;
@@ -31,7 +31,7 @@
 }
 
 /* ========================================
-   CSS変数とリセット
+   CSSå¤‰æ•°ã¨ãƒªã‚»ãƒƒãƒˆ
    ======================================== */
 :root {
     --bg-primary: #0f172a;
@@ -82,7 +82,7 @@ body {
 }
 
 /* ========================================
-   アプリコンテナ
+   ã‚¢ãƒ—ãƒªã‚³ãƒ³ãƒ†ãƒŠ
    ======================================== */
 .app-container {
     max-width: 1400px;
@@ -94,7 +94,7 @@ body {
 }
 
 /* ========================================
-   ヘッダー
+   ãƒ˜ãƒƒãƒ€ãƒ¼
    ======================================== */
 .header {
     display: flex;
@@ -135,7 +135,7 @@ body {
     flex-wrap: wrap;
 }
 
-/* ロール切り替え */
+/* ãƒ­ãƒ¼ãƒ«åˆ‡ã‚Šæ›¿ãˆ */
 .role-toggle {
     display: flex;
     align-items: center;
@@ -174,7 +174,7 @@ body {
 }
 
 /* ========================================
-   メッセージバー
+   ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒãƒ¼
    ======================================== */
 .message-bar {
     display: flex;
@@ -212,7 +212,7 @@ body {
 }
 
 /* ========================================
-   ボタン
+   ãƒœã‚¿ãƒ³
    ======================================== */
 .btn {
     display: inline-flex;
@@ -295,7 +295,7 @@ body {
 }
 
 /* ========================================
-   管理者パネル
+   ç®¡ç†è€…ãƒ‘ãƒãƒ«
    ======================================== */
 .admin-panel {
     margin-bottom: 24px;
@@ -341,7 +341,7 @@ body {
     color: white;
 }
 
-/* 管理者タブのバッジ */
+/* ç®¡ç†è€…ã‚¿ãƒ–ã®ãƒãƒƒã‚¸ */
 .admin-tab {
     position: relative;
 }
@@ -381,7 +381,7 @@ body {
     overflow-y: auto;
 }
 
-/* トレンドレポートタブ用（長文表示対応） */
+/* ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆã‚¿ãƒ–ç”¨ï¼ˆé•·æ–‡è¡¨ç¤ºå¯¾å¿œï¼‰ */
 .admin-content.trend-reports-content {
     max-height: none;
 }
@@ -417,7 +417,7 @@ body {
     gap: 8px;
 }
 
-/* 従業員リスト */
+/* å¾“æ¥­å“¡ãƒªã‚¹ãƒˆ */
 .employee-list {
     display: grid;
     gap: 12px;
@@ -458,13 +458,13 @@ body {
     color: var(--text-secondary);
 }
 
-/* 従業員カードのアクション */
+/* å¾“æ¥­å“¡ã‚«ãƒ¼ãƒ‰ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ */
 .employee-actions {
     display: flex;
     gap: 8px;
 }
 
-/* 発注担当分類タグ */
+/* ç™ºæ³¨æ‹…å½“åˆ†é¡žã‚¿ã‚° */
 .order-categories-display {
     display: flex;
     flex-wrap: wrap;
@@ -483,7 +483,7 @@ body {
     border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
-/* モーダル内の発注担当分類チェックボックス */
+/* ãƒ¢ãƒ¼ãƒ€ãƒ«å†…ã®ç™ºæ³¨æ‹…å½“åˆ†é¡žãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ */
 .order-categories {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -538,7 +538,7 @@ body {
 }
 
 
-/* ステータスバッジ */
+/* ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒãƒƒã‚¸ */
 .status-badge {
     display: inline-block;
     padding: 4px 10px;
@@ -562,7 +562,7 @@ body {
     color: var(--danger);
 }
 
-/* 履歴タブ */
+/* å±¥æ­´ã‚¿ãƒ– */
 .history-card {
     flex-direction: column;
     align-items: stretch;
@@ -623,7 +623,7 @@ body {
 }
 
 /* ========================================
-   日付ナビゲーション
+   æ—¥ä»˜ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³
    ======================================== */
 .date-nav {
     display: flex;
@@ -666,7 +666,7 @@ body {
 }
 
 /* ========================================
-   ガントチャート
+   ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆ
    ======================================== */
 .gantt-container {
     background: var(--glass-bg);
@@ -674,9 +674,9 @@ body {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    /* ブラウザのダブルタップズームとピンチズームを無効化し、タップとスクロールは許可 */
+    /* ãƒ–ãƒ©ã‚¦ã‚¶ã®ãƒ€ãƒ–ãƒ«ã‚¿ãƒƒãƒ—ã‚ºãƒ¼ãƒ ã¨ãƒ”ãƒ³ãƒã‚ºãƒ¼ãƒ ã‚’ç„¡åŠ¹åŒ–ã—ã€ã‚¿ãƒƒãƒ—ã¨ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã¯è¨±å¯ */
     touch-action: manipulation;
-    /* 縦スクロール用に overflow-y を auto に変更 */
+    /* ç¸¦ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ç”¨ã« overflow-y ã‚’ auto ã«å¤‰æ›´ */
     overflow-x: auto;
     overflow-y: auto;
     max-height: 600px;
@@ -700,7 +700,7 @@ body {
     color: var(--text-secondary);
     text-align: center;
     border-right: 1px solid var(--border-color);
-    /* スクロール時に固定 */
+    /* ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã«å›ºå®š */
     position: sticky;
     left: 0;
     background: var(--bg-secondary);
@@ -729,7 +729,7 @@ body {
     border-right: none;
 }
 
-/* ガントチャート本体 */
+/* ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆæœ¬ä½“ */
 .gantt-body {
     min-width: fit-content;
 }
@@ -758,7 +758,7 @@ body {
     justify-content: center;
     border-right: 1px solid var(--border-color);
     background: var(--bg-secondary);
-    /* 横スクロール時に左側に固定し、シフトバーより上に表示 */
+    /* æ¨ªã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã«å·¦å´ã«å›ºå®šã—ã€ã‚·ãƒ•ãƒˆãƒãƒ¼ã‚ˆã‚Šä¸Šã«è¡¨ç¤º */
     position: sticky;
     left: 0;
     z-index: 100;
@@ -790,7 +790,7 @@ body {
     display: flex;
     position: relative;
     min-height: 80px;
-    /* 日付ラベルより低いz-indexを設定 */
+    /* æ—¥ä»˜ãƒ©ãƒ™ãƒ«ã‚ˆã‚Šä½Žã„z-indexã‚’è¨­å®š */
     z-index: 1;
 }
 
@@ -805,7 +805,7 @@ body {
     border-right: none;
 }
 
-/* シフトバー */
+/* ã‚·ãƒ•ãƒˆãƒãƒ¼ */
 .shift-bar {
     position: absolute;
     border-radius: var(--radius-sm);
@@ -822,7 +822,7 @@ body {
     white-space: nowrap;
     text-overflow: ellipsis;
     z-index: 5;
-    /* モバイルでのタップを確実に検出 */
+    /* ãƒ¢ãƒã‚¤ãƒ«ã§ã®ã‚¿ãƒƒãƒ—ã‚’ç¢ºå®Ÿã«æ¤œå‡º */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -868,7 +868,7 @@ body {
     font-size: 0.7rem;
 }
 
-/* 変更履歴があるシフト */
+/* å¤‰æ›´å±¥æ­´ãŒã‚ã‚‹ã‚·ãƒ•ãƒˆ */
 .shift-bar.changed {
     border: 2px solid rgba(59, 130, 246, 0.8);
     animation: changedPulse 2s infinite;
@@ -886,7 +886,7 @@ body {
     }
 }
 
-/* 交代履歴があるシフト */
+/* äº¤ä»£å±¥æ­´ãŒã‚ã‚‹ã‚·ãƒ•ãƒˆ */
 .shift-bar.swapped {
     border: 2px solid rgba(16, 185, 129, 0.8);
     animation: swappedPulse 2s infinite;
@@ -909,7 +909,7 @@ body {
     }
 }
 
-/* 有給バー */
+/* æœ‰çµ¦ãƒãƒ¼ */
 .leave-bar {
     position: absolute;
     left: 0;
@@ -934,7 +934,7 @@ body {
     text-overflow: ellipsis;
 }
 
-/* 夜勤の翌日分有給バー */
+/* å¤œå‹¤ã®ç¿Œæ—¥åˆ†æœ‰çµ¦ãƒãƒ¼ */
 .leave-bar.overnight-continuation {
     background: repeating-linear-gradient(45deg,
             rgba(16, 185, 129, 0.2),
@@ -943,7 +943,7 @@ body {
             rgba(16, 185, 129, 0.4) 20px);
 }
 
-/* 休日バー */
+/* ä¼‘æ—¥ãƒãƒ¼ */
 .holiday-bar {
     position: absolute;
     border-radius: var(--radius-sm);
@@ -977,12 +977,12 @@ body {
             rgba(239, 68, 68, 0.7) 20px);
 }
 
-/* 半休バー */
+/* åŠä¼‘ãƒãƒ¼ */
 .half-day-bar {
     border-style: solid;
 }
 
-/* 午前半休バー */
+/* åˆå‰åŠä¼‘ãƒãƒ¼ */
 .half-day-bar.morning {
     background: repeating-linear-gradient(45deg,
             rgba(251, 191, 36, 0.4),
@@ -1000,7 +1000,7 @@ body {
             rgba(251, 191, 36, 0.7) 20px);
 }
 
-/* 午後半休バー */
+/* åˆå¾ŒåŠä¼‘ãƒãƒ¼ */
 .half-day-bar.afternoon {
     background: repeating-linear-gradient(45deg,
             rgba(249, 115, 22, 0.4),
@@ -1018,7 +1018,7 @@ body {
             rgba(249, 115, 22, 0.7) 20px);
 }
 
-/* ラジオボタングループ */
+/* ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã‚°ãƒ«ãƒ¼ãƒ— */
 .radio-group {
     display: flex;
     gap: 24px;
@@ -1042,7 +1042,7 @@ body {
 
 
 /* ========================================
-   凡例
+   å‡¡ä¾‹
    ======================================== */
 .legend {
     margin-top: 24px;
@@ -1080,7 +1080,7 @@ body {
 }
 
 /* ========================================
-   モーダル
+   ãƒ¢ãƒ¼ãƒ€ãƒ«
    ======================================== */
 .modal-overlay {
     position: fixed;
@@ -1185,7 +1185,7 @@ body {
     font-family: inherit;
     transition: border-color var(--transition-fast);
     resize: vertical;
-    /* タッチデバイスでの入力を有効にする */
+    /* ã‚¿ãƒƒãƒãƒ‡ãƒã‚¤ã‚¹ã§ã®å…¥åŠ›ã‚’æœ‰åŠ¹ã«ã™ã‚‹ */
     touch-action: auto;
     -webkit-user-select: text;
     user-select: text;
@@ -1219,7 +1219,7 @@ body {
     flex: 1;
 }
 
-/* オプショングループ */
+/* ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚°ãƒ«ãƒ¼ãƒ— */
 .fixed-shift-group,
 .overnight-group {
     padding: 16px;
@@ -1253,7 +1253,7 @@ body {
     font-weight: 500;
 }
 
-/* カラーピッカー */
+/* ã‚«ãƒ©ãƒ¼ãƒ”ãƒƒã‚«ãƒ¼ */
 .color-picker {
     display: flex;
     gap: 8px;
@@ -1284,7 +1284,7 @@ body {
     margin-top: 24px;
 }
 
-/* メッセージカード */
+/* ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚«ãƒ¼ãƒ‰ */
 .message-card {
     padding: 16px;
     background: var(--bg-tertiary);
@@ -1325,7 +1325,7 @@ body {
 }
 
 /* ========================================
-   スクロールバー
+   ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼
    ======================================== */
 ::-webkit-scrollbar {
     width: 8px;
@@ -1346,7 +1346,7 @@ body {
 }
 
 /* ========================================
-   レスポンシブ
+   ãƒ¬ã‚¹ãƒãƒ³ã‚·ãƒ–
    ======================================== */
 @media (max-width: 768px) {
     .app-container {
@@ -1412,7 +1412,7 @@ body {
         font-size: 0.8rem;
     }
 
-    /* ガントチャート改善 */
+    /* ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆæ”¹å–„ */
     .gantt-container {
         overflow-x: auto;
         overflow-y: visible;
@@ -1476,7 +1476,7 @@ body {
         padding: 1px 3px;
     }
 
-    /* スクロール改善 */
+    /* ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ”¹å–„ */
     .gantt-body {
         max-height: none;
         overflow-y: visible;
@@ -1511,14 +1511,14 @@ body {
         padding: 12px;
     }
 
-    /* 祝日マーク（モバイル） */
+    /* ç¥æ—¥ãƒžãƒ¼ã‚¯ï¼ˆãƒ¢ãƒã‚¤ãƒ«ï¼‰ */
     .holiday-mark {
         padding: 1px 4px;
         font-size: 0.6rem;
         margin-top: 2px;
     }
 
-    /* 給料日・年金支給日マーク（モバイル） */
+    /* çµ¦æ–™æ—¥ãƒ»å¹´é‡‘æ”¯çµ¦æ—¥ãƒžãƒ¼ã‚¯ï¼ˆãƒ¢ãƒã‚¤ãƒ«ï¼‰ */
     .payday-marks {
         gap: 2px;
         margin-top: 2px;
@@ -1531,7 +1531,7 @@ body {
 }
 
 /* ========================================
-   ズームコントロール
+   ã‚ºãƒ¼ãƒ ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«
    ======================================== */
 .zoom-controls {
     display: flex;
@@ -1630,7 +1630,7 @@ body {
 }
 
 /* ========================================
-   シフト詳細ポップオーバー
+   ã‚·ãƒ•ãƒˆè©³ç´°ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼
    ======================================== */
 .shift-popover {
     position: fixed;
@@ -1775,7 +1775,7 @@ body {
 
 .popover-action-row .btn {
     flex: 1;
-    /* モバイルでのタップを確実に検出 */
+    /* ãƒ¢ãƒã‚¤ãƒ«ã§ã®ã‚¿ãƒƒãƒ—ã‚’ç¢ºå®Ÿã«æ¤œå‡º */
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(99, 102, 241, 0.3);
     min-height: 40px;
@@ -1786,7 +1786,7 @@ body {
 }
 
 /* ========================================
-   印刷用スタイル
+   å°åˆ·ç”¨ã‚¹ã‚¿ã‚¤ãƒ«
    ======================================== */
 @media print {
     @page {
@@ -1810,7 +1810,7 @@ body {
         padding: 0 !important;
     }
 
-    /* 印刷時に非表示にする要素 */
+    /* å°åˆ·æ™‚ã«éžè¡¨ç¤ºã«ã™ã‚‹è¦ç´  */
     .connection-status,
     .header-actions,
     .role-toggle,
@@ -1857,7 +1857,7 @@ body {
         max-height: none !important;
     }
 
-    /* 印刷時はstickyを解除 */
+    /* å°åˆ·æ™‚ã¯stickyã‚’è§£é™¤ */
     .gantt-header {
         position: relative !important;
     }
@@ -1908,7 +1908,7 @@ body {
     }
 }
 
-/* PDF出力用クラス */
+/* PDFå‡ºåŠ›ç”¨ã‚¯ãƒ©ã‚¹ */
 .pdf-export-mode .connection-status,
 .pdf-export-mode .header-actions,
 .pdf-export-mode .role-toggle,
@@ -1937,7 +1937,7 @@ body {
     display: inline !important;
 }
 
-/* レスポンシブ - ズームコントロール */
+/* ãƒ¬ã‚¹ãƒãƒ³ã‚·ãƒ– - ã‚ºãƒ¼ãƒ ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ« */
 @media (max-width: 768px) {
     .zoom-controls {
         flex-direction: column;
@@ -1975,7 +1975,7 @@ body {
 }
 
 /* ========================================
-   PDFローディングスピナー
+   PDFãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°ã‚¹ãƒ”ãƒŠãƒ¼
    ======================================== */
 .pdf-loading-content {
     display: flex;
@@ -2000,7 +2000,7 @@ body {
 }
 
 /* ========================================
-   イベントアイコン（日付ラベル内）
+   ã‚¤ãƒ™ãƒ³ãƒˆã‚¢ã‚¤ã‚³ãƒ³ï¼ˆæ—¥ä»˜ãƒ©ãƒ™ãƒ«å†…ï¼‰
    ======================================== */
 .event-icons {
     display: flex;
@@ -2055,7 +2055,7 @@ body {
 }
 
 /* ========================================
-   イベント詳細ポップオーバー
+   ã‚¤ãƒ™ãƒ³ãƒˆè©³ç´°ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼
    ======================================== */
 .event-popover {
     position: fixed;
@@ -2124,7 +2124,7 @@ body {
     overflow-y: auto;
 }
 
-/* イベントリストアイテム */
+/* ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒˆã‚¢ã‚¤ãƒ†ãƒ  */
 .event-list-item {
     padding: 12px;
     background: var(--bg-tertiary);
@@ -2168,7 +2168,7 @@ body {
 }
 
 /* ========================================
-   店舗スケジュール管理（管理者パネル）
+   åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†ï¼ˆç®¡ç†è€…ãƒ‘ãƒãƒ«ï¼‰
    ======================================== */
 .daily-events-header {
     display: flex;
@@ -2239,7 +2239,7 @@ body {
 }
 
 /* ========================================
-   天気予報表示
+   å¤©æ°—äºˆå ±è¡¨ç¤º
    ======================================== */
 .weather-info {
     display: flex;
@@ -2271,7 +2271,7 @@ body {
     color: #60a5fa;
 }
 
-/* 昨年比較表示 */
+/* æ˜¨å¹´æ¯”è¼ƒè¡¨ç¤º */
 .weather-last-year {
     font-size: 0.85rem;
     color: var(--text-secondary);
@@ -2294,7 +2294,7 @@ body {
     font-weight: 600;
 }
 
-/* 祝日マーク */
+/* ç¥æ—¥ãƒžãƒ¼ã‚¯ */
 .holiday-mark {
     display: inline-flex;
     align-items: center;
@@ -2318,7 +2318,7 @@ body {
     color: #ef4444;
 }
 
-/* 給料日・年金支給日マーク */
+/* çµ¦æ–™æ—¥ãƒ»å¹´é‡‘æ”¯çµ¦æ—¥ãƒžãƒ¼ã‚¯ */
 .payday-marks {
     display: flex;
     flex-wrap: wrap;
@@ -2351,7 +2351,7 @@ body {
 }
 
 /* ========================================
-   発注アドバイザーセクション
+   ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã‚»ã‚¯ã‚·ãƒ§ãƒ³
    ======================================== */
 .order-advisor {
     margin-bottom: 16px;
@@ -2404,7 +2404,7 @@ body {
     display: none;
 }
 
-/* 天気サマリー */
+/* å¤©æ°—ã‚µãƒžãƒªãƒ¼ */
 .advisor-weather-summary {
     display: flex;
     flex-wrap: wrap;
@@ -2432,7 +2432,7 @@ body {
     color: var(--text-primary);
 }
 
-/* アドバイスグリッド */
+/* ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚°ãƒªãƒƒãƒ‰ */
 .advisor-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -2505,7 +2505,7 @@ body {
     margin-top: 4px;
 }
 
-/* 注意事項 */
+/* æ³¨æ„äº‹é … */
 .advisor-notes {
     margin-top: 16px;
     padding: 12px;
@@ -2539,13 +2539,13 @@ body {
 }
 
 .advisor-notes-list li::before {
-    content: '•';
+    content: 'â€¢';
     position: absolute;
     left: 0;
     color: var(--warning);
 }
 
-/* レスポンシブ */
+/* ãƒ¬ã‚¹ãƒãƒ³ã‚·ãƒ– */
 @media (max-width: 768px) {
     .advisor-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -2570,7 +2570,7 @@ body {
     }
 }
 
-/* 印刷時は非表示 */
+/* å°åˆ·æ™‚ã¯éžè¡¨ç¤º */
 @media print {
     .order-advisor {
         display: none !important;
@@ -2578,7 +2578,7 @@ body {
 }
 
 /* ========================================
-   非デイリー発注アドバイザー
+   éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼
    ======================================== */
 .non-daily-advisor .advisor-header {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(34, 197, 94, 0.15));
@@ -2659,7 +2659,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* カテゴリ別カラー */
+/* ã‚«ãƒ†ã‚´ãƒªåˆ¥ã‚«ãƒ©ãƒ¼ */
 .non-daily-advice-card[data-category="snacks"] {
     border-left: 3px solid #f59e0b;
 }
@@ -2688,7 +2688,7 @@ body {
     border-left: 3px solid #6b7280;
 }
 
-/* アドバイスがない場合 */
+/* ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãŒãªã„å ´åˆ */
 .no-advice-message {
     text-align: center;
     padding: 24px;
@@ -2697,13 +2697,13 @@ body {
 }
 
 /* ========================================
-   定期コンビニ新商品レポート
+   å®šæœŸã‚³ãƒ³ãƒ“ãƒ‹æ–°å•†å“ãƒ¬ãƒãƒ¼ãƒˆ
    ======================================== */
 .new-product-report .advisor-header {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.15));
 }
 
-/* 管理者用 新商品レポート管理画面 */
+/* ç®¡ç†è€…ç”¨ æ–°å•†å“ãƒ¬ãƒãƒ¼ãƒˆç®¡ç†ç”»é¢ */
 .new-product-admin-container {
     padding: 16px;
 }
@@ -2774,7 +2774,7 @@ body {
     justify-content: flex-end;
 }
 
-/* フロント表示用 */
+/* ãƒ•ãƒ­ãƒ³ãƒˆè¡¨ç¤ºç”¨ */
 .new-product-actions {
     margin-bottom: 16px;
     text-align: right;
@@ -2850,12 +2850,12 @@ body {
     justify-content: flex-end;
 }
 
-/* トレンドレポートの左ボーダー色 */
+/* ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆã®å·¦ãƒœãƒ¼ãƒ€ãƒ¼è‰² */
 .trend-report-card {
     border-left-color: #3B82F6;
 }
 
-/* 新商品レポート モバイル対応 */
+/* æ–°å•†å“ãƒ¬ãƒãƒ¼ãƒˆ ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .new-product-report-card,
     .trend-report-card {
@@ -2883,7 +2883,7 @@ body {
 }
 
 /* ========================================
-   店舗スケジュール一覧
+   åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ä¸€è¦§
    ======================================== */
 .schedule-list-section .advisor-header {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.15));
@@ -2952,7 +2952,7 @@ body {
     margin-left: 8px;
 }
 
-/* イベントタイプ別のボーダー色 */
+/* ã‚¤ãƒ™ãƒ³ãƒˆã‚¿ã‚¤ãƒ—åˆ¥ã®ãƒœãƒ¼ãƒ€ãƒ¼è‰² */
 .schedule-list-item[data-type="sale"] {
     border-left: 3px solid #ec4899;
 }
@@ -2984,7 +2984,7 @@ body {
     font-style: italic;
 }
 
-/* 管理者用アクションボタン */
+/* ç®¡ç†è€…ç”¨ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³ */
 .advice-card-actions {
     display: flex;
     gap: 8px;
@@ -2993,7 +2993,7 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
-/* 非デイリーアドバイス入力フォーム */
+/* éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹å…¥åŠ›ãƒ•ã‚©ãƒ¼ãƒ  */
 .non-daily-form-group {
     margin-bottom: 12px;
 }
@@ -3022,7 +3022,7 @@ body {
     resize: vertical;
 }
 
-/* レスポンシブ */
+/* ãƒ¬ã‚¹ãƒãƒ³ã‚·ãƒ– */
 @media (max-width: 768px) {
     .non-daily-advice-card {
         flex-direction: column;
@@ -3040,7 +3040,7 @@ body {
 }
 
 /* ========================================
-   フィルタータブスタイル
+   ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ã‚¿ãƒ–ã‚¹ã‚¿ã‚¤ãƒ«
    ======================================== */
 .filter-tabs {
     display: flex;
@@ -3077,7 +3077,7 @@ body {
     color: white;
 }
 
-/* 非デイリーフィルタータブ */
+/* éžãƒ‡ã‚¤ãƒªãƒ¼ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ã‚¿ãƒ– */
 .non-daily-filter-tabs {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.1));
 }
@@ -3087,7 +3087,7 @@ body {
     padding: 10px 18px;
 }
 
-/* レスポンシブ - フィルタータブ */
+/* ãƒ¬ã‚¹ãƒãƒ³ã‚·ãƒ– - ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ã‚¿ãƒ– */
 @media (max-width: 768px) {
     .filter-tabs {
         overflow-x: auto;
@@ -3115,14 +3115,14 @@ body {
 }
 
 /* ========================================
-   凡例セクション（非表示）
+   å‡¡ä¾‹ã‚»ã‚¯ã‚·ãƒ§ãƒ³ï¼ˆéžè¡¨ç¤ºï¼‰
    ======================================== */
 .legend {
     display: none !important;
 }
 
 /* ========================================
-   拡張発注アドバイザー
+   æ‹¡å¼µç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼
    ======================================== */
 .advisor-extended {
     display: flex;
@@ -3130,7 +3130,7 @@ body {
     gap: 16px;
 }
 
-/* 上部パネル（天気＋購買行動分析） */
+/* ä¸Šéƒ¨ãƒ‘ãƒãƒ«ï¼ˆå¤©æ°—ï¼‹è³¼è²·è¡Œå‹•åˆ†æžï¼‰ */
 .advisor-top-panel {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3237,7 +3237,7 @@ body {
     color: #60a5fa;
 }
 
-/* カテゴリチップ */
+/* ã‚«ãƒ†ã‚´ãƒªãƒãƒƒãƒ— */
 .category-chips {
     display: flex;
     flex-wrap: wrap;
@@ -3313,7 +3313,7 @@ body {
     color: var(--text-muted);
 }
 
-/* カテゴリ詳細パネル */
+/* ã‚«ãƒ†ã‚´ãƒªè©³ç´°ãƒ‘ãƒãƒ« */
 .category-detail-panel {
     background: linear-gradient(135deg, #1a1f2e, #232b3b);
     border-radius: var(--radius-md);
@@ -3358,7 +3358,7 @@ body {
     color: var(--text-muted);
 }
 
-/* サブカテゴリ */
+/* ã‚µãƒ–ã‚«ãƒ†ã‚´ãƒª */
 .detail-subcategories {
     margin-bottom: 16px;
 }
@@ -3407,7 +3407,7 @@ body {
     color: var(--text-muted);
 }
 
-/* 日次チェックリスト */
+/* æ—¥æ¬¡ãƒã‚§ãƒƒã‚¯ãƒªã‚¹ãƒˆ */
 .daily-checklist {
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--radius-md);
@@ -3466,7 +3466,7 @@ body {
     color: white;
 }
 
-/* メモ */
+/* ãƒ¡ãƒ¢ */
 .category-memo {
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--radius-md);
@@ -3546,7 +3546,7 @@ body {
     color: #4a9eff;
 }
 
-/* レスポンシブ - 拡張アドバイザー */
+/* ãƒ¬ã‚¹ãƒãƒ³ã‚·ãƒ– - æ‹¡å¼µã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ */
 @media (max-width: 768px) {
     .advisor-top-panel {
         grid-template-columns: 1fr;
@@ -3598,7 +3598,7 @@ body {
 }
 
 /* ========================================
-   発注・スケジュール情報グループ
+   ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«æƒ…å ±ã‚°ãƒ«ãƒ¼ãƒ—
    ======================================== */
 .advisor-group {
     margin-bottom: 16px;
@@ -3651,7 +3651,7 @@ body {
     color: var(--text-primary);
 }
 
-/* 印刷画面グループ */
+/* å°åˆ·ç”»é¢ã‚°ãƒ«ãƒ¼ãƒ— */
 .print-group {
     margin-bottom: 16px;
 }
@@ -3709,7 +3709,7 @@ body {
     overflow: hidden;
 }
 
-/* グループ内のセクション */
+/* ã‚°ãƒ«ãƒ¼ãƒ—å†…ã®ã‚»ã‚¯ã‚·ãƒ§ãƒ³ */
 .advisor-group-content .order-advisor {
     margin-bottom: 0;
     border-radius: 0;
@@ -3721,12 +3721,12 @@ body {
     border-bottom: none;
 }
 
-/* グループ内のセクション用微調整 */
+/* ã‚°ãƒ«ãƒ¼ãƒ—å†…ã®ã‚»ã‚¯ã‚·ãƒ§ãƒ³ç”¨å¾®èª¿æ•´ */
 .advisor-group-content .advisor-header {
     border-radius: 0;
 }
 
-/* レポートグループ */
+/* ãƒ¬ãƒãƒ¼ãƒˆã‚°ãƒ«ãƒ¼ãƒ— */
 .reports-group-section {
     background: var(--bg-secondary);
 }
@@ -3749,7 +3749,7 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* レポートグループ内のコンテンツ */
+/* ãƒ¬ãƒãƒ¼ãƒˆã‚°ãƒ«ãƒ¼ãƒ—å†…ã®ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ */
 #reportsGroupContent,
 .reports-group-content {
     padding: 0;
@@ -3762,7 +3762,7 @@ body {
     padding: 0;
 }
 
-/* サブレポートのスタイル */
+/* ã‚µãƒ–ãƒ¬ãƒãƒ¼ãƒˆã®ã‚¹ã‚¿ã‚¤ãƒ« */
 .sub-report {
     margin: 0 !important;
     border-radius: 0 !important;
@@ -3795,7 +3795,7 @@ body {
     padding-left: 32px;
 }
 
-/* レポートなしメッセージ */
+/* ãƒ¬ãƒãƒ¼ãƒˆãªã—ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ */
 .no-reports-message {
     padding: 20px;
     text-align: center;
@@ -3806,7 +3806,7 @@ body {
     margin: 0;
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .advisor-group-header {
         padding: 14px 16px;
@@ -3828,7 +3828,7 @@ body {
         padding-left: 24px;
     }
 
-    /* モバイルでトレンドレポートの長文が切れないように */
+    /* ãƒ¢ãƒã‚¤ãƒ«ã§ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆã®é•·æ–‡ãŒåˆ‡ã‚Œãªã„ã‚ˆã†ã« */
     .advisor-group-content {
         max-height: none;
         overflow: visible;
@@ -3850,7 +3850,7 @@ body {
     }
 }
 /* ========================================
-   発注アドバイス機能
+   ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹æ©Ÿèƒ½
    ======================================== */
 
 .order-advice-screen {
@@ -4389,7 +4389,7 @@ body {
     }
 }
 
-/* モバイル用 発注アドバイスフローティングボタン */
+/* ãƒ¢ãƒã‚¤ãƒ«ç”¨ ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ãƒœã‚¿ãƒ³ */
 .order-advice-fab {
     display: none;
     position: fixed;
@@ -4424,14 +4424,14 @@ body {
         justify-content: center;
     }
     
-    /* デスクトップ用の発注アドバイスボタンをモバイルで非表示 */
+    /* ãƒ‡ã‚¹ã‚¯ãƒˆãƒƒãƒ—ç”¨ã®ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒœã‚¿ãƒ³ã‚’ãƒ¢ãƒã‚¤ãƒ«ã§éžè¡¨ç¤º */
     #orderAdviceBtn {
         display: none;
     }
 }
 
 /* ========================================
-   フィードバック集計（管理者専用）
+   ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é›†è¨ˆï¼ˆç®¡ç†è€…å°‚ç”¨ï¼‰
    ======================================== */
 .feedback-stats-container {
     padding: 16px;
@@ -4490,7 +4490,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* サマリーカード */
+/* ã‚µãƒžãƒªãƒ¼ã‚«ãƒ¼ãƒ‰ */
 .feedback-stats-summary {
     margin-bottom: 20px;
 }
@@ -4545,7 +4545,7 @@ body {
 .rating-item.fair { color: #fbbf24; }
 .rating-item.poor { color: #f87171; }
 
-/* タブ */
+/* ã‚¿ãƒ– */
 .feedback-stats-tabs {
     display: flex;
     gap: 8px;
@@ -4575,7 +4575,7 @@ body {
     color: white;
 }
 
-/* 担当者別表示 */
+/* æ‹…å½“è€…åˆ¥è¡¨ç¤º */
 .staff-stats-list {
     display: flex;
     flex-direction: column;
@@ -4675,7 +4675,7 @@ body {
     color: var(--text-primary);
 }
 
-/* 日付別表示 */
+/* æ—¥ä»˜åˆ¥è¡¨ç¤º */
 .date-stats-list {
     display: flex;
     flex-direction: column;
@@ -4726,7 +4726,7 @@ body {
     font-weight: 500;
 }
 
-/* 一覧表示（テーブル） */
+/* ä¸€è¦§è¡¨ç¤ºï¼ˆãƒ†ãƒ¼ãƒ–ãƒ«ï¼‰ */
 .feedback-list-table {
     overflow-x: auto;
 }
@@ -4785,7 +4785,7 @@ body {
     font-style: italic;
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .feedback-filters {
         flex-direction: column;
@@ -4846,7 +4846,7 @@ body {
 }
 
 /* ========================================
-   商品分類管理
+   å•†å“åˆ†é¡žç®¡ç†
    ======================================== */
 .product-categories-container {
     padding: 16px;
@@ -4868,7 +4868,7 @@ body {
     margin: 0;
 }
 
-/* 2カラムレイアウト */
+/* 2ã‚«ãƒ©ãƒ ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ */
 .product-categories-layout {
     display: grid;
     grid-template-columns: 280px 1fr;
@@ -4876,7 +4876,7 @@ body {
     min-height: 400px;
 }
 
-/* 左サイドバー: PMA一覧 */
+/* å·¦ã‚µã‚¤ãƒ‰ãƒãƒ¼: PMAä¸€è¦§ */
 .pma-sidebar {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -4950,7 +4950,7 @@ body {
     font-size: 0.85rem;
 }
 
-/* 右側: PMA詳細 */
+/* å³å´: PMAè©³ç´° */
 .pma-detail {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -5012,7 +5012,7 @@ body {
     border-color: rgba(239, 68, 68, 0.9);
 }
 
-/* 情報分類セクション */
+/* æƒ…å ±åˆ†é¡žã‚»ã‚¯ã‚·ãƒ§ãƒ³ */
 .info-categories-section {
     padding: 20px;
 }
@@ -5052,7 +5052,7 @@ body {
     text-align: center;
 }
 
-/* 情報分類アイテム */
+/* æƒ…å ±åˆ†é¡žã‚¢ã‚¤ãƒ†ãƒ  */
 .info-category-item {
     background: var(--bg-secondary);
     border-radius: var(--radius-md);
@@ -5100,7 +5100,7 @@ body {
     opacity: 1;
 }
 
-/* 小分類セクション */
+/* å°åˆ†é¡žã‚»ã‚¯ã‚·ãƒ§ãƒ³ */
 .sub-categories-section {
     padding: 12px 16px 16px 40px;
     background: var(--bg-tertiary);
@@ -5156,7 +5156,7 @@ body {
     margin-top: 4px;
 }
 
-/* ボタンサイズ追加 */
+/* ãƒœã‚¿ãƒ³ã‚µã‚¤ã‚ºè¿½åŠ  */
 .btn-xs {
     padding: 4px 8px;
     font-size: 0.75rem;
@@ -5174,7 +5174,7 @@ body {
     color: var(--text-primary);
 }
 
-/* カテゴリモーダル */
+/* ã‚«ãƒ†ã‚´ãƒªãƒ¢ãƒ¼ãƒ€ãƒ« */
 .category-modal-overlay {
     position: fixed;
     top: 0;
@@ -5270,7 +5270,7 @@ body {
     border-top: 1px solid var(--glass-border);
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .product-categories-layout {
         grid-template-columns: 1fr;
@@ -5340,9 +5340,9 @@ body {
     }
 }
 
-/* 追加のモバイル対応 */
+/* è¿½åŠ ã®ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 480px) {
-    /* 小さい画面用の追加調整 */
+    /* å°ã•ã„ç”»é¢ç”¨ã®è¿½åŠ èª¿æ•´ */
     .filter-tab {
         padding: 8px 12px;
         font-size: 0.85rem;
@@ -5371,7 +5371,7 @@ body {
 }
 
 /* ========================================
-   週刊トレンドレポート
+   é€±åˆŠãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆ
    ======================================== */
 .trend-report-section {
     margin-top: 12px;
@@ -5446,7 +5446,7 @@ body {
     text-align: center;
 }
 
-/* ファイルアップロードエリア */
+/* ãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã‚¨ãƒªã‚¢ */
 .file-upload-area {
     border: 2px dashed var(--border-color);
     border-radius: var(--radius-md);
@@ -5508,7 +5508,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* アップロードプログレス */
+/* ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ */
 .upload-progress {
     margin-top: 16px;
 }
@@ -5541,7 +5541,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .trend-report-item {
         flex-direction: column;
@@ -5626,7 +5626,7 @@ body {
     margin-top: 4px;
 }
 
-/* 機能別表示 */
+/* æ©Ÿèƒ½åˆ¥è¡¨ç¤º */
 .usage-feature-list,
 .usage-user-list,
 .usage-category-list {
@@ -5734,7 +5734,7 @@ body {
     color: var(--text-primary);
 }
 
-/* 未使用機能表示 */
+/* æœªä½¿ç”¨æ©Ÿèƒ½è¡¨ç¤º */
 .unused-features-list {
     padding: 16px;
 }
@@ -5800,7 +5800,7 @@ body {
     color: var(--text-muted);
 }
 
-/* タイムライン表示 */
+/* ã‚¿ã‚¤ãƒ ãƒ©ã‚¤ãƒ³è¡¨ç¤º */
 .usage-timeline {
     padding: 8px 0;
 }
@@ -5856,7 +5856,7 @@ body {
     font-size: 0.85rem;
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .usage-stats-header {
         flex-direction: column;
@@ -5888,7 +5888,7 @@ body {
     }
 }
 
-/* シフト選択リスト（有給申請・休日申請用） */
+/* ã‚·ãƒ•ãƒˆé¸æŠžãƒªã‚¹ãƒˆï¼ˆæœ‰çµ¦ç”³è«‹ãƒ»ä¼‘æ—¥ç”³è«‹ç”¨ï¼‰ */
 .shift-selection-list {
     max-height: 350px;
     overflow-y: auto;
@@ -5995,7 +5995,7 @@ body {
     margin-bottom: 8px;
 }
 
-/* 休日申請の時間帯選択 */
+/* ä¼‘æ—¥ç”³è«‹ã®æ™‚é–“å¸¯é¸æŠž */
 #holidayTimeRangeGroup {
     background: var(--bg-tertiary);
     padding: 16px;
@@ -6004,7 +6004,7 @@ body {
     margin-top: 12px;
 }
 
-/* 大きめモーダル */
+/* å¤§ãã‚ãƒ¢ãƒ¼ãƒ€ãƒ« */
 .modal.modal-lg {
     max-width: 600px;
 }
@@ -6023,7 +6023,7 @@ body {
     }
 }
 
-/* 管理パネル内の選択シフトリスト */
+/* ç®¡ç†ãƒ‘ãƒãƒ«å†…ã®é¸æŠžã‚·ãƒ•ãƒˆãƒªã‚¹ãƒˆ */
 .selected-shifts-list {
     margin: 8px 0;
     padding: 8px;
@@ -6069,7 +6069,7 @@ body {
     color: var(--text-muted);
 }
 
-/* 日曜日・土曜日のスタイル */
+/* æ—¥æ›œæ—¥ãƒ»åœŸæ›œæ—¥ã®ã‚¹ã‚¿ã‚¤ãƒ« */
 .shift-selection-date.sunday {
     color: #ef4444;
 }
@@ -6079,7 +6079,7 @@ body {
 }
 
 /* ========================================
-   利用統計 - ユーザー詳細表示
+   åˆ©ç”¨çµ±è¨ˆ - ãƒ¦ãƒ¼ã‚¶ãƒ¼è©³ç´°è¡¨ç¤º
    ======================================== */
 .usage-user-card {
     background: var(--bg-secondary);
@@ -6127,7 +6127,7 @@ body {
     text-align: center;
 }
 
-/* ユーザー詳細パネル */
+/* ãƒ¦ãƒ¼ã‚¶ãƒ¼è©³ç´°ãƒ‘ãƒãƒ« */
 .user-detail-panel {
     border-top: 1px solid var(--border-color);
     background: rgba(15, 23, 42, 0.5);
@@ -6145,7 +6145,7 @@ body {
     }
 }
 
-/* タブ */
+/* ã‚¿ãƒ– */
 .user-detail-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-color);
@@ -6173,14 +6173,14 @@ body {
     border-bottom-color: var(--accent-primary);
 }
 
-/* 詳細コンテンツ */
+/* è©³ç´°ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ */
 .user-detail-content {
     padding: 16px;
     max-height: 400px;
     overflow-y: auto;
 }
 
-/* カテゴリ詳細 */
+/* ã‚«ãƒ†ã‚´ãƒªè©³ç´° */
 .user-category-detail-list {
     display: flex;
     flex-direction: column;
@@ -6246,7 +6246,7 @@ body {
     text-align: right;
 }
 
-/* 機能詳細 */
+/* æ©Ÿèƒ½è©³ç´° */
 .user-feature-detail-list {
     display: flex;
     flex-direction: column;
@@ -6305,7 +6305,7 @@ body {
     text-align: right;
 }
 
-/* 最近のアクション */
+/* æœ€è¿‘ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ */
 .user-recent-actions {
     display: flex;
     flex-direction: column;
@@ -6345,7 +6345,7 @@ body {
     border-radius: 10px;
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .usage-user-card .usage-user-item {
         flex-direction: column;
@@ -6406,7 +6406,7 @@ body {
 }
 
 /* ========================================
-   固定シフト管理
+   å›ºå®šã‚·ãƒ•ãƒˆç®¡ç†
    ======================================== */
 .fixed-shift-management {
     padding: 16px 0;
@@ -6571,7 +6571,7 @@ body {
     flex-shrink: 0;
 }
 
-/* 固定シフト有効期間フォーム */
+/* å›ºå®šã‚·ãƒ•ãƒˆæœ‰åŠ¹æœŸé–“ãƒ•ã‚©ãƒ¼ãƒ  */
 .fixed-shift-period-form {
     margin-top: 12px;
     padding: 12px;
@@ -6597,7 +6597,7 @@ body {
     margin-top: 4px;
 }
 
-/* モバイル対応 */
+/* ãƒ¢ãƒã‚¤ãƒ«å¯¾å¿œ */
 @media (max-width: 768px) {
     .fixed-shift-summary {
         gap: 8px;
@@ -6629,14 +6629,14 @@ body {
     }
 }
 
-/* 非デイリー発注参考情報フォームの入力欄を大きく */
+/* éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±ãƒ•ã‚©ãƒ¼ãƒ ã®å…¥åŠ›æ¬„ã‚’å¤§ãã */
 .non-daily-content-textarea {
     min-height: 200px !important;
     max-height: 400px;
     resize: vertical;
 }
 
-/* 非デイリーアドバイス管理者アクション */
+/* éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç®¡ç†è€…ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ */
 .non-daily-admin-actions {
     display: flex;
     justify-content: flex-end;
@@ -6648,5 +6648,74 @@ body {
     .non-daily-content-textarea {
         min-height: 150px !important;
         max-height: 300px;
+    }
+}
+
+/* ====== 臨時シフト（特別イベント）スタイル ====== */
+
+/* 日付ラベルのイベントマーク */
+.special-event-mark {
+    font-size: 0.7rem;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-top: 2px;
+    display: inline-block;
+    font-weight: 600;
+    animation: specialEventPulse 2s ease-in-out infinite;
+}
+
+@keyframes specialEventPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* イベント日の日付ラベル背景 */
+.gantt-date-label.is-special-event {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.03)) !important;
+    border-left: 3px solid #f59e0b !important;
+}
+
+/* 臨時シフトバーのスタイル */
+.shift-bar.temporary-shift {
+    border: 1.5px solid rgba(245, 158, 11, 0.6) !important;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+}
+
+.shift-bar.temporary-shift::after {
+    content: '臨時';
+    position: absolute;
+    top: -8px;
+    right: 2px;
+    font-size: 0.55rem;
+    background: #f59e0b;
+    color: #0f172a;
+    padding: 0px 4px;
+    border-radius: 3px;
+    font-weight: 700;
+    line-height: 1.3;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.temporary-icon {
+    font-size: 0.7rem;
+    margin-right: 1px;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .special-event-mark {
+        font-size: 0.6rem;
+        padding: 0px 4px;
+    }
+    
+    .shift-bar.temporary-shift::after {
+        font-size: 0.5rem;
+        top: -7px;
+        right: 1px;
+        padding: 0px 3px;
     }
 }
