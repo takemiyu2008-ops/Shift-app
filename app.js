@@ -13,6 +13,284 @@ const firebaseConfig = {
 // Firebase初期化
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+// ==========================================
+// 認証機能コード（従業員番号対応版）
+// ==========================================
+
+// Firebase Auth の初期化（firebase.initializeApp の後に追加）
+const auth = firebase.auth();
+
+// 現在のユーザー情報を保持
+let currentUser = null;
+
+// 従業員番号をメールアドレスに変換
+function staffIdToEmail(staffId) {
+    return staffId + '@staff.local';
+}
+
+// パスワードを6文字以上に変換
+function convertPassword(password) {
+    return password + 'pw';
+}
+
+// 認証状態の監視
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        // ログイン済み
+        currentUser = user;
+        console.log('ログイン済み:', user.email);
+        
+        // UIを表示
+        document.getElementById('authContainer').classList.remove('show');
+        document.getElementById('appContainer').classList.remove('hidden');
+        document.getElementById('logoutBtnContainer').style.display = 'block';
+        
+        // データベースにユーザー情報を保存（初回のみ）
+        const userRef = database.ref('users/' + user.uid);
+        userRef.once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                // 新規ユーザーの場合、データベースに登録
+                const staffId = user.email.split('@')[0];
+                userRef.set({
+                    staffId: staffId,
+                    displayName: user.displayName || '従業員' + staffId,
+                    createdAt: new Date().toISOString()
+                });
+            }
+        });
+        
+        // 既存の初期化処理を実行
+        if (typeof initApp === 'function') {
+            initApp();
+        }
+        
+    } else {
+        // 未ログイン
+        currentUser = null;
+        console.log('未ログイン');
+        
+        // ログイン画面を表示
+        document.getElementById('authContainer').classList.add('show');
+        document.getElementById('appContainer').classList.add('hidden');
+        document.getElementById('logoutBtnContainer').style.display = 'none';
+    }
+});
+
+// エラーメッセージを表示
+function showAuthError(message) {
+    const errorEl = document.getElementById('authError');
+    errorEl.textContent = message;
+    errorEl.classList.add('show');
+    setTimeout(() => {
+        errorEl.classList.remove('show');
+    }, 5000);
+}
+
+// ログイン/登録モードの切り替え
+let isLoginMode = true;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const toggleAuthMode = document.getElementById('toggleAuthMode');
+    const toggleText = document.getElementById('toggleText');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    // 従業員番号の入力制限（3桁の数字のみ）
+    const staffIdInputs = document.querySelectorAll('.staff-id-input');
+    staffIdInputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+            // 数字のみ許可
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            // 3桁まで
+            if (e.target.value.length > 3) {
+                e.target.value = e.target.value.slice(0, 3);
+            }
+        });
+    });
+    
+    // パスワードの入力制限（4桁の数字のみ）
+    const passwordInputs = document.querySelectorAll('.password-input');
+    passwordInputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+            // 数字のみ許可
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            // 4桁まで
+            if (e.target.value.length > 4) {
+                e.target.value = e.target.value.slice(0, 4);
+            }
+        });
+    });
+    
+    // ログイン/登録の切り替え
+    toggleAuthMode.addEventListener('click', () => {
+        isLoginMode = !isLoginMode;
+        
+        if (isLoginMode) {
+            loginForm.style.display = 'flex';
+            registerForm.style.display = 'none';
+            authSubtitle.textContent = 'ログインしてください';
+            toggleText.textContent = 'まだ登録していない方は';
+            toggleAuthMode.textContent = '新規登録';
+        } else {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'flex';
+            authSubtitle.textContent = '新規アカウント作成';
+            toggleText.textContent = 'すでに登録済みの方は';
+            toggleAuthMode.textContent = 'ログイン';
+        }
+        
+        // エラーメッセージをクリア
+        document.getElementById('authError').classList.remove('show');
+    });
+    
+    // ログイン処理
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const staffId = document.getElementById('loginStaffId').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        
+        // 入力チェック
+        if (staffId.length !== 3) {
+            showAuthError('従業員番号は3桁で入力してください');
+            return;
+        }
+        if (password.length !== 4) {
+            showAuthError('パスワードは4桁で入力してください');
+            return;
+        }
+        
+        try {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'ログイン中...';
+            
+            const email = staffIdToEmail(staffId);
+            const fullPassword = convertPassword(password);
+            
+            await auth.signInWithEmailAndPassword(email, fullPassword);
+            // ログイン成功（onAuthStateChangedで処理される）
+            
+        } catch (error) {
+            console.error('ログインエラー:', error);
+            let errorMessage = 'ログインに失敗しました';
+            
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    errorMessage = '従業員番号またはパスワードが間違っています';
+                    break;
+                case 'auth/wrong-password':
+                    errorMessage = '従業員番号またはパスワードが間違っています';
+                    break;
+                case 'auth/invalid-credential':
+                    errorMessage = '従業員番号またはパスワードが間違っています';
+                    break;
+                case 'auth/network-request-failed':
+                    errorMessage = 'ネットワークエラーが発生しました';
+                    break;
+                case 'auth/too-many-requests':
+                    errorMessage = 'ログイン試行回数が多すぎます。しばらく待ってから再度お試しください';
+                    break;
+            }
+            
+            showAuthError(errorMessage);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'ログイン';
+        }
+    });
+    
+    // 新規登録処理
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const name = document.getElementById('registerName').value.trim();
+        const staffId = document.getElementById('registerStaffId').value.trim();
+        const password = document.getElementById('registerPassword').value.trim();
+        const submitBtn = registerForm.querySelector('button[type="submit"]');
+        
+        // 入力チェック
+        if (!name) {
+            showAuthError('名前を入力してください');
+            return;
+        }
+        if (staffId.length !== 3) {
+            showAuthError('従業員番号は3桁で入力してください');
+            return;
+        }
+        if (password.length !== 4) {
+            showAuthError('パスワードは4桁で入力してください');
+            return;
+        }
+        
+        try {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '登録中...';
+            
+            const email = staffIdToEmail(staffId);
+            const fullPassword = convertPassword(password);
+            
+            const userCredential = await auth.createUserWithEmailAndPassword(email, fullPassword);
+            
+            // 表示名を設定
+            await userCredential.user.updateProfile({
+                displayName: name
+            });
+            
+            // データベースにユーザー情報を保存
+            await database.ref('users/' + userCredential.user.uid).set({
+                staffId: staffId,
+                displayName: name,
+                createdAt: new Date().toISOString()
+            });
+            
+            // 登録成功（onAuthStateChangedで処理される）
+            
+        } catch (error) {
+            console.error('登録エラー:', error);
+            let errorMessage = 'アカウント登録に失敗しました';
+            
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    errorMessage = 'この従業員番号は既に使用されています';
+                    break;
+                case 'auth/operation-not-allowed':
+                    errorMessage = 'メール/パスワード認証が有効になっていません';
+                    break;
+                case 'auth/network-request-failed':
+                    errorMessage = 'ネットワークエラーが発生しました';
+                    break;
+            }
+            
+            showAuthError(errorMessage);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '新規登録';
+        }
+    });
+    
+    // ログアウト処理
+    logoutBtn.addEventListener('click', async () => {
+        if (confirm('ログアウトしますか？')) {
+            try {
+                await auth.signOut();
+                // ログアウト成功（onAuthStateChangedで処理される）
+            } catch (error) {
+                console.error('ログアウトエラー:', error);
+                alert('ログアウトに失敗しました');
+            }
+        }
+    });
+});
+
+// 既存のコードとの統合用：initApp関数を作成（必要に応じて既存の初期化コードを移動）
+// function initApp() {
+//     // 既存の初期化処理をここに移動
+// }
+
+
 
 // 設定
 let CONFIG = { ADMIN_PIN: '1234' };

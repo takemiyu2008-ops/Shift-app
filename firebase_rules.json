@@ -1,0 +1,32 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    
+    "users": {
+      "$uid": {
+        ".write": "$uid === auth.uid || root.child('admins').child(auth.uid).exists()"
+      }
+    },
+    
+    "shifts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    "employees": {
+      ".read": "auth != null",
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    },
+    
+    "admins": {
+      ".read": "auth != null",
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    },
+    
+    "settings": {
+      ".read": "auth != null",
+      ".write": "root.child('admins').child(auth.uid).exists()"
+    }
+  }
+}
