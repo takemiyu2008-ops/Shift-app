@@ -1,4 +1,4 @@
-﻿// Firebase設定
+// Firebase設定
 const firebaseConfig = {
     apiKey: "AIzaSyBBNxYD46f-HPoeHo0JlBqIDiZs8_E7l_k",
     authDomain: "shift-app-956a0.firebaseapp.com",
@@ -1241,9 +1241,17 @@ function createShiftBar(s, lvl) {
         var headerHTML = '<div class="shift-bar-header">' + icons + '<span class="shift-name">' + s.name + '</span><span class="shift-time">' + time + '</span></div>';
         var tasksHTML = '<div class="shift-bar-tasks">';
         var sortedTasks = tasks.slice().sort(function(a, b) { return a.startHour - b.startHour; });
+        // 夜勤継続バーの場合、タスク時間を-24して0時基準に調整
+        var isOvernightCont = s.isOvernightContinuation;
         sortedTasks.forEach(function(t) {
-            var tStart = Math.max(t.startHour, start);
-            var tEnd = Math.min(t.endHour, end);
+            var taskStart = t.startHour;
+            var taskEnd = t.endHour;
+            if (isOvernightCont) {
+                taskStart = taskStart >= 24 ? taskStart - 24 : taskStart;
+                taskEnd = taskEnd >= 24 ? taskEnd - 24 : taskEnd;
+            }
+            var tStart = Math.max(taskStart, start);
+            var tEnd = Math.min(taskEnd, end);
             if (tStart >= tEnd) return;
             var tLeftPct = ((tStart - start) / shiftDuration) * 100;
             var tWidthPct = ((tEnd - tStart) / shiftDuration) * 100;
@@ -1625,28 +1633,51 @@ function populateTaskTimeSelects(shiftStart, shiftEnd) {
     startSel.innerHTML = '';
     endSel.innerHTML = '';
 
-    for (var h = shiftStart; h <= shiftEnd; h += 0.5) {
+    // シフト時間に縛られず、0:00～翌12:00までの全時間帯を選択可能にする
+    var rangeStart = 0;
+    var rangeEnd = 36; // 翌12:00まで
+
+    var defaultStartIdx = -1;
+    var defaultEndIdx = -1;
+    var startCount = 0;
+    var endCount = 0;
+
+    for (var h = rangeStart; h <= rangeEnd; h += 0.5) {
         var displayH = h >= 24 ? h - 24 : h;
         var prefix = h >= 24 ? '翌' : '';
         var hh = Math.floor(displayH);
         var mm = (displayH % 1 === 0.5) ? '30' : '00';
         var label = prefix + hh + ':' + mm;
 
-        if (h < shiftEnd) {
+        if (h < rangeEnd) {
             var opt1 = document.createElement('option');
             opt1.value = h;
             opt1.textContent = label;
             startSel.appendChild(opt1);
+            if (h === shiftStart) defaultStartIdx = startCount;
+            startCount++;
         }
-        if (h > shiftStart) {
+        if (h > rangeStart) {
             var opt2 = document.createElement('option');
             opt2.value = h;
             opt2.textContent = label;
             endSel.appendChild(opt2);
+            if (h === shiftEnd) defaultEndIdx = endCount;
+            endCount++;
         }
     }
-    if (endSel.options.length > 0) {
-        endSel.selectedIndex = Math.min(2, endSel.options.length - 1);
+
+    // デフォルト選択：シフト開始時間を初期値にする
+    if (defaultStartIdx >= 0) {
+        startSel.selectedIndex = defaultStartIdx;
+    }
+    // デフォルト選択：シフト開始＋1.5時間 or シフト終了時間
+    if (defaultEndIdx >= 0) {
+        endSel.selectedIndex = Math.min(defaultEndIdx, endSel.options.length - 1);
+    } else if (endSel.options.length > 0) {
+        // シフト開始から3つ先（1.5時間後）をデフォルトに
+        var targetEndIdx = (defaultStartIdx >= 0 ? defaultStartIdx + 3 : 2);
+        endSel.selectedIndex = Math.min(targetEndIdx, endSel.options.length - 1);
     }
 }
 

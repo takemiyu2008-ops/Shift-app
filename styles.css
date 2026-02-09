@@ -1,4 +1,4 @@
-﻿@charset "UTF-8";
+@charset "UTF-8";
 /* 接続状態表示 */
 .connection-status {
     position: fixed;
@@ -6688,17 +6688,20 @@ body {
 .shift-bar.temporary-shift::after {
     content: '臨時';
     position: absolute;
-    top: -8px;
-    right: 2px;
-    font-size: 0.55rem;
-    background: #f59e0b;
-    color: #0f172a;
-    padding: 0px 4px;
-    border-radius: 3px;
+    top: -10px;
+    right: 4px;
+    font-size: 0.65rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 4px;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.4;
     z-index: 2;
     pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .temporary-icon {
@@ -6714,10 +6717,10 @@ body {
     }
     
     .shift-bar.temporary-shift::after {
-        font-size: 0.5rem;
-        top: -7px;
-        right: 1px;
-        padding: 0px 3px;
+        font-size: 0.55rem;
+        top: -9px;
+        right: 2px;
+        padding: 1px 4px;
     }
 }
 
