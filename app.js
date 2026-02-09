@@ -1,4 +1,4 @@
-// Firebase設定
+﻿// Firebase設定
 const firebaseConfig = {
     apiKey: "AIzaSyBBNxYD46f-HPoeHo0JlBqIDiZs8_E7l_k",
     authDomain: "shift-app-956a0.firebaseapp.com",
