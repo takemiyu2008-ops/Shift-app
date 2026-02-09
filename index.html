@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ガントチャート形式のシフト管理アプリ - シフトの追加・編集・申請が簡単に行えます">
-    <title>シフト管理アプリ</title>
+    <meta name="description" content="ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆå½¢å¼ã®ã‚·ãƒ•ãƒˆç®¡ç†ã‚¢ãƒ—ãƒª - ã‚·ãƒ•ãƒˆã®è¿½åŠ ãƒ»ç·¨é›†ãƒ»ç”³è«‹ãŒç°¡å˜ã«è¡Œãˆã¾ã™">
+    <title>ã‚·ãƒ•ãƒˆç®¡ç†ã‚¢ãƒ—ãƒª</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
         rel="stylesheet">
@@ -16,7 +16,7 @@
     <!-- html2pdf.js for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ログイン画面のスタイル */
+        /* ãƒ­ã‚°ã‚¤ãƒ³ç”»é¢ã®ã‚¹ã‚¿ã‚¤ãƒ« */
         .auth-container {
             display: none;
             justify-content: center;
@@ -187,271 +187,271 @@
 </head>
 
 <body>
-    <!-- ログイン画面 -->
+    <!-- ãƒ­ã‚°ã‚¤ãƒ³ç”»é¢ -->
     <div class="auth-container show" id="authContainer">
         <div class="auth-box">
-            <h1 class="auth-title">📅 シフト管理</h1>
-            <p class="auth-subtitle" id="authSubtitle">ログインしてください</p>
+            <h1 class="auth-title">ðŸ“… ã‚·ãƒ•ãƒˆç®¡ç†</h1>
+            <p class="auth-subtitle" id="authSubtitle">ãƒ­ã‚°ã‚¤ãƒ³ã—ã¦ãã ã•ã„</p>
             
             <div class="auth-error" id="authError"></div>
             
-            <!-- ログインフォーム -->
+            <!-- ãƒ­ã‚°ã‚¤ãƒ³ãƒ•ã‚©ãƒ¼ãƒ  -->
             <form class="auth-form" id="loginForm">
                 <div class="auth-input-group">
-                    <label class="auth-label">従業員番号（3桁）</label>
+                    <label class="auth-label">å¾“æ¥­å“¡ç•ªå·ï¼ˆ3æ¡ï¼‰</label>
                     <input type="text" class="auth-input staff-id-input" id="loginStaffId" 
-                           required placeholder="例: 001" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
-                    <p class="auth-hint">あなたの3桁の従業員番号を入力してください</p>
+                           required placeholder="ä¾‹: 001" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
+                    <p class="auth-hint">ã‚ãªãŸã®3æ¡ã®å¾“æ¥­å“¡ç•ªå·ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</p>
                 </div>
                 <div class="auth-input-group">
-                    <label class="auth-label">パスワード（4桁の数字）</label>
+                    <label class="auth-label">ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ï¼ˆ4æ¡ã®æ•°å­—ï¼‰</label>
                     <input type="password" class="auth-input password-input" id="loginPassword" 
-                           required placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
-                    <p class="auth-hint">4桁の数字を入力してください</p>
+                           required placeholder="ä¾‹: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
+                    <p class="auth-hint">4æ¡ã®æ•°å­—ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</p>
                 </div>
-                <button type="submit" class="auth-button">ログイン</button>
+                <button type="submit" class="auth-button">ãƒ­ã‚°ã‚¤ãƒ³</button>
             </form>
             
-            <!-- 新規登録フォーム -->
+            <!-- æ–°è¦ç™»éŒ²ãƒ•ã‚©ãƒ¼ãƒ  -->
             <form class="auth-form" id="registerForm" style="display: none;">
                 <div class="auth-input-group">
-                    <label class="auth-label">名前</label>
+                    <label class="auth-label">åå‰</label>
                     <input type="text" class="auth-input" id="registerName" required 
-                           placeholder="例: 山田 太郎" autocomplete="name">
-                    <p class="auth-hint">あなたの名前をフルネームで入力してください</p>
+                           placeholder="ä¾‹: å±±ç”° å¤ªéƒŽ" autocomplete="name">
+                    <p class="auth-hint">ã‚ãªãŸã®åå‰ã‚’ãƒ•ãƒ«ãƒãƒ¼ãƒ ã§å…¥åŠ›ã—ã¦ãã ã•ã„</p>
                 </div>
                 <div class="auth-input-group">
-                    <label class="auth-label">従業員番号（3桁）</label>
+                    <label class="auth-label">å¾“æ¥­å“¡ç•ªå·ï¼ˆ3æ¡ï¼‰</label>
                     <input type="text" class="auth-input staff-id-input" id="registerStaffId" 
-                           required placeholder="例: 001" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
-                    <p class="auth-hint">あなたの3桁の従業員番号を入力してください</p>
+                           required placeholder="ä¾‹: 001" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
+                    <p class="auth-hint">ã‚ãªãŸã®3æ¡ã®å¾“æ¥­å“¡ç•ªå·ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„</p>
                 </div>
                 <div class="auth-input-group">
-                    <label class="auth-label">パスワード（4桁の数字）</label>
+                    <label class="auth-label">ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ï¼ˆ4æ¡ã®æ•°å­—ï¼‰</label>
                     <input type="password" class="auth-input password-input" id="registerPassword" 
-                           required placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
-                    <p class="auth-hint">覚えやすい4桁の数字を設定してください</p>
+                           required placeholder="ä¾‹: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
+                    <p class="auth-hint">è¦šãˆã‚„ã™ã„4æ¡ã®æ•°å­—ã‚’è¨­å®šã—ã¦ãã ã•ã„</p>
                 </div>
-                <button type="submit" class="auth-button">新規登録</button>
+                <button type="submit" class="auth-button">æ–°è¦ç™»éŒ²</button>
             </form>
             
             <div class="auth-toggle">
-                <span id="toggleText">まだ登録していない方は</span>
-                <a class="auth-toggle-link" id="toggleAuthMode">新規登録</a>
+                <span id="toggleText">ã¾ã ç™»éŒ²ã—ã¦ã„ãªã„æ–¹ã¯</span>
+                <a class="auth-toggle-link" id="toggleAuthMode">æ–°è¦ç™»éŒ²</a>
             </div>
         </div>
     </div>
 
-    <!-- ログアウトボタン -->
+    <!-- ãƒ­ã‚°ã‚¢ã‚¦ãƒˆãƒœã‚¿ãƒ³ -->
     <div class="logout-btn-container" id="logoutBtnContainer" style="display: none;">
         <button id="logoutBtn" class="logout-btn">
-            🚪 ログアウト
+            ðŸšª ãƒ­ã‚°ã‚¢ã‚¦ãƒˆ
         </button>
     </div>
 
 
     <div class="app-container hidden" id="appContainer">
-        <!-- 接続状態表示 -->
+        <!-- æŽ¥ç¶šçŠ¶æ…‹è¡¨ç¤º -->
         <div class="connection-status" id="connectionStatus">
             <span class="status-dot"></span>
-            <span class="status-text">接続中...</span>
+            <span class="status-text">æŽ¥ç¶šä¸­...</span>
         </div>
 
-        <!-- ヘッダー -->
+        <!-- ãƒ˜ãƒƒãƒ€ãƒ¼ -->
         <header class="header">
             <h1 class="header-title">
-                <span class="header-icon">📅</span>
-                シフト管理
+                <span class="header-icon">ðŸ“…</span>
+                ã‚·ãƒ•ãƒˆç®¡ç†
             </h1>
             <div class="header-actions">
-                <!-- ロール切り替え -->
+                <!-- ãƒ­ãƒ¼ãƒ«åˆ‡ã‚Šæ›¿ãˆ -->
                 <div class="role-toggle">
-                    <span class="role-label">モード:</span>
+                    <span class="role-label">ãƒ¢ãƒ¼ãƒ‰:</span>
                     <button id="roleToggle" class="role-btn">
-                        <span class="role-icon">👤</span>
-                        <span id="roleText">スタッフ</span>
+                        <span class="role-icon">ðŸ‘¤</span>
+                        <span id="roleText">ã‚¹ã‚¿ãƒƒãƒ•</span>
                     </button>
                 </div>
                 <button id="orderAdviceBtn" class="btn btn-info">
-                    📦 発注アドバイス
+                    ðŸ“¦ ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹
                 </button>
                 <button id="addShiftBtn" class="btn btn-primary">
                     <span class="btn-icon">+</span>
-                    シフト追加
+                    ã‚·ãƒ•ãƒˆè¿½åŠ 
                 </button>
                 <button id="requestChangeBtn" class="btn btn-secondary">
-                    🔄 シフト変更申請
+                    ðŸ”„ ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹
                 </button>
                 <button id="shiftSwapBtn" class="btn btn-secondary">
-                    🤝 シフト交代依頼
+                    ðŸ¤ ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼
                 </button>
                 <button id="requestLeaveBtn" class="btn btn-secondary">
-                    🏖️ 有給申請
+                    ðŸ–ï¸ æœ‰çµ¦ç”³è«‹
                 </button>
                 <button id="requestHolidayBtn" class="btn btn-secondary">
-                    🏠 休日申請
+                    ðŸ  ä¼‘æ—¥ç”³è«‹
                 </button>
             </div>
         </header>
 
-        <!-- モバイル用 発注アドバイスフローティングボタン -->
+        <!-- ãƒ¢ãƒã‚¤ãƒ«ç”¨ ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ãƒœã‚¿ãƒ³ -->
         <button id="orderAdviceBtnMobile" class="order-advice-fab">
-            📦
+            ðŸ“¦
         </button>
 
-        <!-- 管理者パネル（管理者モード時のみ表示） -->
+        <!-- ç®¡ç†è€…ãƒ‘ãƒãƒ«ï¼ˆç®¡ç†è€…ãƒ¢ãƒ¼ãƒ‰æ™‚ã®ã¿è¡¨ç¤ºï¼‰ -->
         <div class="admin-panel" id="adminPanel" style="display: none;">
             <div class="admin-header">
-                <h2>📋 管理者メニュー</h2>
+                <h2>ðŸ“‹ ç®¡ç†è€…ãƒ¡ãƒ‹ãƒ¥ãƒ¼</h2>
                 <div class="admin-tabs">
-                    <button class="admin-tab active" data-tab="shiftChanges">シフト変更</button>
-                    <button class="admin-tab" data-tab="shiftSwaps">シフト交換</button>
-                    <button class="admin-tab" data-tab="leaveRequests">有給申請</button>
-                    <button class="admin-tab" data-tab="holidayRequests">休日申請</button>
-                    <button class="admin-tab" data-tab="specialEvents">⚡ 臨時シフト管理</button>
-                    <button class="admin-tab" data-tab="fixedShiftManage">🔁 固定シフト管理</button>
-                    <button class="admin-tab" data-tab="dailyEvents">📅 店舗スケジュール</button>
-                    <button class="admin-tab" data-tab="nonDailyAdvice">📈 非デイリー参考情報</button>
-                    <button class="admin-tab" data-tab="feedbackStats">📊 フィードバック集計</button>
-                    <button class="admin-tab" data-tab="productCategories">📂 商品分類管理</button>
-                    <button class="admin-tab" data-tab="trendReports">📊 コンビニ3社 新商品ヒット予測レポート</button>
-                    <button class="admin-tab" data-tab="newProductReport">🆕 週次インテリジェンス（マクロ環境）</button>
-                    <button class="admin-tab" data-tab="usageStats">📈 利用統計</button>
-                    <button class="admin-tab" data-tab="history">📜 履歴</button>
-                    <button class="admin-tab" data-tab="employees">従業員管理</button>
-                    <button class="admin-tab" data-tab="broadcast">全員へ通知</button>
-                    <button class="admin-tab" data-tab="settings">設定</button>
+                    <button class="admin-tab active" data-tab="shiftChanges">ã‚·ãƒ•ãƒˆå¤‰æ›´</button>
+                    <button class="admin-tab" data-tab="shiftSwaps">ã‚·ãƒ•ãƒˆäº¤æ›</button>
+                    <button class="admin-tab" data-tab="leaveRequests">æœ‰çµ¦ç”³è«‹</button>
+                    <button class="admin-tab" data-tab="holidayRequests">ä¼‘æ—¥ç”³è«‹</button>
+                    <button class="admin-tab" data-tab="specialEvents">âš¡ è‡¨æ™‚ã‚·ãƒ•ãƒˆç®¡ç†</button>
+                    <button class="admin-tab" data-tab="fixedShiftManage">ðŸ” å›ºå®šã‚·ãƒ•ãƒˆç®¡ç†</button>
+                    <button class="admin-tab" data-tab="dailyEvents">ðŸ“… åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«</button>
+                    <button class="admin-tab" data-tab="nonDailyAdvice">ðŸ“ˆ éžãƒ‡ã‚¤ãƒªãƒ¼å‚è€ƒæƒ…å ±</button>
+                    <button class="admin-tab" data-tab="feedbackStats">ðŸ“Š ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é›†è¨ˆ</button>
+                    <button class="admin-tab" data-tab="productCategories">ðŸ“‚ å•†å“åˆ†é¡žç®¡ç†</button>
+                    <button class="admin-tab" data-tab="trendReports">ðŸ“Š ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ</button>
+                    <button class="admin-tab" data-tab="newProductReport">ðŸ†• é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰</button>
+                    <button class="admin-tab" data-tab="usageStats">ðŸ“ˆ åˆ©ç”¨çµ±è¨ˆ</button>
+                    <button class="admin-tab" data-tab="history">ðŸ“œ å±¥æ­´</button>
+                    <button class="admin-tab" data-tab="employees">å¾“æ¥­å“¡ç®¡ç†</button>
+                    <button class="admin-tab" data-tab="broadcast">å…¨å“¡ã¸é€šçŸ¥</button>
+                    <button class="admin-tab" data-tab="settings">è¨­å®š</button>
                 </div>
             </div>
             <div class="admin-content" id="adminContent">
             </div>
         </div>
 
-        <!-- メッセージ通知バー -->
+        <!-- ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸é€šçŸ¥ãƒãƒ¼ -->
         <div class="message-bar" id="messageBar" style="display: none;">
             <div class="message-bar-content">
-                <span class="message-icon">📩</span>
-                <span id="messageCount">0</span>件の新しいメッセージ
+                <span class="message-icon">ðŸ“©</span>
+                <span id="messageCount">0</span>ä»¶ã®æ–°ã—ã„ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
             </div>
-            <button id="viewMessagesBtn" class="btn btn-sm btn-primary">確認</button>
+            <button id="viewMessagesBtn" class="btn btn-sm btn-primary">ç¢ºèª</button>
         </div>
 
-        <!-- 発注・スケジュール情報グループ -->
+        <!-- ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«æƒ…å ±ã‚°ãƒ«ãƒ¼ãƒ— -->
         <div class="advisor-group" id="advisorGroup">
             <div class="advisor-group-header" id="advisorGroupHeader">
-                <span class="advisor-group-icon">📋</span>
-                <span class="advisor-group-title">発注・スケジュール情報</span>
-                <button class="advisor-group-toggle" id="advisorGroupToggle">▼</button>
+                <span class="advisor-group-icon">ðŸ“‹</span>
+                <span class="advisor-group-title">ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«æƒ…å ±</span>
+                <button class="advisor-group-toggle" id="advisorGroupToggle">â–¼</button>
             </div>
             <div class="advisor-group-content collapsed" id="advisorGroupContent">
-                <!-- レポートグループ -->
+                <!-- ãƒ¬ãƒãƒ¼ãƒˆã‚°ãƒ«ãƒ¼ãƒ— -->
                 <div class="order-advisor reports-group-section" id="reportsGroupSection">
                     <div class="advisor-header" id="reportsGroupHeader">
-                        <span class="advisor-icon">📑</span>
-                        <span class="advisor-title">レポート</span>
-                        <button class="advisor-toggle collapsed" id="reportsGroupToggle">▼</button>
+                        <span class="advisor-icon">ðŸ“‘</span>
+                        <span class="advisor-title">ãƒ¬ãƒãƒ¼ãƒˆ</span>
+                        <button class="advisor-toggle collapsed" id="reportsGroupToggle">â–¼</button>
                     </div>
                     <div class="advisor-content collapsed" id="reportsGroupContent">
-                        <!-- コンビニ3社 新商品ヒット予測レポート -->
+                        <!-- ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ -->
                         <div class="order-advisor trend-report-section sub-report" id="trendReportSection">
                             <div class="advisor-header sub-header">
-                                <span class="advisor-icon">📊</span>
-                                <span class="advisor-title">コンビニ3社 新商品ヒット予測レポート</span>
-                                <button class="advisor-toggle collapsed" id="trendReportToggle">▼</button>
+                                <span class="advisor-icon">ðŸ“Š</span>
+                                <span class="advisor-title">ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ</span>
+                                <button class="advisor-toggle collapsed" id="trendReportToggle">â–¼</button>
                             </div>
                             <div class="advisor-content collapsed" id="trendReportContent">
-                                <!-- JSで動的に生成 -->
+                                <!-- JSã§å‹•çš„ã«ç”Ÿæˆ -->
                             </div>
                         </div>
 
-                        <!-- 週次インテリジェンス（マクロ環境） -->
+                        <!-- é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ -->
                         <div class="order-advisor new-product-report sub-report" id="newProductReportSection">
                             <div class="advisor-header sub-header">
-                                <span class="advisor-icon">🆕</span>
-                                <span class="advisor-title">週次インテリジェンス（マクロ環境）</span>
-                                <button class="advisor-toggle collapsed" id="newProductToggle">▼</button>
+                                <span class="advisor-icon">ðŸ†•</span>
+                                <span class="advisor-title">é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰</span>
+                                <button class="advisor-toggle collapsed" id="newProductToggle">â–¼</button>
                             </div>
                             <div class="advisor-content collapsed" id="newProductContent">
-                                <!-- JSで動的に生成 -->
+                                <!-- JSã§å‹•çš„ã«ç”Ÿæˆ -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 非デイリー発注参考情報 -->
+                <!-- éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ± -->
                 <div class="order-advisor non-daily-advisor" id="nonDailyAdvisor" style="display: none;">
                     <div class="advisor-header">
-                        <span class="advisor-icon">📈</span>
-                        <span class="advisor-title">非デイリー発注参考情報（毎週月曜更新）</span>
-                        <button class="advisor-toggle collapsed" id="nonDailyToggle">▼</button>
+                        <span class="advisor-icon">ðŸ“ˆ</span>
+                        <span class="advisor-title">éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±ï¼ˆæ¯Žé€±æœˆæ›œæ›´æ–°ï¼‰</span>
+                        <button class="advisor-toggle collapsed" id="nonDailyToggle">â–¼</button>
                     </div>
                     <div class="advisor-content collapsed" id="nonDailyContent">
-                        <!-- JSで動的に生成 -->
+                        <!-- JSã§å‹•çš„ã«ç”Ÿæˆ -->
                     </div>
                 </div>
 
-                <!-- 店舗スケジュール一覧 -->
+                <!-- åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ä¸€è¦§ -->
                 <div class="order-advisor schedule-list-section" id="scheduleListSection" style="display: none;">
                     <div class="advisor-header">
-                        <span class="advisor-icon">📅</span>
-                        <span class="advisor-title">店舗スケジュール一覧</span>
-                        <button class="advisor-toggle collapsed" id="scheduleToggle">▼</button>
+                        <span class="advisor-icon">ðŸ“…</span>
+                        <span class="advisor-title">åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ä¸€è¦§</span>
+                        <button class="advisor-toggle collapsed" id="scheduleToggle">â–¼</button>
                     </div>
                     <div class="advisor-content collapsed" id="scheduleListContent">
-                        <!-- JSで動的に生成 -->
+                        <!-- JSã§å‹•çš„ã«ç”Ÿæˆ -->
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 印刷画面グループ -->
+        <!-- å°åˆ·ç”»é¢ã‚°ãƒ«ãƒ¼ãƒ— -->
         <div class="advisor-group print-group" id="printGroup">
             <div class="advisor-group-header" id="printGroupHeader">
-                <span class="advisor-group-icon">🖨️</span>
-                <span class="advisor-group-title">印刷画面（PDF出力、印刷）</span>
-                <button class="advisor-group-toggle" id="printGroupToggle">▼</button>
+                <span class="advisor-group-icon">ðŸ–¨ï¸</span>
+                <span class="advisor-group-title">å°åˆ·ç”»é¢ï¼ˆPDFå‡ºåŠ›ã€å°åˆ·ï¼‰</span>
+                <button class="advisor-group-toggle" id="printGroupToggle">â–¼</button>
             </div>
             <div class="advisor-group-content collapsed" id="printGroupContent">
                 <div class="pdf-section-inner">
                     <button id="exportPdfBtn" class="btn btn-info">
-                        📄 PDF出力
+                        ðŸ“„ PDFå‡ºåŠ›
                     </button>
                     <button id="printBtn" class="btn btn-secondary">
-                        🖨️ 印刷
+                        ðŸ–¨ï¸ å°åˆ·
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ズームコントロール -->
+        <!-- ã‚ºãƒ¼ãƒ ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ« -->
         <div class="zoom-controls">
             <div class="zoom-section">
-                <span class="zoom-label">🔍 表示サイズ:</span>
-                <button id="zoomOut" class="zoom-btn">−</button>
+                <span class="zoom-label">ðŸ” è¡¨ç¤ºã‚µã‚¤ã‚º:</span>
+                <button id="zoomOut" class="zoom-btn">âˆ’</button>
                 <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider">
                 <button id="zoomIn" class="zoom-btn">+</button>
                 <span id="zoomValue" class="zoom-value">100%</span>
-                <button id="zoomReset" class="btn btn-sm btn-secondary">リセット</button>
+                <button id="zoomReset" class="btn btn-sm btn-secondary">ãƒªã‚»ãƒƒãƒˆ</button>
             </div>
         </div>
 
-        <!-- 日付ナビゲーション -->
+        <!-- æ—¥ä»˜ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ -->
         <div class="date-nav">
             <button id="prevWeek" class="nav-btn">
-                <span>◀</span>
-                前週
+                <span>â—€</span>
+                å‰é€±
             </button>
-            <div class="current-period" id="currentPeriod">2026年1月12日 〜 1月18日</div>
+            <div class="current-period" id="currentPeriod">2026å¹´1æœˆ12æ—¥ ã€œ 1æœˆ18æ—¥</div>
             <button id="nextWeek" class="nav-btn">
-                次週
-                <span>▶</span>
+                æ¬¡é€±
+                <span>â–¶</span>
             </button>
         </div>
 
-        <!-- ガントチャート -->
+        <!-- ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆ -->
         <div class="gantt-container">
             <div class="gantt-header">
-                <div class="gantt-label-header">日付</div>
+                <div class="gantt-label-header">æ—¥ä»˜</div>
                 <div class="gantt-time-header" id="timeHeader">
                 </div>
             </div>
@@ -459,111 +459,114 @@
             </div>
         </div>
 
-        <!-- 凡例（非表示） -->
+        <!-- å‡¡ä¾‹ï¼ˆéžè¡¨ç¤ºï¼‰ -->
         <div class="legend" style="display: none;">
-            <div class="legend-title">担当者</div>
+            <div class="legend-title">æ‹…å½“è€…</div>
             <div class="legend-items" id="legendItems">
             </div>
         </div>
     </div>
 
-    <!-- シフト詳細ポップオーバー -->
+    <!-- ã‚·ãƒ•ãƒˆè©³ç´°ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ -->
     <div class="shift-popover" id="shiftPopover">
         <div class="popover-content">
             <div class="popover-header">
-                <span class="popover-title" id="popoverTitle">シフト詳細</span>
-                <button class="popover-close" id="popoverClose">×</button>
+                <span class="popover-title" id="popoverTitle">ã‚·ãƒ•ãƒˆè©³ç´°</span>
+                <button class="popover-close" id="popoverClose">Ã—</button>
             </div>
             <div class="popover-body">
                 <div class="popover-info">
                     <div class="info-row">
-                        <span class="info-label">担当者:</span>
+                        <span class="info-label">æ‹…å½“è€…:</span>
                         <span class="info-value" id="popoverName">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">日付:</span>
+                        <span class="info-label">æ—¥ä»˜:</span>
                         <span class="info-value" id="popoverDate">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">時間:</span>
+                        <span class="info-label">æ™‚é–“:</span>
                         <span class="info-value" id="popoverTime">-</span>
                     </div>
                     <div class="info-row" id="popoverOvernightRow" style="display: none;">
-                        <span class="info-label">タイプ:</span>
-                        <span class="info-value overnight-badge">🌙 夜勤</span>
+                        <span class="info-label">ã‚¿ã‚¤ãƒ—:</span>
+                        <span class="info-value overnight-badge">ðŸŒ™ å¤œå‹¤</span>
                     </div>
                     <div class="info-row" id="popoverFixedRow" style="display: none;">
-                        <span class="info-label">タイプ:</span>
-                        <span class="info-value fixed-badge">🔁 固定シフト</span>
+                        <span class="info-label">ã‚¿ã‚¤ãƒ—:</span>
+                        <span class="info-value fixed-badge">ðŸ” å›ºå®šã‚·ãƒ•ãƒˆ</span>
                     </div>
                     <div class="info-row" id="popoverChangeRow" style="display: none;">
-                        <span class="info-label">変更履歴:</span>
+                        <span class="info-label">å¤‰æ›´å±¥æ­´:</span>
                         <span class="info-value" id="popoverChangeInfo">-</span>
                     </div>
                     <div class="info-row" id="popoverSwapRow" style="display: none;">
-                        <span class="info-label">交代履歴:</span>
+                        <span class="info-label">äº¤ä»£å±¥æ­´:</span>
                         <span class="info-value" id="popoverSwapInfo">-</span>
                     </div>
                     <div class="info-row" id="popoverOverrideRow" style="display: none;">
-                        <span class="info-label">単日変更:</span>
-                        <span class="info-value override-badge">📝 この日のみ変更済み</span>
+                        <span class="info-label">å˜æ—¥å¤‰æ›´:</span>
+                        <span class="info-value override-badge">ðŸ“ ã“ã®æ—¥ã®ã¿å¤‰æ›´æ¸ˆã¿</span>
                     </div>
                 </div>
             </div>
             <div class="popover-actions">
                 <div class="popover-action-row">
-                    <button class="btn btn-primary btn-sm" id="popoverEditBtn">✏️ 編集</button>
-                    <button class="btn btn-secondary btn-sm" id="popoverOverrideBtn" style="display: none;">📝 この日のみ</button>
-                    <button class="btn btn-danger btn-sm" id="popoverDeleteBtn">🗑️ 削除</button>
+                    <button class="btn btn-primary btn-sm" id="popoverEditBtn">âœï¸ ç·¨é›†</button>
+                    <button class="btn btn-secondary btn-sm" id="popoverOverrideBtn" style="display: none;">ðŸ“ ã“ã®æ—¥ã®ã¿</button>
+                    <button class="btn btn-danger btn-sm" id="popoverDeleteBtn">ðŸ—‘ï¸ å‰Šé™¤</button>
                 </div>
                 <div class="popover-action-row">
-                    <button class="btn btn-info btn-sm" id="popoverMorningHalfDayBtn">🌅 午前半休</button>
-                    <button class="btn btn-info btn-sm" id="popoverAfternoonHalfDayBtn">🌇 午後半休</button>
-                    <button class="btn btn-warning btn-sm" id="popoverDayOffBtn">🏠 休み</button>
+                    <button class="btn btn-sm" id="popoverTaskBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;flex:1;">📋 業務内容</button>
+                </div>
+                <div class="popover-action-row">
+                    <button class="btn btn-info btn-sm" id="popoverMorningHalfDayBtn">ðŸŒ… åˆå‰åŠä¼‘</button>
+                    <button class="btn btn-info btn-sm" id="popoverAfternoonHalfDayBtn">ðŸŒ‡ åˆå¾ŒåŠä¼‘</button>
+                    <button class="btn btn-warning btn-sm" id="popoverDayOffBtn">ðŸ  ä¼‘ã¿</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- シフト追加モーダル -->
+    <!-- ã‚·ãƒ•ãƒˆè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="shiftModalTitle">シフト追加</h2>
-                <button class="modal-close" id="modalClose">×</button>
+                <h2 class="modal-title" id="shiftModalTitle">ã‚·ãƒ•ãƒˆè¿½åŠ </h2>
+                <button class="modal-close" id="modalClose">Ã—</button>
             </div>
             <form id="shiftForm" class="modal-body">
                 <input type="hidden" id="editShiftId" value="">
                 <div class="form-group">
-                    <label for="shiftDate">日付</label>
+                    <label for="shiftDate">æ—¥ä»˜</label>
                     <input type="date" id="shiftDate" required>
                     <p class="form-hint" id="shiftDateDay"></p>
                 </div>
                 <div class="form-group">
-                    <label for="shiftName">氏名</label>
+                    <label for="shiftName">æ°å</label>
                     <select id="shiftName" required>
-                        <option value="">選択してください</option>
+                        <option value="">é¸æŠžã—ã¦ãã ã•ã„</option>
                     </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="shiftStart">開始時刻</label>
+                        <label for="shiftStart">é–‹å§‹æ™‚åˆ»</label>
                         <select id="shiftStart" required></select>
                     </div>
                     <div class="form-group">
-                        <label for="shiftEnd">終了時刻</label>
+                        <label for="shiftEnd">çµ‚äº†æ™‚åˆ»</label>
                         <select id="shiftEnd" required></select>
                     </div>
                 </div>
                 <div class="form-group overnight-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="overnightShift">
-                        <span class="checkbox-text">🌙 夜勤（翌日に跨ぐ）</span>
+                        <span class="checkbox-text">ðŸŒ™ å¤œå‹¤ï¼ˆç¿Œæ—¥ã«è·¨ãï¼‰</span>
                     </label>
-                    <p class="form-hint">例：22:00〜翌9:00のシフト</p>
+                    <p class="form-hint">ä¾‹ï¼š22:00ã€œç¿Œ9:00ã®ã‚·ãƒ•ãƒˆ</p>
                 </div>
                 <div class="form-group">
-                    <label for="shiftColor">色</label>
+                    <label for="shiftColor">è‰²</label>
                     <div class="color-picker" id="colorPicker">
                         <button type="button" class="color-option" data-color="#6366f1"
                             style="background: #6366f1;"></button>
@@ -583,502 +586,552 @@
                 <div class="form-group fixed-shift-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="fixedShift">
-                        <span class="checkbox-text">🔁 固定シフト（毎週繰り返し）</span>
+                        <span class="checkbox-text">ðŸ” å›ºå®šã‚·ãƒ•ãƒˆï¼ˆæ¯Žé€±ç¹°ã‚Šè¿”ã—ï¼‰</span>
                     </label>
-                    <p class="form-hint">チェックすると、毎週同じ曜日・時間にシフトが自動表示されます</p>
+                    <p class="form-hint">ãƒã‚§ãƒƒã‚¯ã™ã‚‹ã¨ã€æ¯Žé€±åŒã˜æ›œæ—¥ãƒ»æ™‚é–“ã«ã‚·ãƒ•ãƒˆãŒè‡ªå‹•è¡¨ç¤ºã•ã‚Œã¾ã™</p>
                     <div id="fixedShiftPeriod" class="fixed-shift-period" style="display: none;">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="fixedStartDate">開始日</label>
+                                <label for="fixedStartDate">é–‹å§‹æ—¥</label>
                                 <input type="date" id="fixedStartDate">
-                                <p class="form-hint">指定した日から有効</p>
+                                <p class="form-hint">æŒ‡å®šã—ãŸæ—¥ã‹ã‚‰æœ‰åŠ¹</p>
                             </div>
                             <div class="form-group">
-                                <label for="fixedEndDate">終了日</label>
+                                <label for="fixedEndDate">çµ‚äº†æ—¥</label>
                                 <input type="date" id="fixedEndDate">
                                 <label class="checkbox-label" style="margin-top: 4px;">
                                     <input type="checkbox" id="fixedNoEndDate" checked>
-                                    <span class="checkbox-text">終了日なし（無期限）</span>
+                                    <span class="checkbox-text">çµ‚äº†æ—¥ãªã—ï¼ˆç„¡æœŸé™ï¼‰</span>
                                 </label>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary" id="shiftSubmitBtn">追加</button>
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary" id="shiftSubmitBtn">è¿½åŠ </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- シフト変更申請モーダル -->
+    <!-- ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="changeModalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">🔄 シフト変更申請</h2>
-                <button class="modal-close" id="changeModalClose">×</button>
+                <h2 class="modal-title">ðŸ”„ ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹</h2>
+                <button class="modal-close" id="changeModalClose">Ã—</button>
             </div>
             <form id="changeForm" class="modal-body">
                 <div class="form-group">
-                    <label for="changeApplicant">申請者名</label>
+                    <label for="changeApplicant">ç”³è«‹è€…å</label>
                     <select id="changeApplicant" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="changeShiftSelect">変更するシフト</label>
+                    <label for="changeShiftSelect">å¤‰æ›´ã™ã‚‹ã‚·ãƒ•ãƒˆ</label>
                     <select id="changeShiftSelect" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="changeDate">新しい日付</label>
+                    <label for="changeDate">æ–°ã—ã„æ—¥ä»˜</label>
                     <input type="date" id="changeDate" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="changeStart">新しい開始時刻</label>
+                        <label for="changeStart">æ–°ã—ã„é–‹å§‹æ™‚åˆ»</label>
                         <select id="changeStart" required></select>
                     </div>
                     <div class="form-group">
-                        <label for="changeEnd">新しい終了時刻</label>
+                        <label for="changeEnd">æ–°ã—ã„çµ‚äº†æ™‚åˆ»</label>
                         <select id="changeEnd" required></select>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="changeReason">変更理由</label>
-                    <textarea id="changeReason" placeholder="例：私用のため" rows="3" required></textarea>
+                    <label for="changeReason">å¤‰æ›´ç†ç”±</label>
+                    <textarea id="changeReason" placeholder="ä¾‹ï¼šç§ç”¨ã®ãŸã‚" rows="3" required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="changeCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">申請</button>
+                    <button type="button" class="btn btn-secondary" id="changeCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ç”³è«‹</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- シフト交代依頼モーダル -->
+    <!-- ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="swapModalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">🤝 シフト交代依頼</h2>
-                <button class="modal-close" id="swapModalClose">×</button>
+                <h2 class="modal-title">ðŸ¤ ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼</h2>
+                <button class="modal-close" id="swapModalClose">Ã—</button>
             </div>
             <form id="swapForm" class="modal-body">
                 <div class="form-group">
-                    <label for="swapApplicant">申請者名</label>
+                    <label for="swapApplicant">ç”³è«‹è€…å</label>
                     <select id="swapApplicant" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="swapShiftSelect">交代してほしいシフト</label>
+                    <label for="swapShiftSelect">äº¤ä»£ã—ã¦ã»ã—ã„ã‚·ãƒ•ãƒˆ</label>
                     <select id="swapShiftSelect" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="swapTargetEmployee">依頼する相手</label>
+                    <label for="swapTargetEmployee">ä¾é ¼ã™ã‚‹ç›¸æ‰‹</label>
                     <select id="swapTargetEmployee" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="swapMessage">メッセージ</label>
-                    <textarea id="swapMessage" placeholder="例：急用ができてしまいました。シフトを変わっていただけませんか？" rows="3"
+                    <label for="swapMessage">ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸</label>
+                    <textarea id="swapMessage" placeholder="ä¾‹ï¼šæ€¥ç”¨ãŒã§ãã¦ã—ã¾ã„ã¾ã—ãŸã€‚ã‚·ãƒ•ãƒˆã‚’å¤‰ã‚ã£ã¦ã„ãŸã ã‘ã¾ã›ã‚“ã‹ï¼Ÿ" rows="3"
                         required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="swapCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">依頼を送る</button>
+                    <button type="button" class="btn btn-secondary" id="swapCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ä¾é ¼ã‚’é€ã‚‹</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 有給申請モーダル -->
+    <!-- æœ‰çµ¦ç”³è«‹ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="leaveModalOverlay">
         <div class="modal modal-lg">
             <div class="modal-header">
-                <h2 class="modal-title">🏖️ 有給申請</h2>
-                <button class="modal-close" id="leaveModalClose">×</button>
+                <h2 class="modal-title">ðŸ–ï¸ æœ‰çµ¦ç”³è«‹</h2>
+                <button class="modal-close" id="leaveModalClose">Ã—</button>
             </div>
             <form id="leaveForm" class="modal-body">
                 <div class="form-group">
-                    <label for="leaveName">申請者名</label>
+                    <label for="leaveName">ç”³è«‹è€…å</label>
                     <select id="leaveName" required onchange="updateLeaveShiftList()"></select>
                 </div>
                 <div class="form-group">
-                    <label>取得したいシフトを選択（複数選択可）</label>
-                    <p class="form-hint">有給を取得したいシフトにチェックを入れてください</p>
+                    <label>å–å¾—ã—ãŸã„ã‚·ãƒ•ãƒˆã‚’é¸æŠžï¼ˆè¤‡æ•°é¸æŠžå¯ï¼‰</label>
+                    <p class="form-hint">æœ‰çµ¦ã‚’å–å¾—ã—ãŸã„ã‚·ãƒ•ãƒˆã«ãƒã‚§ãƒƒã‚¯ã‚’å…¥ã‚Œã¦ãã ã•ã„</p>
                     <div class="shift-selection-list" id="leaveShiftList">
-                        <p class="no-shift-message">申請者を選択してください</p>
+                        <p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="leaveCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">申請</button>
+                    <button type="button" class="btn btn-secondary" id="leaveCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ç”³è«‹</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 休日申請モーダル -->
+    <!-- ä¼‘æ—¥ç”³è«‹ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="holidayModalOverlay">
         <div class="modal modal-lg">
             <div class="modal-header">
-                <h2 class="modal-title">🏠 休日申請</h2>
-                <button class="modal-close" id="holidayModalClose">×</button>
+                <h2 class="modal-title">ðŸ  ä¼‘æ—¥ç”³è«‹</h2>
+                <button class="modal-close" id="holidayModalClose">Ã—</button>
             </div>
             <form id="holidayForm" class="modal-body">
                 <div class="form-group">
-                    <label for="holidayName">申請者名</label>
+                    <label for="holidayName">ç”³è«‹è€…å</label>
                     <select id="holidayName" required onchange="updateHolidayShiftList()"></select>
                 </div>
                 <div class="form-group">
-                    <label>休みを申請したいシフトを選択</label>
-                    <p class="form-hint">休日を申請したいシフトにチェックを入れてください</p>
+                    <label>ä¼‘ã¿ã‚’ç”³è«‹ã—ãŸã„ã‚·ãƒ•ãƒˆã‚’é¸æŠž</label>
+                    <p class="form-hint">ä¼‘æ—¥ã‚’ç”³è«‹ã—ãŸã„ã‚·ãƒ•ãƒˆã«ãƒã‚§ãƒƒã‚¯ã‚’å…¥ã‚Œã¦ãã ã•ã„</p>
                     <div class="shift-selection-list" id="holidayShiftList">
-                        <p class="no-shift-message">申請者を選択してください</p>
+                        <p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>
                     </div>
                 </div>
                 <div class="form-group" id="holidayTimeRangeGroup" style="display: none;">
-                    <label>休みの時間帯（任意）</label>
-                    <p class="form-hint">特定の時間帯のみ休む場合は指定してください（指定しない場合は全日休み）</p>
+                    <label>ä¼‘ã¿ã®æ™‚é–“å¸¯ï¼ˆä»»æ„ï¼‰</label>
+                    <p class="form-hint">ç‰¹å®šã®æ™‚é–“å¸¯ã®ã¿ä¼‘ã‚€å ´åˆã¯æŒ‡å®šã—ã¦ãã ã•ã„ï¼ˆæŒ‡å®šã—ãªã„å ´åˆã¯å…¨æ—¥ä¼‘ã¿ï¼‰</p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="holidayStartTime">開始時刻</label>
+                            <label for="holidayStartTime">é–‹å§‹æ™‚åˆ»</label>
                             <select id="holidayStartTime">
-                                <option value="">シフト開始時刻</option>
+                                <option value="">ã‚·ãƒ•ãƒˆé–‹å§‹æ™‚åˆ»</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="holidayEndTime">終了時刻</label>
+                            <label for="holidayEndTime">çµ‚äº†æ™‚åˆ»</label>
                             <select id="holidayEndTime">
-                                <option value="">シフト終了時刻</option>
+                                <option value="">ã‚·ãƒ•ãƒˆçµ‚äº†æ™‚åˆ»</option>
                             </select>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>シフト交代依頼していますか？</label>
+                    <label>ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼ã—ã¦ã„ã¾ã™ã‹ï¼Ÿ</label>
                     <div class="radio-group">
                         <label class="radio-label">
                             <input type="radio" name="holidaySwapRequested" value="no" checked>
-                            <span>いいえ</span>
+                            <span>ã„ã„ãˆ</span>
                         </label>
                         <label class="radio-label">
                             <input type="radio" name="holidaySwapRequested" value="yes">
-                            <span>はい</span>
+                            <span>ã¯ã„</span>
                         </label>
                     </div>
                 </div>
                 <div class="form-group" id="holidaySwapPartnerGroup" style="display: none;">
-                    <label for="holidaySwapPartner">シフト交代している場合は、誰としていますか？</label>
+                    <label for="holidaySwapPartner">ã‚·ãƒ•ãƒˆäº¤ä»£ã—ã¦ã„ã‚‹å ´åˆã¯ã€èª°ã¨ã—ã¦ã„ã¾ã™ã‹ï¼Ÿ</label>
                     <select id="holidaySwapPartner"></select>
                 </div>
                 <div class="form-group">
-                    <label for="holidayReason">申請理由</label>
-                    <textarea id="holidayReason" placeholder="例：家族との予定のため" rows="3" required></textarea>
+                    <label for="holidayReason">ç”³è«‹ç†ç”±</label>
+                    <textarea id="holidayReason" placeholder="ä¾‹ï¼šå®¶æ—ã¨ã®äºˆå®šã®ãŸã‚" rows="3" required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="holidayCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">申請</button>
+                    <button type="button" class="btn btn-secondary" id="holidayCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ç”³è«‹</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 暗証番号入力モーダル -->
+    <!-- æš—è¨¼ç•ªå·å…¥åŠ›ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="pinModalOverlay">
         <div class="modal modal-sm">
             <div class="modal-header">
-                <h2 class="modal-title">🔐 管理者認証</h2>
-                <button class="modal-close" id="pinModalClose">×</button>
+                <h2 class="modal-title">ðŸ” ç®¡ç†è€…èªè¨¼</h2>
+                <button class="modal-close" id="pinModalClose">Ã—</button>
             </div>
             <form id="pinForm" class="modal-body">
                 <div class="form-group">
-                    <label for="adminPin">暗証番号（4桁）</label>
-                    <input type="password" id="adminPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                    <label for="adminPin">æš—è¨¼ç•ªå·ï¼ˆ4æ¡ï¼‰</label>
+                    <input type="password" id="adminPin" placeholder="â€¢â€¢â€¢â€¢" maxlength="4" pattern="[0-9]{4}"
                         inputmode="numeric" required>
                 </div>
-                <p id="pinError" class="error-text" style="display: none;">暗証番号が間違っています</p>
+                <p id="pinError" class="error-text" style="display: none;">æš—è¨¼ç•ªå·ãŒé–“é•ã£ã¦ã„ã¾ã™</p>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="pinCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">認証</button>
+                    <button type="button" class="btn btn-secondary" id="pinCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">èªè¨¼</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 暗証番号変更モーダル -->
+    <!-- æš—è¨¼ç•ªå·å¤‰æ›´ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="changePinModalOverlay">
         <div class="modal modal-sm">
             <div class="modal-header">
-                <h2 class="modal-title">🔑 暗証番号変更</h2>
-                <button class="modal-close" id="changePinModalClose">×</button>
+                <h2 class="modal-title">ðŸ”‘ æš—è¨¼ç•ªå·å¤‰æ›´</h2>
+                <button class="modal-close" id="changePinModalClose">Ã—</button>
             </div>
             <form id="changePinForm" class="modal-body">
                 <div class="form-group">
-                    <label for="currentPin">現在の暗証番号</label>
-                    <input type="password" id="currentPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                    <label for="currentPin">ç¾åœ¨ã®æš—è¨¼ç•ªå·</label>
+                    <input type="password" id="currentPin" placeholder="â€¢â€¢â€¢â€¢" maxlength="4" pattern="[0-9]{4}"
                         inputmode="numeric" required>
                 </div>
                 <div class="form-group">
-                    <label for="newPin">新しい暗証番号</label>
-                    <input type="password" id="newPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                    <label for="newPin">æ–°ã—ã„æš—è¨¼ç•ªå·</label>
+                    <input type="password" id="newPin" placeholder="â€¢â€¢â€¢â€¢" maxlength="4" pattern="[0-9]{4}"
                         inputmode="numeric" required>
                 </div>
                 <div class="form-group">
-                    <label for="confirmPin">新しい暗証番号（確認）</label>
-                    <input type="password" id="confirmPin" placeholder="••••" maxlength="4" pattern="[0-9]{4}"
+                    <label for="confirmPin">æ–°ã—ã„æš—è¨¼ç•ªå·ï¼ˆç¢ºèªï¼‰</label>
+                    <input type="password" id="confirmPin" placeholder="â€¢â€¢â€¢â€¢" maxlength="4" pattern="[0-9]{4}"
                         inputmode="numeric" required>
                 </div>
                 <p id="changePinError" class="error-text" style="display: none;"></p>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="changePinCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">変更</button>
+                    <button type="button" class="btn btn-secondary" id="changePinCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">å¤‰æ›´</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- メッセージ一覧モーダル -->
+    <!-- ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ä¸€è¦§ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="messagesModalOverlay">
         <div class="modal modal-lg">
             <div class="modal-header">
-                <h2 class="modal-title">📩 メッセージ</h2>
-                <button class="modal-close" id="messagesModalClose">×</button>
+                <h2 class="modal-title">ðŸ“© ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸</h2>
+                <button class="modal-close" id="messagesModalClose">Ã—</button>
             </div>
             <div class="modal-body" id="messagesContent">
             </div>
         </div>
     </div>
 
-    <!-- 従業員追加/編集モーダル -->
+    <!-- å¾“æ¥­å“¡è¿½åŠ /ç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="employeeModalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="employeeModalTitle">👤 従業員追加</h2>
-                <button class="modal-close" id="employeeModalClose">×</button>
+                <h2 class="modal-title" id="employeeModalTitle">ðŸ‘¤ å¾“æ¥­å“¡è¿½åŠ </h2>
+                <button class="modal-close" id="employeeModalClose">Ã—</button>
             </div>
             <form id="employeeForm" class="modal-body">
                 <input type="hidden" id="editEmployeeId" value="">
                 <div class="form-group">
-                    <label for="employeeName">名前</label>
-                    <input type="text" id="employeeName" placeholder="例：田中太郎" required>
+                    <label for="employeeName">åå‰</label>
+                    <input type="text" id="employeeName" placeholder="ä¾‹ï¼šç”°ä¸­å¤ªéƒŽ" required>
                 </div>
                 <div class="form-group">
-                    <label for="employeeRole">役職</label>
+                    <label for="employeeRole">å½¹è·</label>
                     <select id="employeeRole" required>
-                        <option value="staff">スタッフ</option>
-                        <option value="shiftLeader">シフトリーダー</option>
-                        <option value="employee">社員</option>
-                        <option value="manager">マネージャー</option>
+                        <option value="staff">ã‚¹ã‚¿ãƒƒãƒ•</option>
+                        <option value="shiftLeader">ã‚·ãƒ•ãƒˆãƒªãƒ¼ãƒ€ãƒ¼</option>
+                        <option value="employee">ç¤¾å“¡</option>
+                        <option value="manager">ãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="employeeShiftTime">シフト時間帯</label>
+                    <label for="employeeShiftTime">ã‚·ãƒ•ãƒˆæ™‚é–“å¸¯</label>
                     <select id="employeeShiftTime" required>
-                        <option value="day">日勤</option>
-                        <option value="evening">夕勤</option>
-                        <option value="night">夜勤</option>
+                        <option value="day">æ—¥å‹¤</option>
+                        <option value="evening">å¤•å‹¤</option>
+                        <option value="night">å¤œå‹¤</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>発注担当分類（複数選択可）</label>
+                    <label>ç™ºæ³¨æ‹…å½“åˆ†é¡žï¼ˆè¤‡æ•°é¸æŠžå¯ï¼‰</label>
                     <div class="order-categories" id="orderCategories">
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="米飯">
-                            <span>米飯</span>
+                            <input type="checkbox" name="orderCategory" value="ç±³é£¯">
+                            <span>ç±³é£¯</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="調理パン">
-                            <span>調理パン</span>
+                            <input type="checkbox" name="orderCategory" value="èª¿ç†ãƒ‘ãƒ³">
+                            <span>èª¿ç†ãƒ‘ãƒ³</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="麺類その他">
-                            <span>麺類その他</span>
+                            <input type="checkbox" name="orderCategory" value="éººé¡žãã®ä»–">
+                            <span>éººé¡žãã®ä»–</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="デザート">
-                            <span>デザート</span>
+                            <input type="checkbox" name="orderCategory" value="ãƒ‡ã‚¶ãƒ¼ãƒˆ">
+                            <span>ãƒ‡ã‚¶ãƒ¼ãƒˆ</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="デリカテッセン（サラダ、惣菜）">
-                            <span>デリカテッセン（サラダ、惣菜）</span>
+                            <input type="checkbox" name="orderCategory" value="ãƒ‡ãƒªã‚«ãƒ†ãƒƒã‚»ãƒ³ï¼ˆã‚µãƒ©ãƒ€ã€æƒ£èœï¼‰">
+                            <span>ãƒ‡ãƒªã‚«ãƒ†ãƒƒã‚»ãƒ³ï¼ˆã‚µãƒ©ãƒ€ã€æƒ£èœï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="７Pデリカ">
-                            <span>７Pデリカ</span>
+                            <input type="checkbox" name="orderCategory" value="ï¼—Pãƒ‡ãƒªã‚«">
+                            <span>ï¼—Pãƒ‡ãƒªã‚«</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="デリテッセン（その他）">
-                            <span>デリテッセン（その他）</span>
+                            <input type="checkbox" name="orderCategory" value="ãƒ‡ãƒªãƒ†ãƒƒã‚»ãƒ³ï¼ˆãã®ä»–ï¼‰">
+                            <span>ãƒ‡ãƒªãƒ†ãƒƒã‚»ãƒ³ï¼ˆãã®ä»–ï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="牛乳乳飲料">
-                            <span>牛乳乳飲料</span>
+                            <input type="checkbox" name="orderCategory" value="ç‰›ä¹³ä¹³é£²æ–™">
+                            <span>ç‰›ä¹³ä¹³é£²æ–™</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="FF（おでん、中華まん）">
-                            <span>FF（おでん、中華まん）</span>
+                            <input type="checkbox" name="orderCategory" value="FFï¼ˆãŠã§ã‚“ã€ä¸­è¯ã¾ã‚“ï¼‰">
+                            <span>FFï¼ˆãŠã§ã‚“ã€ä¸­è¯ã¾ã‚“ï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="お菓子（チョコレート、和菓子類）">
-                            <span>お菓子（チョコレート、和菓子類）</span>
+                            <input type="checkbox" name="orderCategory" value="ãŠè“å­ï¼ˆãƒãƒ§ã‚³ãƒ¬ãƒ¼ãƒˆã€å’Œè“å­é¡žï¼‰">
+                            <span>ãŠè“å­ï¼ˆãƒãƒ§ã‚³ãƒ¬ãƒ¼ãƒˆã€å’Œè“å­é¡žï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="お菓子（グミ、駄菓子、飴類）">
-                            <span>お菓子（グミ、駄菓子、飴類）</span>
+                            <input type="checkbox" name="orderCategory" value="ãŠè“å­ï¼ˆã‚°ãƒŸã€é§„è“å­ã€é£´é¡žï¼‰">
+                            <span>ãŠè“å­ï¼ˆã‚°ãƒŸã€é§„è“å­ã€é£´é¡žï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="お菓子（ポテトチップス、箱スナック、米菓）">
-                            <span>お菓子（ポテトチップス、箱スナック、米菓）</span>
+                            <input type="checkbox" name="orderCategory" value="ãŠè“å­ï¼ˆãƒãƒ†ãƒˆãƒãƒƒãƒ—ã‚¹ã€ç®±ã‚¹ãƒŠãƒƒã‚¯ã€ç±³è“ï¼‰">
+                            <span>ãŠè“å­ï¼ˆãƒãƒ†ãƒˆãƒãƒƒãƒ—ã‚¹ã€ç®±ã‚¹ãƒŠãƒƒã‚¯ã€ç±³è“ï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="雑貨類">
-                            <span>雑貨類</span>
+                            <input type="checkbox" name="orderCategory" value="é›‘è²¨é¡ž">
+                            <span>é›‘è²¨é¡ž</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="消耗品">
-                            <span>消耗品</span>
+                            <input type="checkbox" name="orderCategory" value="æ¶ˆè€—å“">
+                            <span>æ¶ˆè€—å“</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="加工食品（調味料類、珍味）">
-                            <span>加工食品（調味料類、珍味）</span>
+                            <input type="checkbox" name="orderCategory" value="åŠ å·¥é£Ÿå“ï¼ˆèª¿å‘³æ–™é¡žã€çå‘³ï¼‰">
+                            <span>åŠ å·¥é£Ÿå“ï¼ˆèª¿å‘³æ–™é¡žã€çå‘³ï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="ドリンク類">
-                            <span>ドリンク類</span>
+                            <input type="checkbox" name="orderCategory" value="ãƒ‰ãƒªãƒ³ã‚¯é¡ž">
+                            <span>ãƒ‰ãƒªãƒ³ã‚¯é¡ž</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="フローズン（アイス、冷凍食品）">
-                            <span>フローズン（アイス、冷凍食品）</span>
+                            <input type="checkbox" name="orderCategory" value="ãƒ•ãƒ­ãƒ¼ã‚ºãƒ³ï¼ˆã‚¢ã‚¤ã‚¹ã€å†·å‡é£Ÿå“ï¼‰">
+                            <span>ãƒ•ãƒ­ãƒ¼ã‚ºãƒ³ï¼ˆã‚¢ã‚¤ã‚¹ã€å†·å‡é£Ÿå“ï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="フローズン（フライヤー、焼成パン）">
-                            <span>フローズン（フライヤー、焼成パン）</span>
+                            <input type="checkbox" name="orderCategory" value="ãƒ•ãƒ­ãƒ¼ã‚ºãƒ³ï¼ˆãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼ã€ç„¼æˆãƒ‘ãƒ³ï¼‰">
+                            <span>ãƒ•ãƒ­ãƒ¼ã‚ºãƒ³ï¼ˆãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼ã€ç„¼æˆãƒ‘ãƒ³ï¼‰</span>
                         </label>
                         <label class="category-checkbox">
-                            <input type="checkbox" name="orderCategory" value="タバコ">
-                            <span>タバコ</span>
+                            <input type="checkbox" name="orderCategory" value="ã‚¿ãƒã‚³">
+                            <span>ã‚¿ãƒã‚³</span>
                         </label>
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="employeeCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary" id="employeeSubmitBtn">追加</button>
+                    <button type="button" class="btn btn-secondary" id="employeeCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary" id="employeeSubmitBtn">è¿½åŠ </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 臨時シフト（特別イベント）モーダル -->
+    <!-- è‡¨æ™‚ã‚·ãƒ•ãƒˆï¼ˆç‰¹åˆ¥ã‚¤ãƒ™ãƒ³ãƒˆï¼‰ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="specialEventModalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="specialEventModalTitle">⚡ イベント日を追加</h2>
-                <button class="modal-close" id="specialEventModalClose">×</button>
+                <h2 class="modal-title" id="specialEventModalTitle">âš¡ ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‚’è¿½åŠ </h2>
+                <button class="modal-close" id="specialEventModalClose">Ã—</button>
             </div>
             <form id="specialEventForm" class="modal-body">
                 <input type="hidden" id="editSpecialEventId" value="">
                 <div class="form-group">
-                    <label for="specialEventDate">イベント日</label>
+                    <label for="specialEventDate">ã‚¤ãƒ™ãƒ³ãƒˆæ—¥</label>
                     <input type="date" id="specialEventDate" required>
                 </div>
                 <div class="form-group">
-                    <label for="specialEventName">イベント名</label>
-                    <input type="text" id="specialEventName" placeholder="例：棚卸し、店舗改装、特別セール" required>
+                    <label for="specialEventName">ã‚¤ãƒ™ãƒ³ãƒˆå</label>
+                    <input type="text" id="specialEventName" placeholder="ä¾‹ï¼šæ£šå¸ã—ã€åº—èˆ—æ”¹è£…ã€ç‰¹åˆ¥ã‚»ãƒ¼ãƒ«" required>
                 </div>
                 <div class="form-group">
-                    <label for="specialEventDescription">説明（任意）</label>
-                    <textarea id="specialEventDescription" rows="2" placeholder="イベントの詳細やメモ" style="width:100%;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:6px;padding:8px;font-size:0.9rem;resize:vertical;"></textarea>
+                    <label for="specialEventDescription">èª¬æ˜Žï¼ˆä»»æ„ï¼‰</label>
+                    <textarea id="specialEventDescription" rows="2" placeholder="ã‚¤ãƒ™ãƒ³ãƒˆã®è©³ç´°ã‚„ãƒ¡ãƒ¢" style="width:100%;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:6px;padding:8px;font-size:0.9rem;resize:vertical;"></textarea>
                 </div>
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="suppressFixedShifts" checked>
-                        <span class="checkbox-text">🚫 この日の固定シフトを停止する</span>
+                        <span class="checkbox-text">ðŸš« ã“ã®æ—¥ã®å›ºå®šã‚·ãƒ•ãƒˆã‚’åœæ­¢ã™ã‚‹</span>
                     </label>
-                    <p class="form-hint">チェックすると、固定シフトが非表示になり、手動で追加したシフトのみが表示されます</p>
+                    <p class="form-hint">ãƒã‚§ãƒƒã‚¯ã™ã‚‹ã¨ã€å›ºå®šã‚·ãƒ•ãƒˆãŒéžè¡¨ç¤ºã«ãªã‚Šã€æ‰‹å‹•ã§è¿½åŠ ã—ãŸã‚·ãƒ•ãƒˆã®ã¿ãŒè¡¨ç¤ºã•ã‚Œã¾ã™</p>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="specialEventCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary" id="specialEventSubmitBtn">追加</button>
+                    <button type="button" class="btn btn-secondary" id="specialEventCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary" id="specialEventSubmitBtn">è¿½åŠ </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 全員へ通知モーダル -->
+    <!-- å…¨å“¡ã¸é€šçŸ¥ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="broadcastModalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">📢 全員へ通知</h2>
-                <button class="modal-close" id="broadcastModalClose">×</button>
+                <h2 class="modal-title">ðŸ“¢ å…¨å“¡ã¸é€šçŸ¥</h2>
+                <button class="modal-close" id="broadcastModalClose">Ã—</button>
             </div>
             <form id="broadcastForm" class="modal-body">
                 <div class="form-group">
-                    <label for="broadcastTitle">件名</label>
-                    <input type="text" id="broadcastTitle" placeholder="例：来週のシフトについて" required>
+                    <label for="broadcastTitle">ä»¶å</label>
+                    <input type="text" id="broadcastTitle" placeholder="ä¾‹ï¼šæ¥é€±ã®ã‚·ãƒ•ãƒˆã«ã¤ã„ã¦" required>
                 </div>
                 <div class="form-group">
-                    <label for="broadcastMessage">メッセージ</label>
-                    <textarea id="broadcastMessage" placeholder="全従業員に送信するメッセージを入力してください" rows="5" required></textarea>
+                    <label for="broadcastMessage">ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸</label>
+                    <textarea id="broadcastMessage" placeholder="å…¨å¾“æ¥­å“¡ã«é€ä¿¡ã™ã‚‹ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„" rows="5" required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="broadcastCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">送信</button>
+                    <button type="button" class="btn btn-secondary" id="broadcastCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">é€ä¿¡</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- イベント追加/編集モーダル -->
+    <!-- ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ /ç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ« -->
     <div class="modal-overlay" id="eventModalOverlay">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="eventModalTitle">📅 イベント追加</h2>
-                <button class="modal-close" id="eventModalClose">×</button>
+                <h2 class="modal-title" id="eventModalTitle">ðŸ“… ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ </h2>
+                <button class="modal-close" id="eventModalClose">Ã—</button>
             </div>
             <form id="eventForm" class="modal-body">
                 <input type="hidden" id="editEventId" value="">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="eventStartDate">開始日</label>
+                        <label for="eventStartDate">é–‹å§‹æ—¥</label>
                         <input type="date" id="eventStartDate" required>
                     </div>
                     <div class="form-group">
-                        <label for="eventEndDate">終了日</label>
+                        <label for="eventEndDate">çµ‚äº†æ—¥</label>
                         <input type="date" id="eventEndDate" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="eventType">タイプ</label>
+                    <label for="eventType">ã‚¿ã‚¤ãƒ—</label>
                     <select id="eventType" required>
-                        <option value="sale">🏷️ セール</option>
-                        <option value="notice">📢 連絡事項</option>
-                        <option value="training">📚 研修</option>
-                        <option value="inventory">📦 棚卸</option>
-                        <option value="delivery">🚚 特発納品</option>
-                        <option value="other">📌 その他</option>
+                        <option value="sale">ðŸ·ï¸ ã‚»ãƒ¼ãƒ«</option>
+                        <option value="notice">ðŸ“¢ é€£çµ¡äº‹é …</option>
+                        <option value="training">ðŸ“š ç ”ä¿®</option>
+                        <option value="inventory">ðŸ“¦ æ£šå¸</option>
+                        <option value="delivery">ðŸšš ç‰¹ç™ºç´å“</option>
+                        <option value="other">ðŸ“Œ ãã®ä»–</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="eventTitle">タイトル</label>
-                    <input type="text" id="eventTitle" placeholder="例：タイムセール" required>
+                    <label for="eventTitle">ã‚¿ã‚¤ãƒˆãƒ«</label>
+                    <input type="text" id="eventTitle" placeholder="ä¾‹ï¼šã‚¿ã‚¤ãƒ ã‚»ãƒ¼ãƒ«" required>
                 </div>
                 <div class="form-group">
-                    <label for="eventDescription">詳細</label>
-                    <textarea id="eventDescription" placeholder="例：16:00〜18:00 全品10%OFF" rows="3"></textarea>
+                    <label for="eventDescription">è©³ç´°</label>
+                    <textarea id="eventDescription" placeholder="ä¾‹ï¼š16:00ã€œ18:00 å…¨å“10%OFF" rows="3"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="eventCancelBtn">キャンセル</button>
-                    <button type="submit" class="btn btn-primary" id="eventSubmitBtn">追加</button>
+                    <button type="button" class="btn btn-secondary" id="eventCancelBtn">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary" id="eventSubmitBtn">è¿½åŠ </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- イベント詳細ポップオーバー -->
+    <!-- ã‚¤ãƒ™ãƒ³ãƒˆè©³ç´°ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ -->
     <div class="event-popover" id="eventPopover">
         <div class="popover-content">
             <div class="popover-header">
-                <span class="popover-title" id="eventPopoverTitle">イベント詳細</span>
-                <button class="popover-close" id="eventPopoverClose">×</button>
+                <span class="popover-title" id="eventPopoverTitle">ã‚¤ãƒ™ãƒ³ãƒˆè©³ç´°</span>
+                <button class="popover-close" id="eventPopoverClose">Ã—</button>
             </div>
             <div class="popover-body" id="eventPopoverBody">
+            </div>
+        </div>
+    </div>
+
+    <!-- 業務内容（タスク）管理モーダル -->
+    <div class="modal-overlay" id="taskModalOverlay">
+        <div class="modal" style="max-width:520px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="taskModalTitle">📋 業務内容を管理</h2>
+                <button class="modal-close" id="taskModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="taskShiftInfo" style="background:var(--bg-tertiary);padding:12px 14px;border-radius:8px;margin-bottom:14px;">
+                    <div style="font-weight:600;font-size:0.95rem;" id="taskShiftInfoText"></div>
+                </div>
+                <div id="taskList" style="margin-bottom:16px;"></div>
+                <div style="border:1px solid var(--border);border-radius:8px;padding:16px;background:var(--bg-secondary);">
+                    <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:12px;margin-top:0;color:var(--text-secondary);">➕ 業務を追加</h3>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label for="taskName" style="font-size:0.85rem;">業務名</label>
+                        <input type="text" id="taskName" placeholder="例：シフトフォロー、商品展示会" style="width:100%;padding:8px 12px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+                    <div class="form-row" style="gap:10px;margin-bottom:10px;">
+                        <div class="form-group" style="flex:1;">
+                            <label for="taskStartHour" style="font-size:0.85rem;">開始</label>
+                            <select id="taskStartHour" style="width:100%;padding:8px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;font-size:0.9rem;"></select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="taskEndHour" style="font-size:0.85rem;">終了</label>
+                            <select id="taskEndHour" style="width:100%;padding:8px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;font-size:0.9rem;"></select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label style="font-size:0.85rem;">業務カラー</label>
+                        <div id="taskColorPicker" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                            <button type="button" class="task-color-option selected" data-color="#10b981" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#10b981;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#f59e0b" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#f59e0b;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#ef4444" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#ef4444;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#3b82f6" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#3b82f6;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#8b5cf6" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#8b5cf6;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#ec4899" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#ec4899;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#14b8a6" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#14b8a6;cursor:pointer;"></button>
+                            <button type="button" class="task-color-option" data-color="#f97316" style="width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:#f97316;cursor:pointer;"></button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="addTaskBtn" style="width:100%;">追加</button>
+                </div>
+                <div class="modal-actions" style="margin-top:16px;">
+                    <button type="button" class="btn btn-secondary" id="taskModalCancelBtn">閉じる</button>
+                </div>
             </div>
         </div>
     </div>

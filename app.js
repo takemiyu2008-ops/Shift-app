@@ -1,4 +1,4 @@
-// Firebase設定
+// Firebaseè¨­å®š
 const firebaseConfig = {
     apiKey: "AIzaSyBBNxYD46f-HPoeHo0JlBqIDiZs8_E7l_k",
     authDomain: "shift-app-956a0.firebaseapp.com",
@@ -10,73 +10,73 @@ const firebaseConfig = {
     measurementId: "G-002NDWGWGL"
 };
 
-// Firebase初期化
+// FirebaseåˆæœŸåŒ–
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 // ==========================================
-// 認証機能コード（従業員番号対応版）
+// èªè¨¼æ©Ÿèƒ½ã‚³ãƒ¼ãƒ‰ï¼ˆå¾“æ¥­å“¡ç•ªå·å¯¾å¿œç‰ˆï¼‰
 // ==========================================
 
-// Firebase Auth の初期化（firebase.initializeApp の後に追加）
+// Firebase Auth ã®åˆæœŸåŒ–ï¼ˆfirebase.initializeApp ã®å¾Œã«è¿½åŠ ï¼‰
 const auth = firebase.auth();
 
-// 現在のユーザー情報を保持
+// ç¾åœ¨ã®ãƒ¦ãƒ¼ã‚¶ãƒ¼æƒ…å ±ã‚’ä¿æŒ
 let currentUser = null;
 
-// 従業員番号をメールアドレスに変換
+// å¾“æ¥­å“¡ç•ªå·ã‚’ãƒ¡ãƒ¼ãƒ«ã‚¢ãƒ‰ãƒ¬ã‚¹ã«å¤‰æ›
 function staffIdToEmail(staffId) {
     return staffId + '@staff.local';
 }
 
-// パスワードを6文字以上に変換
+// ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã‚’6æ–‡å­—ä»¥ä¸Šã«å¤‰æ›
 function convertPassword(password) {
     return password + 'pw';
 }
 
-// 認証状態の監視
+// èªè¨¼çŠ¶æ…‹ã®ç›£è¦–
 auth.onAuthStateChanged((user) => {
     if (user) {
-        // ログイン済み
+        // ãƒ­ã‚°ã‚¤ãƒ³æ¸ˆã¿
         currentUser = user;
-        console.log('ログイン済み:', user.email);
+        console.log('ãƒ­ã‚°ã‚¤ãƒ³æ¸ˆã¿:', user.email);
         
-        // UIを表示
+        // UIã‚’è¡¨ç¤º
         document.getElementById('authContainer').classList.remove('show');
         document.getElementById('appContainer').classList.remove('hidden');
         document.getElementById('logoutBtnContainer').style.display = 'block';
         
-        // データベースにユーザー情報を保存（初回のみ）
+        // ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã«ãƒ¦ãƒ¼ã‚¶ãƒ¼æƒ…å ±ã‚’ä¿å­˜ï¼ˆåˆå›žã®ã¿ï¼‰
         const userRef = database.ref('users/' + user.uid);
         userRef.once('value', (snapshot) => {
             if (!snapshot.exists()) {
-                // 新規ユーザーの場合、データベースに登録
+                // æ–°è¦ãƒ¦ãƒ¼ã‚¶ãƒ¼ã®å ´åˆã€ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã«ç™»éŒ²
                 const staffId = user.email.split('@')[0];
                 userRef.set({
                     staffId: staffId,
-                    displayName: user.displayName || '従業員' + staffId,
+                    displayName: user.displayName || 'å¾“æ¥­å“¡' + staffId,
                     createdAt: new Date().toISOString()
                 });
             }
         });
         
-        // 既存の初期化処理を実行
+        // æ—¢å­˜ã®åˆæœŸåŒ–å‡¦ç†ã‚’å®Ÿè¡Œ
         if (typeof initApp === 'function') {
             initApp();
         }
         
     } else {
-        // 未ログイン
+        // æœªãƒ­ã‚°ã‚¤ãƒ³
         currentUser = null;
-        console.log('未ログイン');
+        console.log('æœªãƒ­ã‚°ã‚¤ãƒ³');
         
-        // ログイン画面を表示
+        // ãƒ­ã‚°ã‚¤ãƒ³ç”»é¢ã‚’è¡¨ç¤º
         document.getElementById('authContainer').classList.add('show');
         document.getElementById('appContainer').classList.add('hidden');
         document.getElementById('logoutBtnContainer').style.display = 'none';
     }
 });
 
-// エラーメッセージを表示
+// ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’è¡¨ç¤º
 function showAuthError(message) {
     const errorEl = document.getElementById('authError');
     errorEl.textContent = message;
@@ -86,7 +86,7 @@ function showAuthError(message) {
     }, 5000);
 }
 
-// ログイン/登録モードの切り替え
+// ãƒ­ã‚°ã‚¤ãƒ³/ç™»éŒ²ãƒ¢ãƒ¼ãƒ‰ã®åˆ‡ã‚Šæ›¿ãˆ
 let isLoginMode = true;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -97,55 +97,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const authSubtitle = document.getElementById('authSubtitle');
     const logoutBtn = document.getElementById('logoutBtn');
     
-    // 従業員番号の入力制限（3桁の数字のみ）
+    // å¾“æ¥­å“¡ç•ªå·ã®å…¥åŠ›åˆ¶é™ï¼ˆ3æ¡ã®æ•°å­—ã®ã¿ï¼‰
     const staffIdInputs = document.querySelectorAll('.staff-id-input');
     staffIdInputs.forEach(input => {
         input.addEventListener('input', (e) => {
-            // 数字のみ許可
+            // æ•°å­—ã®ã¿è¨±å¯
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
-            // 3桁まで
+            // 3æ¡ã¾ã§
             if (e.target.value.length > 3) {
                 e.target.value = e.target.value.slice(0, 3);
             }
         });
     });
     
-    // パスワードの入力制限（4桁の数字のみ）
+    // ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã®å…¥åŠ›åˆ¶é™ï¼ˆ4æ¡ã®æ•°å­—ã®ã¿ï¼‰
     const passwordInputs = document.querySelectorAll('.password-input');
     passwordInputs.forEach(input => {
         input.addEventListener('input', (e) => {
-            // 数字のみ許可
+            // æ•°å­—ã®ã¿è¨±å¯
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
-            // 4桁まで
+            // 4æ¡ã¾ã§
             if (e.target.value.length > 4) {
                 e.target.value = e.target.value.slice(0, 4);
             }
         });
     });
     
-    // ログイン/登録の切り替え
+    // ãƒ­ã‚°ã‚¤ãƒ³/ç™»éŒ²ã®åˆ‡ã‚Šæ›¿ãˆ
     toggleAuthMode.addEventListener('click', () => {
         isLoginMode = !isLoginMode;
         
         if (isLoginMode) {
             loginForm.style.display = 'flex';
             registerForm.style.display = 'none';
-            authSubtitle.textContent = 'ログインしてください';
-            toggleText.textContent = 'まだ登録していない方は';
-            toggleAuthMode.textContent = '新規登録';
+            authSubtitle.textContent = 'ãƒ­ã‚°ã‚¤ãƒ³ã—ã¦ãã ã•ã„';
+            toggleText.textContent = 'ã¾ã ç™»éŒ²ã—ã¦ã„ãªã„æ–¹ã¯';
+            toggleAuthMode.textContent = 'æ–°è¦ç™»éŒ²';
         } else {
             loginForm.style.display = 'none';
             registerForm.style.display = 'flex';
-            authSubtitle.textContent = '新規アカウント作成';
-            toggleText.textContent = 'すでに登録済みの方は';
-            toggleAuthMode.textContent = 'ログイン';
+            authSubtitle.textContent = 'æ–°è¦ã‚¢ã‚«ã‚¦ãƒ³ãƒˆä½œæˆ';
+            toggleText.textContent = 'ã™ã§ã«ç™»éŒ²æ¸ˆã¿ã®æ–¹ã¯';
+            toggleAuthMode.textContent = 'ãƒ­ã‚°ã‚¤ãƒ³';
         }
         
-        // エラーメッセージをクリア
+        // ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’ã‚¯ãƒªã‚¢
         document.getElementById('authError').classList.remove('show');
     });
     
-    // ログイン処理
+    // ãƒ­ã‚°ã‚¤ãƒ³å‡¦ç†
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -153,56 +153,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('loginPassword').value.trim();
         const submitBtn = loginForm.querySelector('button[type="submit"]');
         
-        // 入力チェック
+        // å…¥åŠ›ãƒã‚§ãƒƒã‚¯
         if (staffId.length !== 3) {
-            showAuthError('従業員番号は3桁で入力してください');
+            showAuthError('å¾“æ¥­å“¡ç•ªå·ã¯3æ¡ã§å…¥åŠ›ã—ã¦ãã ã•ã„');
             return;
         }
         if (password.length !== 4) {
-            showAuthError('パスワードは4桁で入力してください');
+            showAuthError('ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã¯4æ¡ã§å…¥åŠ›ã—ã¦ãã ã•ã„');
             return;
         }
         
         try {
             submitBtn.disabled = true;
-            submitBtn.textContent = 'ログイン中...';
+            submitBtn.textContent = 'ãƒ­ã‚°ã‚¤ãƒ³ä¸­...';
             
             const email = staffIdToEmail(staffId);
             const fullPassword = convertPassword(password);
             
             await auth.signInWithEmailAndPassword(email, fullPassword);
-            // ログイン成功（onAuthStateChangedで処理される）
+            // ãƒ­ã‚°ã‚¤ãƒ³æˆåŠŸï¼ˆonAuthStateChangedã§å‡¦ç†ã•ã‚Œã‚‹ï¼‰
             
         } catch (error) {
-            console.error('ログインエラー:', error);
-            let errorMessage = 'ログインに失敗しました';
+            console.error('ãƒ­ã‚°ã‚¤ãƒ³ã‚¨ãƒ©ãƒ¼:', error);
+            let errorMessage = 'ãƒ­ã‚°ã‚¤ãƒ³ã«å¤±æ•—ã—ã¾ã—ãŸ';
             
             switch (error.code) {
                 case 'auth/user-not-found':
-                    errorMessage = '従業員番号またはパスワードが間違っています';
+                    errorMessage = 'å¾“æ¥­å“¡ç•ªå·ã¾ãŸã¯ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ãŒé–“é•ã£ã¦ã„ã¾ã™';
                     break;
                 case 'auth/wrong-password':
-                    errorMessage = '従業員番号またはパスワードが間違っています';
+                    errorMessage = 'å¾“æ¥­å“¡ç•ªå·ã¾ãŸã¯ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ãŒé–“é•ã£ã¦ã„ã¾ã™';
                     break;
                 case 'auth/invalid-credential':
-                    errorMessage = '従業員番号またはパスワードが間違っています';
+                    errorMessage = 'å¾“æ¥­å“¡ç•ªå·ã¾ãŸã¯ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ãŒé–“é•ã£ã¦ã„ã¾ã™';
                     break;
                 case 'auth/network-request-failed':
-                    errorMessage = 'ネットワークエラーが発生しました';
+                    errorMessage = 'ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ';
                     break;
                 case 'auth/too-many-requests':
-                    errorMessage = 'ログイン試行回数が多すぎます。しばらく待ってから再度お試しください';
+                    errorMessage = 'ãƒ­ã‚°ã‚¤ãƒ³è©¦è¡Œå›žæ•°ãŒå¤šã™ãŽã¾ã™ã€‚ã—ã°ã‚‰ãå¾…ã£ã¦ã‹ã‚‰å†åº¦ãŠè©¦ã—ãã ã•ã„';
                     break;
             }
             
             showAuthError(errorMessage);
         } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'ログイン';
+            submitBtn.textContent = 'ãƒ­ã‚°ã‚¤ãƒ³';
         }
     });
     
-    // 新規登録処理
+    // æ–°è¦ç™»éŒ²å‡¦ç†
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -211,101 +211,101 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('registerPassword').value.trim();
         const submitBtn = registerForm.querySelector('button[type="submit"]');
         
-        // 入力チェック
+        // å…¥åŠ›ãƒã‚§ãƒƒã‚¯
         if (!name) {
-            showAuthError('名前を入力してください');
+            showAuthError('åå‰ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„');
             return;
         }
         if (staffId.length !== 3) {
-            showAuthError('従業員番号は3桁で入力してください');
+            showAuthError('å¾“æ¥­å“¡ç•ªå·ã¯3æ¡ã§å…¥åŠ›ã—ã¦ãã ã•ã„');
             return;
         }
         if (password.length !== 4) {
-            showAuthError('パスワードは4桁で入力してください');
+            showAuthError('ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã¯4æ¡ã§å…¥åŠ›ã—ã¦ãã ã•ã„');
             return;
         }
         
         try {
             submitBtn.disabled = true;
-            submitBtn.textContent = '登録中...';
+            submitBtn.textContent = 'ç™»éŒ²ä¸­...';
             
             const email = staffIdToEmail(staffId);
             const fullPassword = convertPassword(password);
             
             const userCredential = await auth.createUserWithEmailAndPassword(email, fullPassword);
             
-            // 表示名を設定
+            // è¡¨ç¤ºåã‚’è¨­å®š
             await userCredential.user.updateProfile({
                 displayName: name
             });
             
-            // データベースにユーザー情報を保存
+            // ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã«ãƒ¦ãƒ¼ã‚¶ãƒ¼æƒ…å ±ã‚’ä¿å­˜
             await database.ref('users/' + userCredential.user.uid).set({
                 staffId: staffId,
                 displayName: name,
                 createdAt: new Date().toISOString()
             });
             
-            // 登録成功（onAuthStateChangedで処理される）
+            // ç™»éŒ²æˆåŠŸï¼ˆonAuthStateChangedã§å‡¦ç†ã•ã‚Œã‚‹ï¼‰
             
         } catch (error) {
-            console.error('登録エラー:', error);
-            let errorMessage = 'アカウント登録に失敗しました';
+            console.error('ç™»éŒ²ã‚¨ãƒ©ãƒ¼:', error);
+            let errorMessage = 'ã‚¢ã‚«ã‚¦ãƒ³ãƒˆç™»éŒ²ã«å¤±æ•—ã—ã¾ã—ãŸ';
             
             switch (error.code) {
                 case 'auth/email-already-in-use':
-                    errorMessage = 'この従業員番号は既に使用されています';
+                    errorMessage = 'ã“ã®å¾“æ¥­å“¡ç•ªå·ã¯æ—¢ã«ä½¿ç”¨ã•ã‚Œã¦ã„ã¾ã™';
                     break;
                 case 'auth/operation-not-allowed':
-                    errorMessage = 'メール/パスワード認証が有効になっていません';
+                    errorMessage = 'ãƒ¡ãƒ¼ãƒ«/ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰èªè¨¼ãŒæœ‰åŠ¹ã«ãªã£ã¦ã„ã¾ã›ã‚“';
                     break;
                 case 'auth/network-request-failed':
-                    errorMessage = 'ネットワークエラーが発生しました';
+                    errorMessage = 'ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ';
                     break;
             }
             
             showAuthError(errorMessage);
         } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = '新規登録';
+            submitBtn.textContent = 'æ–°è¦ç™»éŒ²';
         }
     });
     
-    // ログアウト処理
+    // ãƒ­ã‚°ã‚¢ã‚¦ãƒˆå‡¦ç†
     logoutBtn.addEventListener('click', async () => {
-        if (confirm('ログアウトしますか？')) {
+        if (confirm('ãƒ­ã‚°ã‚¢ã‚¦ãƒˆã—ã¾ã™ã‹ï¼Ÿ')) {
             try {
                 await auth.signOut();
-                // ログアウト成功（onAuthStateChangedで処理される）
+                // ãƒ­ã‚°ã‚¢ã‚¦ãƒˆæˆåŠŸï¼ˆonAuthStateChangedã§å‡¦ç†ã•ã‚Œã‚‹ï¼‰
             } catch (error) {
-                console.error('ログアウトエラー:', error);
-                alert('ログアウトに失敗しました');
+                console.error('ãƒ­ã‚°ã‚¢ã‚¦ãƒˆã‚¨ãƒ©ãƒ¼:', error);
+                alert('ãƒ­ã‚°ã‚¢ã‚¦ãƒˆã«å¤±æ•—ã—ã¾ã—ãŸ');
             }
         }
     });
 });
 
-// 既存のコードとの統合用：initApp関数を作成（必要に応じて既存の初期化コードを移動）
+// æ—¢å­˜ã®ã‚³ãƒ¼ãƒ‰ã¨ã®çµ±åˆç”¨ï¼šinitAppé–¢æ•°ã‚’ä½œæˆï¼ˆå¿…è¦ã«å¿œã˜ã¦æ—¢å­˜ã®åˆæœŸåŒ–ã‚³ãƒ¼ãƒ‰ã‚’ç§»å‹•ï¼‰
 // function initApp() {
-//     // 既存の初期化処理をここに移動
+//     // æ—¢å­˜ã®åˆæœŸåŒ–å‡¦ç†ã‚’ã“ã“ã«ç§»å‹•
 // }
 
 
 
-// 設定
+// è¨­å®š
 let CONFIG = { ADMIN_PIN: '1234' };
 
-// Firebaseから暗証番号を読み込み
+// Firebaseã‹ã‚‰æš—è¨¼ç•ªå·ã‚’èª­ã¿è¾¼ã¿
 database.ref('settings/adminPin').once('value', snap => {
     if (snap.val()) CONFIG.ADMIN_PIN = snap.val();
 });
 
-// 状態管理
+// çŠ¶æ…‹ç®¡ç†
 const state = {
     currentWeekStart: getWeekStart(new Date()),
     shifts: [],
     fixedShifts: [],
-    shiftOverrides: [], // 固定シフトの単日上書き
+    shiftOverrides: [], // å›ºå®šã‚·ãƒ•ãƒˆã®å˜æ—¥ä¸Šæ›¸ã
     changeRequests: [],
     leaveRequests: [],
     holidayRequests: [],
@@ -313,10 +313,10 @@ const state = {
     messages: [],
     swapRequests: [],
     dailyEvents: [],
-    nonDailyAdvice: [], // 非デイリー発注アドバイス
-    trendReports: [], // コンビニ3社 新商品ヒット予測レポート
-    newProductReports: [], // 週次インテリジェンス（マクロ環境）
-    weatherData: {}, // 日付別の天気データ
+    nonDailyAdvice: [], // éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹
+    trendReports: [], // ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ
+    newProductReports: [], // é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰
+    weatherData: {}, // æ—¥ä»˜åˆ¥ã®å¤©æ°—ãƒ‡ãƒ¼ã‚¿
     selectedColor: '#6366f1',
     isAdmin: false,
     activeAdminTab: 'shiftChanges',
@@ -324,71 +324,71 @@ const state = {
     isConnected: false,
     zoomLevel: 100,
     currentPopoverShift: null,
-    eventTypeFilter: 'all', // 店舗スケジュールのタイプフィルター
-    nonDailyFilter: 'all', // 非デイリーアドバイスのカテゴリフィルター
-    dailyChecklist: {}, // カテゴリ別日次チェックリスト
-    categoryMemos: [], // カテゴリ別メモ
-    selectedAdvisorCategory: null, // 選択中のアドバイザーカテゴリ
-    productCategories: [], // 商品分類データ（PMA/情報分類/小分類）
-    selectedPmaId: null, // 選択中のPMA ID
-    usageStats: [], // 利用統計データ
-    specialEvents: [] // 臨時シフト用イベント日
+    eventTypeFilter: 'all', // åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ã‚¿ã‚¤ãƒ—ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
+    nonDailyFilter: 'all', // éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã®ã‚«ãƒ†ã‚´ãƒªãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
+    dailyChecklist: {}, // ã‚«ãƒ†ã‚´ãƒªåˆ¥æ—¥æ¬¡ãƒã‚§ãƒƒã‚¯ãƒªã‚¹ãƒˆ
+    categoryMemos: [], // ã‚«ãƒ†ã‚´ãƒªåˆ¥ãƒ¡ãƒ¢
+    selectedAdvisorCategory: null, // é¸æŠžä¸­ã®ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã‚«ãƒ†ã‚´ãƒª
+    productCategories: [], // å•†å“åˆ†é¡žãƒ‡ãƒ¼ã‚¿ï¼ˆPMA/æƒ…å ±åˆ†é¡ž/å°åˆ†é¡žï¼‰
+    selectedPmaId: null, // é¸æŠžä¸­ã®PMA ID
+    usageStats: [], // åˆ©ç”¨çµ±è¨ˆãƒ‡ãƒ¼ã‚¿
+    specialEvents: [] // è‡¨æ™‚ã‚·ãƒ•ãƒˆç”¨ã‚¤ãƒ™ãƒ³ãƒˆæ—¥
 };
 
-// 利用統計の機能カテゴリ定義
+// åˆ©ç”¨çµ±è¨ˆã®æ©Ÿèƒ½ã‚«ãƒ†ã‚´ãƒªå®šç¾©
 const USAGE_FEATURES = {
-    // アプリ閲覧
-    'app_view': { name: 'アプリ閲覧', category: 'アクセス', icon: '👁️' },
-    // シフト関連
-    'view_shift': { name: 'シフト表閲覧', category: 'シフト管理', icon: '📅' },
-    'add_shift': { name: 'シフト追加', category: 'シフト管理', icon: '➕' },
-    'edit_shift': { name: 'シフト編集', category: 'シフト管理', icon: '✏️' },
-    'delete_shift': { name: 'シフト削除', category: 'シフト管理', icon: '🗑️' },
-    'request_change': { name: 'シフト変更申請', category: 'シフト管理', icon: '🔄' },
-    'request_swap': { name: 'シフト交代依頼', category: 'シフト管理', icon: '🤝' },
-    'request_leave': { name: '有給申請', category: 'シフト管理', icon: '🏖️' },
-    'request_holiday': { name: '休日申請', category: 'シフト管理', icon: '🏠' },
-    'create_halfday': { name: '半休作成', category: 'シフト管理', icon: '🌅' },
-    'add_special_event': { name: '臨時シフトイベント追加', category: 'シフト管理', icon: '⚡' },
-    // 発注・スケジュール管理
-    'view_order_advice': { name: '発注アドバイス閲覧', category: '発注・スケジュール管理', icon: '📦' },
-    'submit_order_feedback': { name: '発注フィードバック送信', category: '発注・スケジュール管理', icon: '📝' },
-    'view_daily_checklist': { name: '日次チェックリスト確認', category: '発注・スケジュール管理', icon: '✅' },
-    'update_daily_checklist': { name: '日次チェックリスト更新', category: '発注・スケジュール管理', icon: '☑️' },
-    // 非デイリー発注参考情報
-    'view_non_daily': { name: '非デイリー参考情報閲覧', category: '非デイリー発注参考情報', icon: '📈' },
-    'add_non_daily': { name: '非デイリー参考情報追加', category: '非デイリー発注参考情報', icon: '➕' },
-    'edit_non_daily': { name: '非デイリー参考情報編集', category: '非デイリー発注参考情報', icon: '✏️' },
-    'delete_non_daily': { name: '非デイリー参考情報削除', category: '非デイリー発注参考情報', icon: '🗑️' },
-    // 店舗スケジュール
-    'view_daily_events': { name: '店舗スケジュール閲覧', category: '店舗スケジュール', icon: '📅' },
-    'add_daily_event': { name: '店舗スケジュール追加', category: '店舗スケジュール', icon: '➕' },
-    'edit_daily_event': { name: '店舗スケジュール編集', category: '店舗スケジュール', icon: '✏️' },
-    'delete_daily_event': { name: '店舗スケジュール削除', category: '店舗スケジュール', icon: '🗑️' },
-    // レポート
-    'view_trend_report': { name: 'トレンドレポート閲覧', category: 'レポート', icon: '📊' },
-    'add_trend_report': { name: 'トレンドレポート追加', category: 'レポート', icon: '➕' },
-    'edit_trend_report': { name: 'トレンドレポート編集', category: 'レポート', icon: '✏️' },
-    'delete_trend_report': { name: 'トレンドレポート削除', category: 'レポート', icon: '🗑️' },
-    'view_new_product': { name: '週次インテリジェンス（マクロ環境）閲覧', category: 'レポート', icon: '🆕' },
-    'add_new_product': { name: '週次インテリジェンス（マクロ環境）追加', category: 'レポート', icon: '➕' },
-    'edit_new_product': { name: '週次インテリジェンス（マクロ環境）編集', category: 'レポート', icon: '✏️' },
-    'delete_new_product': { name: '週次インテリジェンス（マクロ環境）削除', category: 'レポート', icon: '🗑️' },
-    // メッセージ
-    'view_messages': { name: 'メッセージ確認', category: 'コミュニケーション', icon: '📩' },
-    'send_broadcast': { name: '全員へ通知送信', category: 'コミュニケーション', icon: '📢' },
-    // 管理者機能
-    'admin_approve': { name: '申請承認', category: '管理者', icon: '✅' },
-    'admin_reject': { name: '申請却下', category: '管理者', icon: '❌' },
-    'manage_employees': { name: '従業員管理', category: '管理者', icon: '👥' },
-    'view_feedback_stats': { name: 'フィードバック集計閲覧', category: '管理者', icon: '📊' },
-    'manage_product_categories': { name: '商品分類管理', category: '管理者', icon: '📂' },
-    // その他
-    'export_pdf': { name: 'PDF出力', category: 'その他', icon: '📄' },
-    'print_shift': { name: 'シフト表印刷', category: 'その他', icon: '🖨️' }
+    // ã‚¢ãƒ—ãƒªé–²è¦§
+    'app_view': { name: 'ã‚¢ãƒ—ãƒªé–²è¦§', category: 'ã‚¢ã‚¯ã‚»ã‚¹', icon: 'ðŸ‘ï¸' },
+    // ã‚·ãƒ•ãƒˆé–¢é€£
+    'view_shift': { name: 'ã‚·ãƒ•ãƒˆè¡¨é–²è¦§', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸ“…' },
+    'add_shift': { name: 'ã‚·ãƒ•ãƒˆè¿½åŠ ', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'âž•' },
+    'edit_shift': { name: 'ã‚·ãƒ•ãƒˆç·¨é›†', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'âœï¸' },
+    'delete_shift': { name: 'ã‚·ãƒ•ãƒˆå‰Šé™¤', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸ—‘ï¸' },
+    'request_change': { name: 'ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸ”„' },
+    'request_swap': { name: 'ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸ¤' },
+    'request_leave': { name: 'æœ‰çµ¦ç”³è«‹', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸ–ï¸' },
+    'request_holiday': { name: 'ä¼‘æ—¥ç”³è«‹', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸ ' },
+    'create_halfday': { name: 'åŠä¼‘ä½œæˆ', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'ðŸŒ…' },
+    'add_special_event': { name: 'è‡¨æ™‚ã‚·ãƒ•ãƒˆã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ ', category: 'ã‚·ãƒ•ãƒˆç®¡ç†', icon: 'âš¡' },
+    // ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†
+    'view_order_advice': { name: 'ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹é–²è¦§', category: 'ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†', icon: 'ðŸ“¦' },
+    'submit_order_feedback': { name: 'ç™ºæ³¨ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é€ä¿¡', category: 'ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†', icon: 'ðŸ“' },
+    'view_daily_checklist': { name: 'æ—¥æ¬¡ãƒã‚§ãƒƒã‚¯ãƒªã‚¹ãƒˆç¢ºèª', category: 'ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†', icon: 'âœ…' },
+    'update_daily_checklist': { name: 'æ—¥æ¬¡ãƒã‚§ãƒƒã‚¯ãƒªã‚¹ãƒˆæ›´æ–°', category: 'ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†', icon: 'â˜‘ï¸' },
+    // éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±
+    'view_non_daily': { name: 'éžãƒ‡ã‚¤ãƒªãƒ¼å‚è€ƒæƒ…å ±é–²è¦§', category: 'éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±', icon: 'ðŸ“ˆ' },
+    'add_non_daily': { name: 'éžãƒ‡ã‚¤ãƒªãƒ¼å‚è€ƒæƒ…å ±è¿½åŠ ', category: 'éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±', icon: 'âž•' },
+    'edit_non_daily': { name: 'éžãƒ‡ã‚¤ãƒªãƒ¼å‚è€ƒæƒ…å ±ç·¨é›†', category: 'éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±', icon: 'âœï¸' },
+    'delete_non_daily': { name: 'éžãƒ‡ã‚¤ãƒªãƒ¼å‚è€ƒæƒ…å ±å‰Šé™¤', category: 'éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±', icon: 'ðŸ—‘ï¸' },
+    // åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«
+    'view_daily_events': { name: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«é–²è¦§', category: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«', icon: 'ðŸ“…' },
+    'add_daily_event': { name: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«è¿½åŠ ', category: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«', icon: 'âž•' },
+    'edit_daily_event': { name: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç·¨é›†', category: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«', icon: 'âœï¸' },
+    'delete_daily_event': { name: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«å‰Šé™¤', category: 'åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«', icon: 'ðŸ—‘ï¸' },
+    // ãƒ¬ãƒãƒ¼ãƒˆ
+    'view_trend_report': { name: 'ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆé–²è¦§', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'ðŸ“Š' },
+    'add_trend_report': { name: 'ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆè¿½åŠ ', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'âž•' },
+    'edit_trend_report': { name: 'ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆç·¨é›†', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'âœï¸' },
+    'delete_trend_report': { name: 'ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆå‰Šé™¤', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'ðŸ—‘ï¸' },
+    'view_new_product': { name: 'é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰é–²è¦§', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'ðŸ†•' },
+    'add_new_product': { name: 'é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰è¿½åŠ ', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'âž•' },
+    'edit_new_product': { name: 'é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ç·¨é›†', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'âœï¸' },
+    'delete_new_product': { name: 'é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰å‰Šé™¤', category: 'ãƒ¬ãƒãƒ¼ãƒˆ', icon: 'ðŸ—‘ï¸' },
+    // ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
+    'view_messages': { name: 'ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ç¢ºèª', category: 'ã‚³ãƒŸãƒ¥ãƒ‹ã‚±ãƒ¼ã‚·ãƒ§ãƒ³', icon: 'ðŸ“©' },
+    'send_broadcast': { name: 'å…¨å“¡ã¸é€šçŸ¥é€ä¿¡', category: 'ã‚³ãƒŸãƒ¥ãƒ‹ã‚±ãƒ¼ã‚·ãƒ§ãƒ³', icon: 'ðŸ“¢' },
+    // ç®¡ç†è€…æ©Ÿèƒ½
+    'admin_approve': { name: 'ç”³è«‹æ‰¿èª', category: 'ç®¡ç†è€…', icon: 'âœ…' },
+    'admin_reject': { name: 'ç”³è«‹å´ä¸‹', category: 'ç®¡ç†è€…', icon: 'âŒ' },
+    'manage_employees': { name: 'å¾“æ¥­å“¡ç®¡ç†', category: 'ç®¡ç†è€…', icon: 'ðŸ‘¥' },
+    'view_feedback_stats': { name: 'ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é›†è¨ˆé–²è¦§', category: 'ç®¡ç†è€…', icon: 'ðŸ“Š' },
+    'manage_product_categories': { name: 'å•†å“åˆ†é¡žç®¡ç†', category: 'ç®¡ç†è€…', icon: 'ðŸ“‚' },
+    // ãã®ä»–
+    'export_pdf': { name: 'PDFå‡ºåŠ›', category: 'ãã®ä»–', icon: 'ðŸ“„' },
+    'print_shift': { name: 'ã‚·ãƒ•ãƒˆè¡¨å°åˆ·', category: 'ãã®ä»–', icon: 'ðŸ–¨ï¸' }
 };
 
-// 利用統計を記録する関数
+// åˆ©ç”¨çµ±è¨ˆã‚’è¨˜éŒ²ã™ã‚‹é–¢æ•°
 function trackUsage(featureId, userName = null) {
     const feature = USAGE_FEATURES[featureId];
     if (!feature) return;
@@ -398,23 +398,23 @@ function trackUsage(featureId, userName = null) {
         featureId: featureId,
         featureName: feature.name,
         category: feature.category,
-        userName: userName || '匿名',
+        userName: userName || 'åŒ¿å',
         timestamp: new Date().toISOString(),
         date: formatDate(new Date())
     };
     
-    // Firebaseに保存
+    // Firebaseã«ä¿å­˜
     database.ref('usageStats/' + stat.id).set(stat);
 }
 
-// 店舗の位置情報（千葉県千葉市）
+// åº—èˆ—ã®ä½ç½®æƒ…å ±ï¼ˆåƒè‘‰çœŒåƒè‘‰å¸‚ï¼‰
 const STORE_LOCATION = {
     latitude: 35.6074,
     longitude: 140.1065,
-    name: '千葉市'
+    name: 'åƒè‘‰å¸‚'
 };
 
-// 接続状態の監視
+// æŽ¥ç¶šçŠ¶æ…‹ã®ç›£è¦–
 database.ref('.info/connected').on('value', (snap) => {
     const statusEl = document.getElementById('connectionStatus');
     const textEl = statusEl?.querySelector('.status-text');
@@ -422,26 +422,26 @@ database.ref('.info/connected').on('value', (snap) => {
         state.isConnected = true;
         statusEl?.classList.remove('disconnected');
         statusEl?.classList.add('connected');
-        if (textEl) textEl.textContent = '接続中';
+        if (textEl) textEl.textContent = 'æŽ¥ç¶šä¸­';
     } else {
         state.isConnected = false;
         statusEl?.classList.remove('connected');
         statusEl?.classList.add('disconnected');
-        if (textEl) textEl.textContent = 'オフライン';
+        if (textEl) textEl.textContent = 'ã‚ªãƒ•ãƒ©ã‚¤ãƒ³';
     }
 });
 
-// ユーティリティ関数
-// 週の開始日を取得（月曜日始まり）
+// ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£é–¢æ•°
+// é€±ã®é–‹å§‹æ—¥ã‚’å–å¾—ï¼ˆæœˆæ›œæ—¥å§‹ã¾ã‚Šï¼‰
 function getWeekStart(date) {
     const d = new Date(date);
     const day = d.getDay();
-    // 月曜日を0として計算（日曜日は6になる）
+    // æœˆæ›œæ—¥ã‚’0ã¨ã—ã¦è¨ˆç®—ï¼ˆæ—¥æ›œæ—¥ã¯6ã«ãªã‚‹ï¼‰
     const diff = day === 0 ? 6 : day - 1;
     d.setDate(d.getDate() - diff);
     return d;
 }
-// 日付をローカルタイムゾーンでフォーマット（YYYY-MM-DD形式）
+// æ—¥ä»˜ã‚’ãƒ­ãƒ¼ã‚«ãƒ«ã‚¿ã‚¤ãƒ ã‚¾ãƒ¼ãƒ³ã§ãƒ•ã‚©ãƒ¼ãƒžãƒƒãƒˆï¼ˆYYYY-MM-DDå½¢å¼ï¼‰
 function formatDate(date) {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -453,27 +453,27 @@ function formatDateTime(str) {
     const d = new Date(str);
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
-function getDayName(i) { return ['日', '月', '火', '水', '木', '金', '土'][i]; }
+function getDayName(i) { return ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'][i]; }
 function getMonthDay(date) {
     const d = new Date(date);
     return { month: d.getMonth() + 1, day: d.getDate(), dayOfWeek: d.getDay() };
 }
 function getDayOfWeek(str) { return new Date(str).getDay(); }
 
-// 時刻をフォーマットするヘルパー関数（30分単位対応）
+// æ™‚åˆ»ã‚’ãƒ•ã‚©ãƒ¼ãƒžãƒƒãƒˆã™ã‚‹ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°ï¼ˆ30åˆ†å˜ä½å¯¾å¿œï¼‰
 function formatTime(val) {
     const hours = Math.floor(val);
     const mins = Math.round((val - hours) * 60);
     return `${hours}:${mins.toString().padStart(2, '0')}`;
 }
 
-// 日付選択時に曜日を表示
+// æ—¥ä»˜é¸æŠžæ™‚ã«æ›œæ—¥ã‚’è¡¨ç¤º
 function updateShiftDateDay() {
     const dateInput = document.getElementById('shiftDate');
     const dayDisplay = document.getElementById('shiftDateDay');
     if (dateInput.value) {
         const dow = getDayOfWeek(dateInput.value);
-        const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+        const dayNames = ['æ—¥æ›œæ—¥', 'æœˆæ›œæ—¥', 'ç«æ›œæ—¥', 'æ°´æ›œæ—¥', 'æœ¨æ›œæ—¥', 'é‡‘æ›œæ—¥', 'åœŸæ›œæ—¥'];
         dayDisplay.textContent = dayNames[dow];
         dayDisplay.style.color = dow === 0 ? '#ef4444' : dow === 6 ? '#3b82f6' : 'inherit';
     } else {
@@ -481,7 +481,7 @@ function updateShiftDateDay() {
     }
 }
 
-// Firebase からデータを読み込み
+// Firebase ã‹ã‚‰ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿è¾¼ã¿
 function loadData() {
     const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents'];
     refs.forEach(key => {
@@ -497,11 +497,11 @@ function loadData() {
             updateMessageBar();
         });
     });
-    // dailyChecklistはオブジェクト形式で管理
+    // dailyChecklistã¯ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆå½¢å¼ã§ç®¡ç†
     database.ref('dailyChecklist').on('value', snap => {
         state.dailyChecklist = snap.val() || {};
     });
-    // 利用統計（管理者用）
+    // åˆ©ç”¨çµ±è¨ˆï¼ˆç®¡ç†è€…ç”¨ï¼‰
     database.ref('usageStats').on('value', snap => {
         const data = snap.val();
         state.usageStats = data ? Object.values(data) : [];
@@ -511,18 +511,18 @@ function loadData() {
     });
 }
 
-// Firebase にデータを保存
+// Firebase ã«ãƒ‡ãƒ¼ã‚¿ã‚’ä¿å­˜
 function saveToFirebase(key, data) {
     const ref = database.ref(key);
     ref.set(data.reduce((acc, item) => { acc[item.id] = item; return acc; }, {}));
 }
 
-// 従業員セレクト更新
+// å¾“æ¥­å“¡ã‚»ãƒ¬ã‚¯ãƒˆæ›´æ–°
 function updateEmployeeSelects() {
     ['shiftName', 'leaveName', 'holidayName', 'holidaySwapPartner', 'swapTargetEmployee', 'changeApplicant', 'swapApplicant'].forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
-        sel.innerHTML = '<option value="">選択してください</option>';
+        sel.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
         state.employees.forEach(e => {
             const opt = document.createElement('option');
             opt.value = e.name;
@@ -532,44 +532,44 @@ function updateEmployeeSelects() {
     });
 }
 
-// 担当者色マップ
+// æ‹…å½“è€…è‰²ãƒžãƒƒãƒ—
 function getNameColors() {
     const map = {};
     [...state.shifts, ...state.fixedShifts].forEach(s => { if (!map[s.name]) map[s.name] = s.color; });
     return map;
 }
 
-// 時間ヘッダー
+// æ™‚é–“ãƒ˜ãƒƒãƒ€ãƒ¼
 function renderTimeHeader() {
     const h = document.getElementById('timeHeader');
     h.innerHTML = '';
     for (let i = 0; i < 24; i++) {
         const c = document.createElement('div');
         c.className = 'time-cell';
-        c.textContent = `${i}時`;
+        c.textContent = `${i}æ™‚`;
         h.appendChild(c);
     }
 }
 
-// シフトレベル計算（重なるシフトを縦に並べる）
+// ã‚·ãƒ•ãƒˆãƒ¬ãƒ™ãƒ«è¨ˆç®—ï¼ˆé‡ãªã‚‹ã‚·ãƒ•ãƒˆã‚’ç¸¦ã«ä¸¦ã¹ã‚‹ï¼‰
 function calculateShiftLevels(shifts) {
     const levels = {};
 
-    // 各シフトの表示用終了時間を計算（夜勤は開始日は24時まで表示）
+    // å„ã‚·ãƒ•ãƒˆã®è¡¨ç¤ºç”¨çµ‚äº†æ™‚é–“ã‚’è¨ˆç®—ï¼ˆå¤œå‹¤ã¯é–‹å§‹æ—¥ã¯24æ™‚ã¾ã§è¡¨ç¤ºï¼‰
     const getDisplayEndHour = (s) => {
         if (s.overnight && !s.isOvernightContinuation) {
-            return 24; // 夜勤シフトの開始日は24時（0時）まで
+            return 24; // å¤œå‹¤ã‚·ãƒ•ãƒˆã®é–‹å§‹æ—¥ã¯24æ™‚ï¼ˆ0æ™‚ï¼‰ã¾ã§
         }
         return s.endHour;
     };
 
-    // 開始時間でソート、同じ場合はIDでソート（安定したソートのため）
+    // é–‹å§‹æ™‚é–“ã§ã‚½ãƒ¼ãƒˆã€åŒã˜å ´åˆã¯IDã§ã‚½ãƒ¼ãƒˆï¼ˆå®‰å®šã—ãŸã‚½ãƒ¼ãƒˆã®ãŸã‚ï¼‰
     const sorted = [...shifts].sort((a, b) => {
         if (a.startHour !== b.startHour) return a.startHour - b.startHour;
         return String(a.id).localeCompare(String(b.id));
     });
 
-    // デバッグ用ログ
+    // ãƒ‡ãƒãƒƒã‚°ç”¨ãƒ­ã‚°
     console.log('Calculating levels for shifts:', sorted.map(s => ({
         id: s.id,
         name: s.name,
@@ -589,7 +589,7 @@ function calculateShiftLevels(shifts) {
             const oStart = o.startHour;
             const oEnd = getDisplayEndHour(o);
 
-            // 時間帯が重なるかチェック（開始=終了の場合も重なりとみなす）
+            // æ™‚é–“å¸¯ãŒé‡ãªã‚‹ã‹ãƒã‚§ãƒƒã‚¯ï¼ˆé–‹å§‹=çµ‚äº†ã®å ´åˆã‚‚é‡ãªã‚Šã¨ã¿ãªã™ï¼‰
             const overlaps = !(sEnd < oStart || sStart > oEnd);
             if (overlaps && levels[o.id] >= lvl) {
                 lvl = levels[o.id] + 1;
@@ -602,7 +602,7 @@ function calculateShiftLevels(shifts) {
     return levels;
 }
 
-// ガントチャート
+// ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆ
 function renderGanttBody() {
     const body = document.getElementById('ganttBody');
     body.innerHTML = '';
@@ -615,46 +615,46 @@ function renderGanttBody() {
         const row = document.createElement('div');
         row.className = 'gantt-row';
 
-        // 祝日判定を先に行う
+        // ç¥æ—¥åˆ¤å®šã‚’å…ˆã«è¡Œã†
         const holidayName = getJapaneseHoliday(date);
 
         let dayClass = 'date-day';
-        if (dayOfWeek === 0 || holidayName) dayClass += ' sunday'; // 祝日も赤色に
+        if (dayOfWeek === 0 || holidayName) dayClass += ' sunday'; // ç¥æ—¥ã‚‚èµ¤è‰²ã«
         else if (dayOfWeek === 6) dayClass += ' saturday';
 
         const label = document.createElement('div');
         label.className = 'gantt-date-label';
         if (holidayName) label.classList.add('is-holiday');
 
-        // 基本の日付表示
+        // åŸºæœ¬ã®æ—¥ä»˜è¡¨ç¤º
         let labelHTML = `<span class="date-number${holidayName ? ' holiday' : ''}">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
 
-        // 天気予報を追加
+        // å¤©æ°—äºˆå ±ã‚’è¿½åŠ 
         const weather = state.weatherData[dateStr];
         if (weather) {
             const weatherInfo = getWeatherInfo(weather.weatherCode);
 
-            // 昨年比較用の差分計算
+            // æ˜¨å¹´æ¯”è¼ƒç”¨ã®å·®åˆ†è¨ˆç®—
             let lastYearHtml = '';
             if (weather.lastYearTempMax !== null && weather.lastYearTempMin !== null) {
                 const diffMax = weather.tempMax - weather.lastYearTempMax;
                 const diffSign = diffMax >= 0 ? '+' : '';
                 const diffClass = diffMax >= 0 ? 'temp-diff-plus' : 'temp-diff-minus';
-                lastYearHtml = `<div class="weather-last-year">昨年 <span class="temp-max">${weather.lastYearTempMax}°</span>/<span class="temp-min">${weather.lastYearTempMin}°</span> <span class="${diffClass}">(${diffSign}${diffMax}°)</span></div>`;
+                lastYearHtml = `<div class="weather-last-year">æ˜¨å¹´ <span class="temp-max">${weather.lastYearTempMax}Â°</span>/<span class="temp-min">${weather.lastYearTempMin}Â°</span> <span class="${diffClass}">(${diffSign}${diffMax}Â°)</span></div>`;
             }
 
             labelHTML += `<div class="weather-info" title="${weatherInfo.desc}">
                 <span class="weather-icon">${weatherInfo.icon}</span>
-                <span class="weather-temp"><span class="temp-max">${weather.tempMax}°</span>/<span class="temp-min">${weather.tempMin}°</span></span>
+                <span class="weather-temp"><span class="temp-max">${weather.tempMax}Â°</span>/<span class="temp-min">${weather.tempMin}Â°</span></span>
             </div>${lastYearHtml}`;
         }
 
-        // 祝日表示を追加（holidayNameは上で既に取得済み）
+        // ç¥æ—¥è¡¨ç¤ºã‚’è¿½åŠ ï¼ˆholidayNameã¯ä¸Šã§æ—¢ã«å–å¾—æ¸ˆã¿ï¼‰
         if (holidayName) {
-            labelHTML += `<div class="holiday-mark" title="${holidayName}">🎌 ${holidayName}</div>`;
+            labelHTML += `<div class="holiday-mark" title="${holidayName}">ðŸŽŒ ${holidayName}</div>`;
         }
 
-        // 給料日・年金支給日マークを追加
+        // çµ¦æ–™æ—¥ãƒ»å¹´é‡‘æ”¯çµ¦æ—¥ãƒžãƒ¼ã‚¯ã‚’è¿½åŠ 
         const payDayInfo = getPayDayInfo(date);
         if (payDayInfo.length > 0) {
             labelHTML += `<div class="payday-marks">${payDayInfo.map(p => 
@@ -662,16 +662,16 @@ function renderGanttBody() {
             ).join('')}</div>`;
         }
 
-        // 臨時シフト（特別イベント日）表示
+        // è‡¨æ™‚ã‚·ãƒ•ãƒˆï¼ˆç‰¹åˆ¥ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ï¼‰è¡¨ç¤º
         const specialEventForDay = getSpecialEvent(dateStr);
         if (specialEventForDay) {
-            labelHTML += `<div class="special-event-mark" title="${specialEventForDay.eventName || 'イベント'}">⚡ ${specialEventForDay.eventName || '臨時シフト'}</div>`;
+            labelHTML += `<div class="special-event-mark" title="${specialEventForDay.eventName || 'ã‚¤ãƒ™ãƒ³ãƒˆ'}">âš¡ ${specialEventForDay.eventName || 'è‡¨æ™‚ã‚·ãƒ•ãƒˆ'}</div>`;
             label.classList.add('is-special-event');
         }
 
-        // この日のイベントを取得（期間内にある日付を含むイベント）
+        // ã“ã®æ—¥ã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’å–å¾—ï¼ˆæœŸé–“å†…ã«ã‚ã‚‹æ—¥ä»˜ã‚’å«ã‚€ã‚¤ãƒ™ãƒ³ãƒˆï¼‰
         const dayEvents = state.dailyEvents.filter(e => {
-            const startDate = e.startDate || e.date; // 後方互換性
+            const startDate = e.startDate || e.date; // å¾Œæ–¹äº’æ›æ€§
             const endDate = e.endDate || e.date;
             return dateStr >= startDate && dateStr <= endDate;
         });
@@ -688,7 +688,7 @@ function renderGanttBody() {
 
         label.innerHTML = labelHTML;
 
-        // イベントアイコンにクリックイベントを追加
+        // ã‚¤ãƒ™ãƒ³ãƒˆã‚¢ã‚¤ã‚³ãƒ³ã«ã‚¯ãƒªãƒƒã‚¯ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¿½åŠ 
         label.querySelectorAll('.event-icon').forEach(icon => {
             icon.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -711,7 +711,7 @@ function renderGanttBody() {
             timeline.appendChild(cell);
         }
 
-        // シフト収集
+        // ã‚·ãƒ•ãƒˆåŽé›†
         const dayShifts = state.shifts.filter(s => s.date === dateStr);
         const prevDate = new Date(date); prevDate.setDate(prevDate.getDate() - 1);
         const prevStr = formatDate(prevDate);
@@ -719,32 +719,32 @@ function renderGanttBody() {
             ...s, id: `on-${s.id}`, date: dateStr, startHour: 0, endHour: s.endHour, isOvernightContinuation: true
         }));
 
-        // 有給による上書きシフトのIDを取得
+        // æœ‰çµ¦ã«ã‚ˆã‚‹ä¸Šæ›¸ãã‚·ãƒ•ãƒˆã®IDã‚’å–å¾—
         const leaveOverrideFixedIds = state.shifts
             .filter(s => s.date === dateStr && s.isLeaveOverride && s.fixedShiftOverride)
             .map(s => s.fixedShiftOverride);
 
-        // この日の単日上書きデータを取得
+        // ã“ã®æ—¥ã®å˜æ—¥ä¸Šæ›¸ããƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
         const dayOverrides = state.shiftOverrides.filter(o => o.date === dateStr);
 
-        // 臨時シフト：イベント日は固定シフトを停止
+        // è‡¨æ™‚ã‚·ãƒ•ãƒˆï¼šã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã¯å›ºå®šã‚·ãƒ•ãƒˆã‚’åœæ­¢
         const specialEvent = getSpecialEvent(dateStr);
         const isSpecialDay = specialEvent && specialEvent.suppressFixed !== false;
-        // 固定シフト（ただし、同じ日・同じ時間帯に通常シフトがある場合は除外、有給上書きも除外）
+        // å›ºå®šã‚·ãƒ•ãƒˆï¼ˆãŸã ã—ã€åŒã˜æ—¥ãƒ»åŒã˜æ™‚é–“å¸¯ã«é€šå¸¸ã‚·ãƒ•ãƒˆãŒã‚ã‚‹å ´åˆã¯é™¤å¤–ã€æœ‰çµ¦ä¸Šæ›¸ãã‚‚é™¤å¤–ï¼‰
         const fixed = state.fixedShifts.filter(f => {
-            // 曜日チェック
-            // イベント日は固定シフトを停止
+            // æ›œæ—¥ãƒã‚§ãƒƒã‚¯
+            // ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã¯å›ºå®šã‚·ãƒ•ãƒˆã‚’åœæ­¢
             if (isSpecialDay) return false;
             if (f.dayOfWeek !== dayOfWeek) return false;
-            // 有効期間チェック
+            // æœ‰åŠ¹æœŸé–“ãƒã‚§ãƒƒã‚¯
             if (f.startDate && dateStr < f.startDate) return false;
             if (f.endDate && dateStr > f.endDate) return false;
             return true;
         }).map(f => {
-            // 単日上書きがあるか確認
+            // å˜æ—¥ä¸Šæ›¸ããŒã‚ã‚‹ã‹ç¢ºèª
             const override = dayOverrides.find(o => o.fixedShiftId === f.id);
             if (override) {
-                // 上書きデータを適用
+                // ä¸Šæ›¸ããƒ‡ãƒ¼ã‚¿ã‚’é©ç”¨
                 return {
                     ...f,
                     ...override,
@@ -759,16 +759,16 @@ function renderGanttBody() {
                 ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
             };
         }).filter(f => {
-            // 有給による上書きがある場合は除外
+            // æœ‰çµ¦ã«ã‚ˆã‚‹ä¸Šæ›¸ããŒã‚ã‚‹å ´åˆã¯é™¤å¤–
             if (leaveOverrideFixedIds.includes(f.id.replace(`fx-`, '').replace(`-${dateStr}`, ''))) {
                 return false;
             }
-            // 元のIDを取得（fx-xxx-dateStr形式から）
+            // å…ƒã®IDã‚’å–å¾—ï¼ˆfx-xxx-dateStrå½¢å¼ã‹ã‚‰ï¼‰
             const originalId = f.id.split('-')[1];
             if (leaveOverrideFixedIds.includes(originalId)) {
                 return false;
             }
-            // 同じ日・同じ固定シフトから交代された通常シフトがあるか確認
+            // åŒã˜æ—¥ãƒ»åŒã˜å›ºå®šã‚·ãƒ•ãƒˆã‹ã‚‰äº¤ä»£ã•ã‚ŒãŸé€šå¸¸ã‚·ãƒ•ãƒˆãŒã‚ã‚‹ã‹ç¢ºèª
             return !dayShifts.some(s =>
                 s.swapHistory &&
                 s.startHour === f.startHour &&
@@ -778,26 +778,26 @@ function renderGanttBody() {
         });
 
         const prevDow = (dayOfWeek + 6) % 7;
-        // 有給による上書きを夜勤継続分にも適用
+        // æœ‰çµ¦ã«ã‚ˆã‚‹ä¸Šæ›¸ãã‚’å¤œå‹¤ç¶™ç¶šåˆ†ã«ã‚‚é©ç”¨
         const leaveOverrideFixedIdsForOvernight = state.shifts
             .filter(s => s.date === prevStr && s.isLeaveOverride && s.fixedShiftOverride)
             .map(s => s.fixedShiftOverride);
 
-        // 前日の単日上書きデータを取得
+        // å‰æ—¥ã®å˜æ—¥ä¸Šæ›¸ããƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
         const prevDayOverrides = state.shiftOverrides.filter(o => o.date === prevStr);
             
         const fixedOvernight = state.fixedShifts.filter(f => {
-            // 曜日・夜勤チェック
-            // 前日がイベント日の場合は固定夜勤継続も停止
+            // æ›œæ—¥ãƒ»å¤œå‹¤ãƒã‚§ãƒƒã‚¯
+            // å‰æ—¥ãŒã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã®å ´åˆã¯å›ºå®šå¤œå‹¤ç¶™ç¶šã‚‚åœæ­¢
             const prevSpecialEvent = getSpecialEvent(prevStr);
             if (prevSpecialEvent && prevSpecialEvent.suppressFixed !== false) return false;
             if (f.dayOfWeek !== prevDow || !f.overnight) return false;
-            // 有効期間チェック（前日の日付でチェック）
+            // æœ‰åŠ¹æœŸé–“ãƒã‚§ãƒƒã‚¯ï¼ˆå‰æ—¥ã®æ—¥ä»˜ã§ãƒã‚§ãƒƒã‚¯ï¼‰
             if (f.startDate && prevStr < f.startDate) return false;
             if (f.endDate && prevStr > f.endDate) return false;
             return true;
         }).map(f => {
-            // 単日上書きがあるか確認
+            // å˜æ—¥ä¸Šæ›¸ããŒã‚ã‚‹ã‹ç¢ºèª
             const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
             if (override && override.overnight) {
                 return {
@@ -821,32 +821,32 @@ function renderGanttBody() {
             return !leaveOverrideFixedIdsForOvernight.includes(originalId);
         });
 
-        // 通常シフトからhiddenフラグのものを除外
+        // é€šå¸¸ã‚·ãƒ•ãƒˆã‹ã‚‰hiddenãƒ•ãƒ©ã‚°ã®ã‚‚ã®ã‚’é™¤å¤–
         const visibleDayShifts = dayShifts.filter(s => !s.hidden && !s.isLeaveOverride);
         const visibleOvernight = overnight.filter(s => !s.hidden && !s.isLeaveOverride);
 
         const all = [...visibleDayShifts, ...visibleOvernight, ...fixed, ...fixedOvernight];
 
-        // 承認済みの休日（全日休み）がある担当者のシフトを除外
+        // æ‰¿èªæ¸ˆã¿ã®ä¼‘æ—¥ï¼ˆå…¨æ—¥ä¼‘ã¿ï¼‰ãŒã‚ã‚‹æ‹…å½“è€…ã®ã‚·ãƒ•ãƒˆã‚’é™¤å¤–
         const approvedHolidays = state.holidayRequests.filter(h => {
             if (h.status !== 'approved') return false;
             if (!(dateStr >= h.startDate && dateStr <= h.endDate)) return false;
-            if (h.halfDayType) return false; // 半休は除外対象外
+            if (h.halfDayType) return false; // åŠä¼‘ã¯é™¤å¤–å¯¾è±¡å¤–
             
-            // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
+            // shiftTimesãŒã‚ã‚‹å ´åˆã¯ã€è©²å½“æ—¥ã®ãƒ‡ãƒ¼ã‚¿ãŒå­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ï¼ˆæœ€å„ªå…ˆï¼‰
             if (h.shiftTimes && Object.keys(h.shiftTimes).length > 0) {
                 return !!h.shiftTimes[dateStr];
             }
-            // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
+            // selectedShiftsãŒã‚ã‚‹å ´åˆã¯ã€è©²å½“æ—¥ã®ã‚·ãƒ•ãƒˆãŒå­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
             if (h.selectedShifts && h.selectedShifts.length > 0) {
                 return h.selectedShifts.some(s => s.date === dateStr);
             }
-            // どちらもない場合は従来の期間ベースの除外
+            // ã©ã¡ã‚‰ã‚‚ãªã„å ´åˆã¯å¾“æ¥ã®æœŸé–“ãƒ™ãƒ¼ã‚¹ã®é™¤å¤–
             return true;
         });
         const holidayNames = approvedHolidays.map(h => h.name);
 
-        // 承認済みの有給がある担当者のシフトも除外
+        // æ‰¿èªæ¸ˆã¿ã®æœ‰çµ¦ãŒã‚ã‚‹æ‹…å½“è€…ã®ã‚·ãƒ•ãƒˆã‚‚é™¤å¤–
         const approvedLeaves = state.leaveRequests.filter(l =>
             l.status === 'approved' &&
             dateStr >= l.startDate &&
@@ -854,7 +854,7 @@ function renderGanttBody() {
         );
         const leaveNames = approvedLeaves.map(l => l.name);
 
-        // 全日休み・有給の担当者のシフトを除外したリスト
+        // å…¨æ—¥ä¼‘ã¿ãƒ»æœ‰çµ¦ã®æ‹…å½“è€…ã®ã‚·ãƒ•ãƒˆã‚’é™¤å¤–ã—ãŸãƒªã‚¹ãƒˆ
         const filteredAll = all.filter(s => !holidayNames.includes(s.name) && !leaveNames.includes(s.name));
 
         const levels = calculateShiftLevels(filteredAll);
@@ -864,7 +864,7 @@ function renderGanttBody() {
 
         filteredAll.forEach(s => timeline.appendChild(createShiftBar(s, levels[s.id])));
 
-        // 有給
+        // æœ‰çµ¦
         const leaves = state.leaveRequests.filter(l => l.status === 'approved' && dateStr >= l.startDate && dateStr <= l.endDate);
         let barCount = leaves.length;
         leaves.forEach((l, idx) => {
@@ -873,7 +873,7 @@ function renderGanttBody() {
             bar.style.top = `${baseH + (maxLvl + 1 + idx) * perLvl}px`;
             bar.style.height = `${perLvl - 4}px`;
             
-            // シフト時間情報がある場合は、その時間に合わせて表示
+            // ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ãŒã‚ã‚‹å ´åˆã¯ã€ãã®æ™‚é–“ã«åˆã‚ã›ã¦è¡¨ç¤º
             let timeText = '';
             if (l.shiftTimes && l.shiftTimes[dateStr]) {
                 const shiftTime = l.shiftTimes[dateStr];
@@ -881,7 +881,7 @@ function renderGanttBody() {
                 let end = shiftTime.endHour;
                 const overnight = shiftTime.overnight;
                 
-                // 夜勤の場合は24時まで表示（翌日分は翌日に表示）
+                // å¤œå‹¤ã®å ´åˆã¯24æ™‚ã¾ã§è¡¨ç¤ºï¼ˆç¿Œæ—¥åˆ†ã¯ç¿Œæ—¥ã«è¡¨ç¤ºï¼‰
                 if (overnight) end = 24;
                 
                 const leftPercent = (start / 24) * 100;
@@ -890,25 +890,25 @@ function renderGanttBody() {
                 bar.style.width = `${widthPercent}%`;
                 
                 if (overnight) {
-                    timeText = ` ${formatTime(start)}-翌${formatTime(shiftTime.endHour)}`;
+                    timeText = ` ${formatTime(start)}-ç¿Œ${formatTime(shiftTime.endHour)}`;
                 } else {
                     timeText = ` ${formatTime(start)}-${formatTime(end)}`;
                 }
             }
-            // シフト時間情報がない場合は全幅で表示（従来の動作）
+            // ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ãŒãªã„å ´åˆã¯å…¨å¹…ã§è¡¨ç¤ºï¼ˆå¾“æ¥ã®å‹•ä½œï¼‰
             
-            bar.textContent = `🏖️ ${l.name} 有給${timeText}`;
+            bar.textContent = `ðŸ–ï¸ ${l.name} æœ‰çµ¦${timeText}`;
             timeline.appendChild(bar);
         });
         
-        // 夜勤の有給の翌日分を表示
+        // å¤œå‹¤ã®æœ‰çµ¦ã®ç¿Œæ—¥åˆ†ã‚’è¡¨ç¤º
         const overnightLeaves = state.leaveRequests.filter(l => {
             if (l.status !== 'approved' || !l.shiftTimes) return false;
-            // 前日の日付を取得
+            // å‰æ—¥ã®æ—¥ä»˜ã‚’å–å¾—
             const prevDate = new Date(dateStr);
             prevDate.setDate(prevDate.getDate() - 1);
             const prevDateStr = formatDate(prevDate);
-            // 前日のシフトが夜勤で、前日が有給期間内かチェック
+            // å‰æ—¥ã®ã‚·ãƒ•ãƒˆãŒå¤œå‹¤ã§ã€å‰æ—¥ãŒæœ‰çµ¦æœŸé–“å†…ã‹ãƒã‚§ãƒƒã‚¯
             return l.shiftTimes[prevDateStr] && 
                    l.shiftTimes[prevDateStr].overnight &&
                    prevDateStr >= l.startDate && 
@@ -926,44 +926,44 @@ function renderGanttBody() {
             bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
             bar.style.height = `${perLvl - 4}px`;
             
-            // 0時から終了時刻まで表示
+            // 0æ™‚ã‹ã‚‰çµ‚äº†æ™‚åˆ»ã¾ã§è¡¨ç¤º
             const end = shiftTime.endHour;
             const leftPercent = 0;
             const widthPercent = (end / 24) * 100;
             bar.style.left = `${leftPercent}%`;
             bar.style.width = `${widthPercent}%`;
             
-            bar.textContent = `🏖️ ${l.name} 有給 0:00-${formatTime(end)}`;
+            bar.textContent = `ðŸ–ï¸ ${l.name} æœ‰çµ¦ 0:00-${formatTime(end)}`;
             timeline.appendChild(bar);
         });
         barCount += overnightLeaves.length;
 
-        // 休日
+        // ä¼‘æ—¥
         const holidays = state.holidayRequests.filter(h => {
             if (h.status !== 'approved') return false;
             if (!(dateStr >= h.startDate && dateStr <= h.endDate)) return false;
             
-            // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
+            // shiftTimesãŒã‚ã‚‹å ´åˆã¯ã€è©²å½“æ—¥ã®ãƒ‡ãƒ¼ã‚¿ãŒå­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ï¼ˆæœ€å„ªå…ˆï¼‰
             if (h.shiftTimes && Object.keys(h.shiftTimes).length > 0) {
                 const hasTime = !!h.shiftTimes[dateStr];
-                console.log(`[休日デバッグ] ${h.name} ${dateStr}: shiftTimes存在, 該当日=${hasTime}`, h.shiftTimes);
+                console.log(`[ä¼‘æ—¥ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: shiftTimeså­˜åœ¨, è©²å½“æ—¥=${hasTime}`, h.shiftTimes);
                 return hasTime;
             }
-            // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
+            // selectedShiftsãŒã‚ã‚‹å ´åˆã¯ã€è©²å½“æ—¥ã®ã‚·ãƒ•ãƒˆãŒå­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
             if (h.selectedShifts && h.selectedShifts.length > 0) {
                 const hasShift = h.selectedShifts.some(s => s.date === dateStr);
-                console.log(`[休日デバッグ] ${h.name} ${dateStr}: selectedShifts存在, 該当日=${hasShift}`, h.selectedShifts);
+                console.log(`[ä¼‘æ—¥ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: selectedShiftså­˜åœ¨, è©²å½“æ—¥=${hasShift}`, h.selectedShifts);
                 return hasShift;
             }
-            // どちらもない場合は従来の期間ベースの表示
-            console.log(`[休日デバッグ] ${h.name} ${dateStr}: shiftTimes/selectedShifts無し、期間ベース表示`);
+            // ã©ã¡ã‚‰ã‚‚ãªã„å ´åˆã¯å¾“æ¥ã®æœŸé–“ãƒ™ãƒ¼ã‚¹ã®è¡¨ç¤º
+            console.log(`[ä¼‘æ—¥ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: shiftTimes/selectedShiftsç„¡ã—ã€æœŸé–“ãƒ™ãƒ¼ã‚¹è¡¨ç¤º`);
             return true;
         });
         
         holidays.forEach((h, idx) => {
             const bar = document.createElement('div');
 
-            // 半休タイプに応じてクラスを設定
+            // åŠä¼‘ã‚¿ã‚¤ãƒ—ã«å¿œã˜ã¦ã‚¯ãƒ©ã‚¹ã‚’è¨­å®š
             if (h.halfDayType === 'morning') {
                 bar.className = 'holiday-bar half-day-bar morning';
             } else if (h.halfDayType === 'afternoon') {
@@ -973,15 +973,15 @@ function renderGanttBody() {
             }
             bar.dataset.holidayId = h.id;
 
-            // シフト時間情報を取得（優先順位: shiftTimes[日付] > selectedShifts > 直接プロパティ）
+            // ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ã‚’å–å¾—ï¼ˆå„ªå…ˆé †ä½: shiftTimes[æ—¥ä»˜] > selectedShifts > ç›´æŽ¥ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼‰
             let shiftTimeInfo = null;
             
-            // 1. shiftTimes から日付ごとの時間情報を取得
+            // 1. shiftTimes ã‹ã‚‰æ—¥ä»˜ã”ã¨ã®æ™‚é–“æƒ…å ±ã‚’å–å¾—
             if (h.shiftTimes && h.shiftTimes[dateStr]) {
                 shiftTimeInfo = h.shiftTimes[dateStr];
-                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: shiftTimesから取得`, shiftTimeInfo);
+                console.log(`[ä¼‘æ—¥æ™‚é–“ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: shiftTimesã‹ã‚‰å–å¾—`, shiftTimeInfo);
             }
-            // 2. selectedShifts から該当日の時間情報を取得
+            // 2. selectedShifts ã‹ã‚‰è©²å½“æ—¥ã®æ™‚é–“æƒ…å ±ã‚’å–å¾—
             else if (h.selectedShifts && h.selectedShifts.length > 0) {
                 const selectedShift = h.selectedShifts.find(s => s.date === dateStr);
                 if (selectedShift) {
@@ -990,26 +990,26 @@ function renderGanttBody() {
                         endHour: selectedShift.endHour,
                         overnight: selectedShift.overnight || false
                     };
-                    console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: selectedShiftsから取得`, shiftTimeInfo);
+                    console.log(`[ä¼‘æ—¥æ™‚é–“ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: selectedShiftsã‹ã‚‰å–å¾—`, shiftTimeInfo);
                 }
             }
-            // 3. 直接プロパティから取得（従来の形式）
+            // 3. ç›´æŽ¥ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‹ã‚‰å–å¾—ï¼ˆå¾“æ¥ã®å½¢å¼ï¼‰
             else if (h.startHour !== undefined && h.endHour !== undefined) {
                 shiftTimeInfo = {
                     startHour: h.startHour,
                     endHour: h.endHour,
                     overnight: h.overnight || false
                 };
-                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: 直接プロパティから取得`, shiftTimeInfo);
+                console.log(`[ä¼‘æ—¥æ™‚é–“ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: ç›´æŽ¥ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‹ã‚‰å–å¾—`, shiftTimeInfo);
             } else {
-                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: 時間情報なし`, h);
+                console.log(`[ä¼‘æ—¥æ™‚é–“ãƒ‡ãƒãƒƒã‚°] ${h.name} ${dateStr}: æ™‚é–“æƒ…å ±ãªã—`, h);
             }
 
-            // シフト時間情報がある場合は、その時間に合わせて表示
+            // ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ãŒã‚ã‚‹å ´åˆã¯ã€ãã®æ™‚é–“ã«åˆã‚ã›ã¦è¡¨ç¤º
             if (shiftTimeInfo) {
                 let start = shiftTimeInfo.startHour;
                 let end = shiftTimeInfo.endHour;
-                // 夜勤の場合は24時まで表示
+                // å¤œå‹¤ã®å ´åˆã¯24æ™‚ã¾ã§è¡¨ç¤º
                 if (shiftTimeInfo.overnight) end = 24;
 
                 const leftPercent = (start / 24) * 100;
@@ -1017,40 +1017,40 @@ function renderGanttBody() {
                 bar.style.left = `${leftPercent}%`;
                 bar.style.width = `${widthPercent}%`;
             }
-            // シフト時間情報がない場合は全幅で表示（従来の動作）
+            // ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ãŒãªã„å ´åˆã¯å…¨å¹…ã§è¡¨ç¤ºï¼ˆå¾“æ¥ã®å‹•ä½œï¼‰
 
             bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
             bar.style.height = `${perLvl - 4}px`;
 
-            // 時間表示を追加
+            // æ™‚é–“è¡¨ç¤ºã‚’è¿½åŠ 
             let timeText = '';
             if (shiftTimeInfo) {
                 if (shiftTimeInfo.overnight) {
-                    timeText = ` ${formatTime(shiftTimeInfo.startHour)}-翌${formatTime(shiftTimeInfo.endHour)}`;
+                    timeText = ` ${formatTime(shiftTimeInfo.startHour)}-ç¿Œ${formatTime(shiftTimeInfo.endHour)}`;
                 } else {
                     timeText = ` ${formatTime(shiftTimeInfo.startHour)}-${formatTime(shiftTimeInfo.endHour)}`;
                 }
             }
 
-            // 半休タイプに応じたラベル
+            // åŠä¼‘ã‚¿ã‚¤ãƒ—ã«å¿œã˜ãŸãƒ©ãƒ™ãƒ«
             let label;
             if (h.halfDayType === 'morning') {
-                label = `🌅 ${h.name} 午前半休${timeText}`;
+                label = `ðŸŒ… ${h.name} åˆå‰åŠä¼‘${timeText}`;
             } else if (h.halfDayType === 'afternoon') {
-                label = `🌇 ${h.name} 午後半休${timeText}`;
+                label = `ðŸŒ‡ ${h.name} åˆå¾ŒåŠä¼‘${timeText}`;
             } else {
-                label = `🏠 ${h.name} 休日${timeText}`;
+                label = `ðŸ  ${h.name} ä¼‘æ—¥${timeText}`;
             }
             bar.textContent = label;
 
-            // クリック/タップで削除
+            // ã‚¯ãƒªãƒƒã‚¯/ã‚¿ãƒƒãƒ—ã§å‰Šé™¤
             bar.style.cursor = 'pointer';
-            const deleteLabel = h.halfDayType ? '半休' : '休日';
-            bar.title = `クリックで${deleteLabel}を取り消し`;
+            const deleteLabel = h.halfDayType ? 'åŠä¼‘' : 'ä¼‘æ—¥';
+            bar.title = `ã‚¯ãƒªãƒƒã‚¯ã§${deleteLabel}ã‚’å–ã‚Šæ¶ˆã—`;
 
             const handleDeleteHoliday = () => {
-                const typeLabel = h.halfDayType === 'morning' ? '午前半休' : (h.halfDayType === 'afternoon' ? '午後半休' : '休日');
-                if (confirm(`${h.name}さんの${typeLabel}（${h.startDate}）を取り消しますか？`)) {
+                const typeLabel = h.halfDayType === 'morning' ? 'åˆå‰åŠä¼‘' : (h.halfDayType === 'afternoon' ? 'åˆå¾ŒåŠä¼‘' : 'ä¼‘æ—¥');
+                if (confirm(`${h.name}ã•ã‚“ã®${typeLabel}ï¼ˆ${h.startDate}ï¼‰ã‚’å–ã‚Šæ¶ˆã—ã¾ã™ã‹ï¼Ÿ`)) {
                     state.holidayRequests = state.holidayRequests.filter(x => x.id !== h.id);
                     saveToFirebase('holidayRequests', state.holidayRequests);
                     render();
@@ -1068,18 +1068,18 @@ function renderGanttBody() {
         });
         barCount += holidays.length;
         
-        // 夜勤の休日の翌日分を表示
+        // å¤œå‹¤ã®ä¼‘æ—¥ã®ç¿Œæ—¥åˆ†ã‚’è¡¨ç¤º
         const overnightHolidays = state.holidayRequests.filter(h => {
             if (h.status !== 'approved') return false;
-            // 前日の日付を取得
+            // å‰æ—¥ã®æ—¥ä»˜ã‚’å–å¾—
             const prevDate = new Date(dateStr);
             prevDate.setDate(prevDate.getDate() - 1);
             const prevDateStr = formatDate(prevDate);
             
-            // 前日が休日期間内かチェック
+            // å‰æ—¥ãŒä¼‘æ—¥æœŸé–“å†…ã‹ãƒã‚§ãƒƒã‚¯
             if (!(prevDateStr >= h.startDate && prevDateStr <= h.endDate)) return false;
             
-            // 前日のシフト時間情報を取得して夜勤かチェック
+            // å‰æ—¥ã®ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ã‚’å–å¾—ã—ã¦å¤œå‹¤ã‹ãƒã‚§ãƒƒã‚¯
             let prevShiftTime = null;
             if (h.shiftTimes && h.shiftTimes[prevDateStr]) {
                 prevShiftTime = h.shiftTimes[prevDateStr];
@@ -1104,7 +1104,7 @@ function renderGanttBody() {
             prevDate.setDate(prevDate.getDate() - 1);
             const prevDateStr = formatDate(prevDate);
             
-            // 前日のシフト時間情報を取得
+            // å‰æ—¥ã®ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ã‚’å–å¾—
             let prevShiftTime = null;
             if (h.shiftTimes && h.shiftTimes[prevDateStr]) {
                 prevShiftTime = h.shiftTimes[prevDateStr];
@@ -1128,14 +1128,14 @@ function renderGanttBody() {
             bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
             bar.style.height = `${perLvl - 4}px`;
             
-            // 0時から終了時刻まで表示
+            // 0æ™‚ã‹ã‚‰çµ‚äº†æ™‚åˆ»ã¾ã§è¡¨ç¤º
             const end = prevShiftTime.endHour;
             const leftPercent = 0;
             const widthPercent = (end / 24) * 100;
             bar.style.left = `${leftPercent}%`;
             bar.style.width = `${widthPercent}%`;
             
-            bar.textContent = `🏠 ${h.name} 休日 0:00-${formatTime(end)}`;
+            bar.textContent = `ðŸ  ${h.name} ä¼‘æ—¥ 0:00-${formatTime(end)}`;
             timeline.appendChild(bar);
         });
         barCount += overnightHolidays.length;
@@ -1147,20 +1147,20 @@ function renderGanttBody() {
     }
 }
 
-// セルの実際の幅を取得する関数
+// ã‚»ãƒ«ã®å®Ÿéš›ã®å¹…ã‚’å–å¾—ã™ã‚‹é–¢æ•°
 function getCellWidth() {
     const hourCell = document.querySelector('.hour-cell');
     if (hourCell) {
         return hourCell.getBoundingClientRect().width;
     }
-    // デフォルト値（フォールバック）
+    // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤ï¼ˆãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯ï¼‰
     return window.innerWidth <= 768 ? 38 : 50;
 }
 
-// タッチイベントかどうかを判定
+// ã‚¿ãƒƒãƒã‚¤ãƒ™ãƒ³ãƒˆã‹ã©ã†ã‹ã‚’åˆ¤å®š
 let touchMoved = false;
 
-// シフトバー作成（パーセントベースで位置計算）
+// ã‚·ãƒ•ãƒˆãƒãƒ¼ä½œæˆï¼ˆãƒ‘ãƒ¼ã‚»ãƒ³ãƒˆãƒ™ãƒ¼ã‚¹ã§ä½ç½®è¨ˆç®—ï¼‰
 function createShiftBar(s, lvl) {
     const bar = document.createElement('div');
     let cls = 'shift-bar';
@@ -1169,7 +1169,7 @@ function createShiftBar(s, lvl) {
     bar.className = cls;
     bar.dataset.id = s.id;
 
-    // パーセントベースで位置を計算（24時間 = 100%）
+    // ãƒ‘ãƒ¼ã‚»ãƒ³ãƒˆãƒ™ãƒ¼ã‚¹ã§ä½ç½®ã‚’è¨ˆç®—ï¼ˆ24æ™‚é–“ = 100%ï¼‰
     let start = s.startHour, end = s.endHour;
     if (s.overnight && !s.isOvernightContinuation) end = 24;
 
@@ -1180,56 +1180,96 @@ function createShiftBar(s, lvl) {
     bar.style.width = `${widthPercent}%`;
     bar.style.top = `${8 + lvl * 28}px`;
     bar.style.height = '24px';
-    // 色が正しく設定されているか確認し、不正な場合はデフォルト色を使用
+    // è‰²ãŒæ­£ã—ãè¨­å®šã•ã‚Œã¦ã„ã‚‹ã‹ç¢ºèªã—ã€ä¸æ­£ãªå ´åˆã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆè‰²ã‚’ä½¿ç”¨
     const shiftColor = (s.color && s.color.startsWith('#') && s.color.length >= 4) ? s.color : '#6366f1';
     bar.style.background = `linear-gradient(135deg, ${shiftColor}, ${adjustColor(shiftColor, -20)})`;
 
     let icons = '';
-    if (s.changeHistory) icons += '<span class="change-icon" title="シフト変更あり">📝</span>';
-    if (s.swapHistory) icons += '<span class="swap-icon" title="シフト交代あり">🤝</span>';
-    if (s.hasOverride) icons += '<span class="override-icon" title="この日のみ変更">✏️</span>';
-    if (s.isFixed && !s.hasOverride) icons += '<span class="fixed-icon">🔁</span>';
-    if (s.overnight && !s.isOvernightContinuation) icons += '<span class="overnight-icon">🌙</span>';
-    if (s.isOvernightContinuation) icons += '<span class="overnight-icon">→</span>';
-    // 臨時シフト判定（イベント日のシフトにバッジを付ける）
+    if (s.changeHistory) icons += '<span class="change-icon" title="ã‚·ãƒ•ãƒˆå¤‰æ›´ã‚ã‚Š">ðŸ“</span>';
+    if (s.swapHistory) icons += '<span class="swap-icon" title="ã‚·ãƒ•ãƒˆäº¤ä»£ã‚ã‚Š">ðŸ¤</span>';
+    if (s.hasOverride) icons += '<span class="override-icon" title="ã“ã®æ—¥ã®ã¿å¤‰æ›´">âœï¸</span>';
+    if (s.isFixed && !s.hasOverride) icons += '<span class="fixed-icon">ðŸ”</span>';
+    if (s.overnight && !s.isOvernightContinuation) icons += '<span class="overnight-icon">ðŸŒ™</span>';
+    if (s.isOvernightContinuation) icons += '<span class="overnight-icon">â†’</span>';
+    // è‡¨æ™‚ã‚·ãƒ•ãƒˆåˆ¤å®šï¼ˆã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã®ã‚·ãƒ•ãƒˆã«ãƒãƒƒã‚¸ã‚’ä»˜ã‘ã‚‹ï¼‰
     if (!s.isFixed && s.date && isSpecialEventDate(s.date)) {
-        icons += '<span class="temporary-icon" title="臨時シフト">⚡</span>';
+        icons += '<span class="temporary-icon" title="è‡¨æ™‚ã‚·ãƒ•ãƒˆ">âš¡</span>';
         bar.classList.add('temporary-shift');
     }
 
-    let time = s.overnight && !s.isOvernightContinuation ? `${formatTime(s.startHour)}-翌${formatTime(s.endHour)}` :
-        s.isOvernightContinuation ? `〜${formatTime(s.endHour)}` : `${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+    let time = s.overnight && !s.isOvernightContinuation ? `${formatTime(s.startHour)}-ç¿Œ${formatTime(s.endHour)}` :
+        s.isOvernightContinuation ? `ã€œ${formatTime(s.endHour)}` : `${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
 
-    // 変更履歴がある場合はツールチップに表示
+    // å¤‰æ›´å±¥æ­´ãŒã‚ã‚‹å ´åˆã¯ãƒ„ãƒ¼ãƒ«ãƒãƒƒãƒ—ã«è¡¨ç¤º
     if (s.changeHistory) {
         const h = s.changeHistory;
-        bar.title = `変更前: ${h.previousDate} ${formatTime(h.previousStartHour)}-${formatTime(h.previousEndHour)}\n理由: ${h.reason}`;
+        bar.title = `å¤‰æ›´å‰: ${h.previousDate} ${formatTime(h.previousStartHour)}-${formatTime(h.previousEndHour)}\nç†ç”±: ${h.reason}`;
         bar.classList.add('changed');
     }
 
-    // 交代履歴がある場合はツールチップに表示
+    // äº¤ä»£å±¥æ­´ãŒã‚ã‚‹å ´åˆã¯ãƒ„ãƒ¼ãƒ«ãƒãƒƒãƒ—ã«è¡¨ç¤º
     if (s.swapHistory) {
         const h = s.swapHistory;
-        bar.title = `交代前: ${h.previousName} → 交代後: ${h.newName}`;
+        bar.title = `äº¤ä»£å‰: ${h.previousName} â†’ äº¤ä»£å¾Œ: ${h.newName}`;
         bar.classList.add('swapped');
     }
 
-    bar.innerHTML = `${icons}<span class="shift-name">${s.name}</span><span class="shift-time">${time}</span>`;
+    // 業務内容（タスク）セグメントの描画
+    let tasks = s.tasks || [];
+    // 固定シフトの場合、元のfixedShiftからタスクを取得
+    if (s.isFixed && !tasks.length) {
+        const parts = s.id.split('-');
+        const originalId = parts[1];
+        const original = state.fixedShifts.find(function(f) { return f.id === originalId; });
+        if (original && original.tasks && original.tasks.length > 0) {
+            tasks = original.tasks;
+        }
+    }
+    // 夜勤継続の場合、元のシフトからタスクを取得
+    if (s.isOvernightContinuation && !tasks.length) {
+        const origId = s.id.replace('on-', '').replace('fxo-', '');
+        const origShift = state.shifts.find(function(x) { return x.id === origId; });
+        if (origShift && origShift.tasks && origShift.tasks.length > 0) {
+            tasks = origShift.tasks;
+        }
+    }
 
-    // タッチ位置を保存するための変数
+    if (tasks.length > 0) {
+        bar.classList.add('has-tasks');
+        bar.style.height = '28px';
+        var shiftDuration = end - start;
+        var headerHTML = '<div class="shift-bar-header">' + icons + '<span class="shift-name">' + s.name + '</span><span class="shift-time">' + time + '</span></div>';
+        var tasksHTML = '<div class="shift-bar-tasks">';
+        var sortedTasks = tasks.slice().sort(function(a, b) { return a.startHour - b.startHour; });
+        sortedTasks.forEach(function(t) {
+            var tStart = Math.max(t.startHour, start);
+            var tEnd = Math.min(t.endHour, end);
+            if (tStart >= tEnd) return;
+            var tLeftPct = ((tStart - start) / shiftDuration) * 100;
+            var tWidthPct = ((tEnd - tStart) / shiftDuration) * 100;
+            var tColor = t.color || '#10b981';
+            tasksHTML += '<div class="task-segment" style="left:' + tLeftPct + '%;width:' + tWidthPct + '%;background:' + tColor + ';" title="' + t.name + ' (' + formatTaskTime(t.startHour) + '～' + formatTaskTime(t.endHour) + ')"><span class="task-segment-name">' + t.name + '</span></div>';
+        });
+        tasksHTML += '</div>';
+        bar.innerHTML = headerHTML + tasksHTML;
+    } else {
+        bar.innerHTML = icons + '<span class="shift-name">' + s.name + '</span><span class="shift-time">' + time + '</span>';
+    }
+
+    // ã‚¿ãƒƒãƒä½ç½®ã‚’ä¿å­˜ã™ã‚‹ãŸã‚ã®å¤‰æ•°
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
 
-    // クリックイベント（デスクトップ用）
+    // ã‚¯ãƒªãƒƒã‚¯ã‚¤ãƒ™ãƒ³ãƒˆï¼ˆãƒ‡ã‚¹ã‚¯ãƒˆãƒƒãƒ—ç”¨ï¼‰
     bar.addEventListener('click', e => {
-        // 確認ダイアログを表示してからポップオーバーを表示
-        if (confirm('シフト内容を変更しますか？')) {
+        // ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤ºã—ã¦ã‹ã‚‰ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚’è¡¨ç¤º
+        if (confirm('ã‚·ãƒ•ãƒˆå†…å®¹ã‚’å¤‰æ›´ã—ã¾ã™ã‹ï¼Ÿ')) {
             showShiftPopover(s, e, bar);
         }
     });
 
-    // タッチイベント（モバイル用）
+    // ã‚¿ãƒƒãƒã‚¤ãƒ™ãƒ³ãƒˆï¼ˆãƒ¢ãƒã‚¤ãƒ«ç”¨ï¼‰
     bar.addEventListener('touchstart', (e) => {
         touchMoved = false;
         touchStartTime = Date.now();
@@ -1237,12 +1277,12 @@ function createShiftBar(s, lvl) {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         }
-        // イベントの伝播を停止してピンチズームとの競合を防ぐ
+        // ã‚¤ãƒ™ãƒ³ãƒˆã®ä¼æ’­ã‚’åœæ­¢ã—ã¦ãƒ”ãƒ³ãƒã‚ºãƒ¼ãƒ ã¨ã®ç«¶åˆã‚’é˜²ã
         e.stopPropagation();
     }, { passive: true });
 
     bar.addEventListener('touchmove', (e) => {
-        // 少しでも動いたらスクロールとみなす
+        // å°‘ã—ã§ã‚‚å‹•ã„ãŸã‚‰ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã¨ã¿ãªã™
         if (e.touches.length === 1) {
             const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
             const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
@@ -1253,15 +1293,15 @@ function createShiftBar(s, lvl) {
     }, { passive: true });
 
     bar.addEventListener('touchend', (e) => {
-        // タップ判定：動きが少なく、短い時間
+        // ã‚¿ãƒƒãƒ—åˆ¤å®šï¼šå‹•ããŒå°‘ãªãã€çŸ­ã„æ™‚é–“
         const touchDuration = Date.now() - touchStartTime;
         if (touchMoved || touchDuration > 500) return;
 
         e.preventDefault();
         e.stopPropagation();
 
-        // 確認ダイアログを表示してからポップオーバーを表示
-        if (confirm('シフト内容を変更しますか？')) {
+        // ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤ºã—ã¦ã‹ã‚‰ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚’è¡¨ç¤º
+        if (confirm('ã‚·ãƒ•ãƒˆå†…å®¹ã‚’å¤‰æ›´ã—ã¾ã™ã‹ï¼Ÿ')) {
             showShiftPopover(s, {
                 clientX: touchStartX,
                 clientY: touchStartY,
@@ -1273,11 +1313,11 @@ function createShiftBar(s, lvl) {
     return bar;
 }
 
-// シフト詳細ポップオーバーを表示
+// ã‚·ãƒ•ãƒˆè©³ç´°ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚’è¡¨ç¤º
 function showShiftPopover(s, event, barElement = null) {
     const popover = document.getElementById('shiftPopover');
 
-    // シフト情報を取得（固定シフトや夜勤継続の場合は元のシフトを取得）
+    // ã‚·ãƒ•ãƒˆæƒ…å ±ã‚’å–å¾—ï¼ˆå›ºå®šã‚·ãƒ•ãƒˆã‚„å¤œå‹¤ç¶™ç¶šã®å ´åˆã¯å…ƒã®ã‚·ãƒ•ãƒˆã‚’å–å¾—ï¼‰
     let displayShift = s;
     if (s.isFixed) {
         const parts = s.id.split('-');
@@ -1296,70 +1336,70 @@ function showShiftPopover(s, event, barElement = null) {
 
     state.currentPopoverShift = s;
 
-    // ポップオーバーの内容を更新
+    // ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã®å†…å®¹ã‚’æ›´æ–°
     document.getElementById('popoverName').textContent = displayShift.name;
 
-    // 日付表示
+    // æ—¥ä»˜è¡¨ç¤º
     const dateObj = new Date(displayShift.date || s.date);
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    const dateStr = `${dateObj.getMonth() + 1}月${dateObj.getDate()}日（${dayNames[dateObj.getDay()]}）`;
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+    const dateStr = `${dateObj.getMonth() + 1}æœˆ${dateObj.getDate()}æ—¥ï¼ˆ${dayNames[dateObj.getDay()]}ï¼‰`;
     document.getElementById('popoverDate').textContent = dateStr;
 
-    // 時間表示
+    // æ™‚é–“è¡¨ç¤º
     let timeStr;
     if (displayShift.overnight && !s.isOvernightContinuation) {
-        timeStr = `${formatTime(displayShift.startHour)} 〜 翌${formatTime(displayShift.endHour)}`;
+        timeStr = `${formatTime(displayShift.startHour)} ã€œ ç¿Œ${formatTime(displayShift.endHour)}`;
     } else if (s.isOvernightContinuation) {
-        timeStr = `0:00 〜 ${formatTime(displayShift.endHour)}（前日からの継続）`;
+        timeStr = `0:00 ã€œ ${formatTime(displayShift.endHour)}ï¼ˆå‰æ—¥ã‹ã‚‰ã®ç¶™ç¶šï¼‰`;
     } else {
-        timeStr = `${formatTime(displayShift.startHour)} 〜 ${formatTime(displayShift.endHour)}`;
+        timeStr = `${formatTime(displayShift.startHour)} ã€œ ${formatTime(displayShift.endHour)}`;
     }
     document.getElementById('popoverTime').textContent = timeStr;
 
-    // タイプ表示
+    // ã‚¿ã‚¤ãƒ—è¡¨ç¤º
     document.getElementById('popoverOvernightRow').style.display =
         (displayShift.overnight && !s.isOvernightContinuation) ? 'flex' : 'none';
     document.getElementById('popoverFixedRow').style.display = s.isFixed ? 'flex' : 'none';
 
-    // 単日変更表示
+    // å˜æ—¥å¤‰æ›´è¡¨ç¤º
     const overrideRow = document.getElementById('popoverOverrideRow');
     if (overrideRow) {
         overrideRow.style.display = s.hasOverride ? 'flex' : 'none';
     }
 
-    // 「この日のみ変更」ボタンの表示制御（固定シフトの場合のみ表示）
+    // ã€Œã“ã®æ—¥ã®ã¿å¤‰æ›´ã€ãƒœã‚¿ãƒ³ã®è¡¨ç¤ºåˆ¶å¾¡ï¼ˆå›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã®ã¿è¡¨ç¤ºï¼‰
     const overrideBtn = document.getElementById('popoverOverrideBtn');
     if (overrideBtn) {
         overrideBtn.style.display = s.isFixed ? 'inline-block' : 'none';
-        // すでに上書きがある場合はボタンテキストを変更
+        // ã™ã§ã«ä¸Šæ›¸ããŒã‚ã‚‹å ´åˆã¯ãƒœã‚¿ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’å¤‰æ›´
         if (s.hasOverride) {
-            overrideBtn.textContent = '📝 単日変更を編集';
+            overrideBtn.textContent = 'ðŸ“ å˜æ—¥å¤‰æ›´ã‚’ç·¨é›†';
         } else {
-            overrideBtn.textContent = '📝 この日のみ変更';
+            overrideBtn.textContent = 'ðŸ“ ã“ã®æ—¥ã®ã¿å¤‰æ›´';
         }
     }
 
-    // 変更履歴表示
+    // å¤‰æ›´å±¥æ­´è¡¨ç¤º
     if (displayShift.changeHistory) {
         document.getElementById('popoverChangeRow').style.display = 'flex';
         const h = displayShift.changeHistory;
         document.getElementById('popoverChangeInfo').textContent =
-            `${h.previousDate} ${formatTime(h.previousStartHour)}-${formatTime(h.previousEndHour)}から変更`;
+            `${h.previousDate} ${formatTime(h.previousStartHour)}-${formatTime(h.previousEndHour)}ã‹ã‚‰å¤‰æ›´`;
     } else {
         document.getElementById('popoverChangeRow').style.display = 'none';
     }
 
-    // 交代履歴表示
+    // äº¤ä»£å±¥æ­´è¡¨ç¤º
     if (displayShift.swapHistory) {
         document.getElementById('popoverSwapRow').style.display = 'flex';
         const h = displayShift.swapHistory;
-        document.getElementById('popoverSwapInfo').textContent = `${h.previousName} → ${h.newName}`;
+        document.getElementById('popoverSwapInfo').textContent = `${h.previousName} â†’ ${h.newName}`;
     } else {
         document.getElementById('popoverSwapRow').style.display = 'none';
     }
 
-    // ポップオーバーの位置を計算
-    // バー要素を取得（直接渡されたか、イベントから取得）
+    // ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã®ä½ç½®ã‚’è¨ˆç®—
+    // ãƒãƒ¼è¦ç´ ã‚’å–å¾—ï¼ˆç›´æŽ¥æ¸¡ã•ã‚ŒãŸã‹ã€ã‚¤ãƒ™ãƒ³ãƒˆã‹ã‚‰å–å¾—ï¼‰
     let bar = barElement;
     if (!bar && event && event.target) {
         bar = event.target.closest ? event.target.closest('.shift-bar') : event.target;
@@ -1374,27 +1414,27 @@ function showShiftPopover(s, event, barElement = null) {
         left = rect.left + (rect.width / 2) - (popoverWidth / 2);
         top = rect.bottom + 10;
 
-        // 画面からはみ出さないように調整
+        // ç”»é¢ã‹ã‚‰ã¯ã¿å‡ºã•ãªã„ã‚ˆã†ã«èª¿æ•´
         if (top + popoverHeight > window.innerHeight - 10) {
             top = rect.top - popoverHeight - 10;
         }
     } else if (event && (event.clientX !== undefined)) {
-        // タッチイベントの場合、タッチ位置を基準に配置
+        // ã‚¿ãƒƒãƒã‚¤ãƒ™ãƒ³ãƒˆã®å ´åˆã€ã‚¿ãƒƒãƒä½ç½®ã‚’åŸºæº–ã«é…ç½®
         left = event.clientX - (popoverWidth / 2);
         top = event.clientY + 20;
     } else {
-        // フォールバック：画面中央
+        // ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯ï¼šç”»é¢ä¸­å¤®
         left = (window.innerWidth - popoverWidth) / 2;
         top = (window.innerHeight - popoverHeight) / 2;
     }
 
-    // 左右のはみ出し調整
+    // å·¦å³ã®ã¯ã¿å‡ºã—èª¿æ•´
     if (left < 10) left = 10;
     if (left + popoverWidth > window.innerWidth - 10) {
         left = window.innerWidth - popoverWidth - 10;
     }
 
-    // 上下のはみ出し調整
+    // ä¸Šä¸‹ã®ã¯ã¿å‡ºã—èª¿æ•´
     if (top < 10) top = 10;
     if (top + popoverHeight > window.innerHeight - 10) {
         top = window.innerHeight - popoverHeight - 10;
@@ -1405,41 +1445,41 @@ function showShiftPopover(s, event, barElement = null) {
     popover.classList.add('active');
 }
 
-// ポップオーバーを閉じる
+// ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚’é–‰ã˜ã‚‹
 function closeShiftPopover() {
     const popover = document.getElementById('shiftPopover');
     popover.classList.remove('active');
     state.currentPopoverShift = null;
 }
 
-// 変更履歴モーダル表示
+// å¤‰æ›´å±¥æ­´ãƒ¢ãƒ¼ãƒ€ãƒ«è¡¨ç¤º
 function showChangeHistoryModal(s) {
     const h = s.changeHistory;
     const result = confirm(
-        `📝 シフト変更履歴\n\n` +
-        `【変更前】\n日付: ${h.previousDate}\n時間: ${h.previousStartHour}:00〜${h.previousEndHour}:00\n\n` +
-        `【変更後（現在）】\n日付: ${s.date}\n時間: ${s.startHour}:00〜${s.endHour}:00\n\n` +
-        `理由: ${h.reason}\n\n` +
-        `「OK」で編集画面を開きます`
+        `ðŸ“ ã‚·ãƒ•ãƒˆå¤‰æ›´å±¥æ­´\n\n` +
+        `ã€å¤‰æ›´å‰ã€‘\næ—¥ä»˜: ${h.previousDate}\næ™‚é–“: ${h.previousStartHour}:00ã€œ${h.previousEndHour}:00\n\n` +
+        `ã€å¤‰æ›´å¾Œï¼ˆç¾åœ¨ï¼‰ã€‘\næ—¥ä»˜: ${s.date}\næ™‚é–“: ${s.startHour}:00ã€œ${s.endHour}:00\n\n` +
+        `ç†ç”±: ${h.reason}\n\n` +
+        `ã€ŒOKã€ã§ç·¨é›†ç”»é¢ã‚’é–‹ãã¾ã™`
     );
     if (result) openEditShiftModal(s);
 }
 
-// 交代履歴モーダル表示
+// äº¤ä»£å±¥æ­´ãƒ¢ãƒ¼ãƒ€ãƒ«è¡¨ç¤º
 function showSwapHistoryModal(s) {
     const h = s.swapHistory;
     const result = confirm(
-        `🤝 シフト交代履歴\n\n` +
-        `【交代前】\n担当者: ${h.previousName}\n\n` +
-        `【交代後（現在）】\n担当者: ${h.newName}\n\n` +
-        `メッセージ: ${h.message || 'なし'}\n\n` +
-        `「OK」で編集画面を開きます`
+        `ðŸ¤ ã‚·ãƒ•ãƒˆäº¤ä»£å±¥æ­´\n\n` +
+        `ã€äº¤ä»£å‰ã€‘\næ‹…å½“è€…: ${h.previousName}\n\n` +
+        `ã€äº¤ä»£å¾Œï¼ˆç¾åœ¨ï¼‰ã€‘\næ‹…å½“è€…: ${h.newName}\n\n` +
+        `ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸: ${h.message || 'ãªã—'}\n\n` +
+        `ã€ŒOKã€ã§ç·¨é›†ç”»é¢ã‚’é–‹ãã¾ã™`
     );
     if (result) openEditShiftModal(s);
 }
 
 function adjustColor(hex, amt) {
-    // 色が正しくない場合はデフォルト色を使用
+    // è‰²ãŒæ­£ã—ããªã„å ´åˆã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆè‰²ã‚’ä½¿ç”¨
     if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length < 4) {
         hex = '#6366f1';
     }
@@ -1455,11 +1495,11 @@ function adjustColor(hex, amt) {
     }
 }
 
-// 凡例
+// å‡¡ä¾‹
 function renderLegend() {
     const el = document.getElementById('legendItems');
     const colors = getNameColors();
-    if (!Object.keys(colors).length) { el.innerHTML = '<span style="color:var(--text-muted)">シフトを追加すると担当者が表示されます</span>'; return; }
+    if (!Object.keys(colors).length) { el.innerHTML = '<span style="color:var(--text-muted)">ã‚·ãƒ•ãƒˆã‚’è¿½åŠ ã™ã‚‹ã¨æ‹…å½“è€…ãŒè¡¨ç¤ºã•ã‚Œã¾ã™</span>'; return; }
     el.innerHTML = '';
     Object.entries(colors).forEach(([n, c]) => {
         const d = document.createElement('div');
@@ -1469,16 +1509,16 @@ function renderLegend() {
     });
 }
 
-// 期間表示
+// æœŸé–“è¡¨ç¤º
 function updatePeriodDisplay() {
     const el = document.getElementById('currentPeriod');
     const s = new Date(state.currentWeekStart), e = new Date(s);
     e.setDate(e.getDate() + 6);
     const sm = s.getMonth() + 1, sd = s.getDate(), em = e.getMonth() + 1, ed = e.getDate();
-    el.textContent = sm === em ? `${s.getFullYear()}年${sm}月${sd}日 〜 ${ed}日` : `${s.getFullYear()}年${sm}月${sd}日 〜 ${em}月${ed}日`;
+    el.textContent = sm === em ? `${s.getFullYear()}å¹´${sm}æœˆ${sd}æ—¥ ã€œ ${ed}æ—¥` : `${s.getFullYear()}å¹´${sm}æœˆ${sd}æ—¥ ã€œ ${em}æœˆ${ed}æ—¥`;
 }
 
-// メッセージバー
+// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒãƒ¼
 function updateMessageBar() {
     const cnt = state.messages.filter(m => !m.read).length + state.swapRequests.filter(r => r.status === 'pending').length;
     const bar = document.getElementById('messageBar'), num = document.getElementById('messageCount');
@@ -1486,8 +1526,218 @@ function updateMessageBar() {
     else bar.style.display = 'none';
 }
 
-// CRUD操作
+// CRUDæ“ä½œ
 function addShift(d) { const s = { id: Date.now().toString(), ...d }; state.shifts.push(s); saveToFirebase('shifts', state.shifts); trackUsage('add_shift', d.name); }
+
+// ========================================
+// シフト内タスク（業務内容）管理
+// ========================================
+let currentTaskShiftId = null;
+let currentTaskShiftType = null;
+let selectedTaskColor = '#10b981';
+let editingTaskId = null;
+
+function getShiftForTask(shiftId) {
+    let shift = state.shifts.find(s => s.id === shiftId);
+    if (shift) return { shift, type: 'normal' };
+    shift = state.fixedShifts.find(s => s.id === shiftId);
+    if (shift) return { shift, type: 'fixed' };
+    return null;
+}
+
+function getActualShiftId(popoverShift) {
+    if (popoverShift.isFixed) {
+        const parts = popoverShift.id.split('-');
+        return { id: parts[1], type: 'fixed', date: popoverShift.date };
+    } else if (popoverShift.isOvernightContinuation) {
+        const originalId = popoverShift.id.replace('on-', '');
+        return { id: originalId, type: 'normal', date: popoverShift.date };
+    }
+    return { id: popoverShift.id, type: 'normal', date: popoverShift.date };
+}
+
+function addTaskToShift(shiftId, shiftType, task) {
+    const arr = shiftType === 'fixed' ? state.fixedShifts : state.shifts;
+    const idx = arr.findIndex(s => s.id === shiftId);
+    if (idx < 0) return;
+    if (!arr[idx].tasks) arr[idx].tasks = [];
+    task.id = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 5);
+    arr[idx].tasks.push(task);
+    saveToFirebase(shiftType === 'fixed' ? 'fixedShifts' : 'shifts', arr);
+    render();
+}
+
+function updateTaskInShift(shiftId, shiftType, taskId, updates) {
+    const arr = shiftType === 'fixed' ? state.fixedShifts : state.shifts;
+    const idx = arr.findIndex(s => s.id === shiftId);
+    if (idx < 0) return;
+    if (!arr[idx].tasks) return;
+    const tIdx = arr[idx].tasks.findIndex(t => t.id === taskId);
+    if (tIdx < 0) return;
+    arr[idx].tasks[tIdx] = { ...arr[idx].tasks[tIdx], ...updates };
+    saveToFirebase(shiftType === 'fixed' ? 'fixedShifts' : 'shifts', arr);
+    render();
+}
+
+function deleteTaskFromShift(shiftId, shiftType, taskId) {
+    const arr = shiftType === 'fixed' ? state.fixedShifts : state.shifts;
+    const idx = arr.findIndex(s => s.id === shiftId);
+    if (idx < 0) return;
+    if (!arr[idx].tasks) return;
+    arr[idx].tasks = arr[idx].tasks.filter(t => t.id !== taskId);
+    saveToFirebase(shiftType === 'fixed' ? 'fixedShifts' : 'shifts', arr);
+    render();
+}
+
+function openTaskModal(popoverShift) {
+    const actual = getActualShiftId(popoverShift);
+    currentTaskShiftId = actual.id;
+    currentTaskShiftType = actual.type;
+    editingTaskId = null;
+    selectedTaskColor = '#10b981';
+
+    const result = getShiftForTask(actual.id);
+    if (!result) { alert('シフトが見つかりません'); return; }
+    const shift = result.shift;
+
+    const infoEl = document.getElementById('taskShiftInfoText');
+    const timeStr = shift.overnight ?
+        formatTime(shift.startHour) + '～翌' + formatTime(shift.endHour) :
+        formatTime(shift.startHour) + '～' + formatTime(shift.endHour);
+    infoEl.textContent = shift.name + ' | ' + timeStr;
+
+    populateTaskTimeSelects(shift.startHour, shift.overnight ? 24 + shift.endHour : shift.endHour);
+
+    document.querySelectorAll('#taskColorPicker .task-color-option').forEach(function(btn) {
+        btn.classList.toggle('selected', btn.dataset.color === selectedTaskColor);
+    });
+
+    document.getElementById('taskName').value = '';
+    document.getElementById('addTaskBtn').textContent = '追加';
+
+    renderTaskList();
+    openModal(document.getElementById('taskModalOverlay'));
+}
+
+function populateTaskTimeSelects(shiftStart, shiftEnd) {
+    var startSel = document.getElementById('taskStartHour');
+    var endSel = document.getElementById('taskEndHour');
+    startSel.innerHTML = '';
+    endSel.innerHTML = '';
+
+    for (var h = shiftStart; h <= shiftEnd; h += 0.5) {
+        var displayH = h >= 24 ? h - 24 : h;
+        var prefix = h >= 24 ? '翌' : '';
+        var hh = Math.floor(displayH);
+        var mm = (displayH % 1 === 0.5) ? '30' : '00';
+        var label = prefix + hh + ':' + mm;
+
+        if (h < shiftEnd) {
+            var opt1 = document.createElement('option');
+            opt1.value = h;
+            opt1.textContent = label;
+            startSel.appendChild(opt1);
+        }
+        if (h > shiftStart) {
+            var opt2 = document.createElement('option');
+            opt2.value = h;
+            opt2.textContent = label;
+            endSel.appendChild(opt2);
+        }
+    }
+    if (endSel.options.length > 0) {
+        endSel.selectedIndex = Math.min(2, endSel.options.length - 1);
+    }
+}
+
+function renderTaskList() {
+    var listEl = document.getElementById('taskList');
+    var result = getShiftForTask(currentTaskShiftId);
+    if (!result) { listEl.innerHTML = ''; return; }
+
+    var tasks = result.shift.tasks || [];
+    if (tasks.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;font-size:0.9rem;">まだ業務内容が登録されていません</div>';
+        return;
+    }
+
+    var sorted = tasks.slice().sort(function(a, b) { return a.startHour - b.startHour; });
+
+    listEl.innerHTML = sorted.map(function(t) {
+        var startStr = formatTaskTime(t.startHour);
+        var endStr = formatTaskTime(t.endHour);
+        return '<div class="task-list-item" style="border-left-color:' + (t.color || '#10b981') + ';">' +
+            '<div class="task-item-info">' +
+            '<div class="task-item-name">' + escapeHtmlTask(t.name) + '</div>' +
+            '<div class="task-item-time">' + startStr + ' ～ ' + endStr + '</div>' +
+            '</div>' +
+            '<div class="task-item-actions">' +
+            '<button class="task-edit-btn" onclick="startEditTask(\'' + t.id + '\')">✏️</button>' +
+            '<button class="task-delete-btn" onclick="confirmDeleteTask(\'' + t.id + '\')">🗑️</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+function formatTaskTime(h) {
+    var displayH = h >= 24 ? h - 24 : h;
+    var prefix = h >= 24 ? '翌' : '';
+    var hh = Math.floor(displayH);
+    var mm = (displayH % 1 === 0.5) ? '30' : '00';
+    return prefix + hh + ':' + mm;
+}
+
+function escapeHtmlTask(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function startEditTask(taskId) {
+    var result = getShiftForTask(currentTaskShiftId);
+    if (!result) return;
+    var task = (result.shift.tasks || []).find(function(t) { return t.id === taskId; });
+    if (!task) return;
+
+    editingTaskId = taskId;
+    document.getElementById('taskName').value = task.name;
+    document.getElementById('taskStartHour').value = task.startHour;
+    document.getElementById('taskEndHour').value = task.endHour;
+    selectedTaskColor = task.color || '#10b981';
+
+    document.querySelectorAll('#taskColorPicker .task-color-option').forEach(function(btn) {
+        btn.classList.toggle('selected', btn.dataset.color === selectedTaskColor);
+    });
+    document.getElementById('addTaskBtn').textContent = '更新';
+}
+
+function confirmDeleteTask(taskId) {
+    if (confirm('この業務を削除しますか？')) {
+        deleteTaskFromShift(currentTaskShiftId, currentTaskShiftType, taskId);
+        renderTaskList();
+    }
+}
+
+function handleAddOrUpdateTask() {
+    var name = document.getElementById('taskName').value.trim();
+    var startHour = parseFloat(document.getElementById('taskStartHour').value);
+    var endHour = parseFloat(document.getElementById('taskEndHour').value);
+
+    if (!name) { alert('業務名を入力してください'); return; }
+    if (startHour >= endHour) { alert('終了時刻は開始時刻より後にしてください'); return; }
+
+    var taskData = { name: name, startHour: startHour, endHour: endHour, color: selectedTaskColor };
+
+    if (editingTaskId) {
+        updateTaskInShift(currentTaskShiftId, currentTaskShiftType, editingTaskId, taskData);
+        editingTaskId = null;
+        document.getElementById('addTaskBtn').textContent = '追加';
+    } else {
+        addTaskToShift(currentTaskShiftId, currentTaskShiftType, taskData);
+    }
+
+    document.getElementById('taskName').value = '';
+    renderTaskList();
+}
 function updateShift(id, d) { const i = state.shifts.findIndex(s => s.id === id); if (i >= 0) { state.shifts[i] = { ...state.shifts[i], ...d }; saveToFirebase('shifts', state.shifts); trackUsage('edit_shift', d.name || state.shifts[i]?.name); } }
 function addFixedShift(d) { 
     const s = { 
@@ -1521,7 +1771,7 @@ function updateFixedShift(id, d) {
             dayOfWeek: getDayOfWeek(d.date),
             updatedAt: new Date().toISOString()
         };
-        // 有効期間が指定されている場合のみ更新
+        // æœ‰åŠ¹æœŸé–“ãŒæŒ‡å®šã•ã‚Œã¦ã„ã‚‹å ´åˆã®ã¿æ›´æ–°
         if (d.fixedStartDate !== undefined) updated.startDate = d.fixedStartDate;
         if (d.fixedEndDate !== undefined) updated.endDate = d.fixedEndDate;
         state.fixedShifts[i] = updated;
@@ -1530,7 +1780,7 @@ function updateFixedShift(id, d) {
     }
 }
 
-// 単日上書き CRUD操作
+// å˜æ—¥ä¸Šæ›¸ã CRUDæ“ä½œ
 function addShiftOverride(d) {
     const override = { id: Date.now().toString(), createdAt: new Date().toISOString(), ...d };
     state.shiftOverrides.push(override);
@@ -1555,25 +1805,25 @@ function addChangeRequest(d) {
     saveToFirebase('changeRequests', state.changeRequests);
     trackUsage('request_change', d.applicant);
 
-    // シフトの持ち主と管理者にメッセージを送信
+    // ã‚·ãƒ•ãƒˆã®æŒã¡ä¸»ã¨ç®¡ç†è€…ã«ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡
     const shift = state.shifts.find(s => s.id === d.originalShiftId);
     if (shift) {
-        const title = '🔄 シフト変更申請';
-        const content = `${d.applicant}さんからシフト変更申請がありました。\nシフト: ${shift.date} ${shift.startHour}:00-${shift.endHour}:00\n変更後: ${d.newDate} ${d.newStartHour}:00-${d.newEndHour}:00\n理由: ${d.reason}`;
+        const title = 'ðŸ”„ ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹';
+        const content = `${d.applicant}ã•ã‚“ã‹ã‚‰ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹ãŒã‚ã‚Šã¾ã—ãŸã€‚\nã‚·ãƒ•ãƒˆ: ${shift.date} ${shift.startHour}:00-${shift.endHour}:00\nå¤‰æ›´å¾Œ: ${d.newDate} ${d.newStartHour}:00-${d.newEndHour}:00\nç†ç”±: ${d.reason}`;
 
-        // シフトの持ち主に通知（申請者と異なる場合）
+        // ã‚·ãƒ•ãƒˆã®æŒã¡ä¸»ã«é€šçŸ¥ï¼ˆç”³è«‹è€…ã¨ç•°ãªã‚‹å ´åˆï¼‰
         if (shift.name !== d.applicant) {
             state.messages.push({ id: Date.now().toString() + '_owner', to: shift.name, from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
         }
 
-        // 管理者に通知
-        state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
+        // ç®¡ç†è€…ã«é€šçŸ¥
+        state.messages.push({ id: Date.now().toString() + '_admin', to: 'ç®¡ç†è€…', from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
 
         saveToFirebase('messages', state.messages);
     }
 }
 
-// 有給申請（互換性維持用の単一関数）
+// æœ‰çµ¦ç”³è«‹ï¼ˆäº’æ›æ€§ç¶­æŒç”¨ã®å˜ä¸€é–¢æ•°ï¼‰
 function addLeaveRequest(d) { 
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d }; 
     state.leaveRequests.push(r); 
@@ -1581,7 +1831,7 @@ function addLeaveRequest(d) {
     trackUsage('request_leave', d.name); 
 }
 
-// 複数シフトの有給申請
+// è¤‡æ•°ã‚·ãƒ•ãƒˆã®æœ‰çµ¦ç”³è«‹
 function addLeaveRequestMultiple(name, selectedShifts) {
     const shiftsInfo = selectedShifts.map(s => ({
         date: s.date,
@@ -1592,10 +1842,10 @@ function addLeaveRequestMultiple(name, selectedShifts) {
         fixedShiftId: s.fixedShiftId || null
     }));
     
-    // 日付でソート
+    // æ—¥ä»˜ã§ã‚½ãƒ¼ãƒˆ
     shiftsInfo.sort((a, b) => a.date.localeCompare(b.date));
     
-    // 開始日と終了日を取得
+    // é–‹å§‹æ—¥ã¨çµ‚äº†æ—¥ã‚’å–å¾—
     const startDate = shiftsInfo[0].date;
     const endDate = shiftsInfo[shiftsInfo.length - 1].date;
     
@@ -1607,26 +1857,26 @@ function addLeaveRequestMultiple(name, selectedShifts) {
         startDate: startDate,
         endDate: endDate,
         selectedShifts: shiftsInfo,
-        reason: '有給休暇'
+        reason: 'æœ‰çµ¦ä¼‘æš‡'
     };
     
     state.leaveRequests.push(r);
     saveToFirebase('leaveRequests', state.leaveRequests);
     trackUsage('request_leave', name);
     
-    // 管理者に通知
-    const title = '🏖️ 有給申請';
+    // ç®¡ç†è€…ã«é€šçŸ¥
+    const title = 'ðŸ–ï¸ æœ‰çµ¦ç”³è«‹';
     const shiftDates = shiftsInfo.map(s => {
         const d = new Date(s.date);
-        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        return `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+        const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+        return `${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
     }).join('\n');
-    const content = `${name}さんから有給申請がありました。\n\n【申請シフト】\n${shiftDates}`;
-    state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: name, title, content, createdAt: new Date().toISOString(), read: false });
+    const content = `${name}ã•ã‚“ã‹ã‚‰æœ‰çµ¦ç”³è«‹ãŒã‚ã‚Šã¾ã—ãŸã€‚\n\nã€ç”³è«‹ã‚·ãƒ•ãƒˆã€‘\n${shiftDates}`;
+    state.messages.push({ id: Date.now().toString() + '_admin', to: 'ç®¡ç†è€…', from: name, title, content, createdAt: new Date().toISOString(), read: false });
     saveToFirebase('messages', state.messages);
 }
 
-// 複数シフトの休日申請
+// è¤‡æ•°ã‚·ãƒ•ãƒˆã®ä¼‘æ—¥ç”³è«‹
 function addHolidayRequestMultiple(name, selectedShifts, options) {
     const shiftsInfo = selectedShifts.map(s => ({
         date: s.date,
@@ -1639,10 +1889,10 @@ function addHolidayRequestMultiple(name, selectedShifts, options) {
         fixedShiftId: s.fixedShiftId || null
     }));
     
-    // 日付でソート
+    // æ—¥ä»˜ã§ã‚½ãƒ¼ãƒˆ
     shiftsInfo.sort((a, b) => a.date.localeCompare(b.date));
     
-    // 開始日と終了日を取得
+    // é–‹å§‹æ—¥ã¨çµ‚äº†æ—¥ã‚’å–å¾—
     const startDate = shiftsInfo[0].date;
     const endDate = shiftsInfo[shiftsInfo.length - 1].date;
     
@@ -1664,49 +1914,49 @@ function addHolidayRequestMultiple(name, selectedShifts, options) {
     saveToFirebase('holidayRequests', state.holidayRequests);
     trackUsage('request_holiday', name);
     
-    // 管理者に通知
-    const title = '🏠 休日申請';
+    // ç®¡ç†è€…ã«é€šçŸ¥
+    const title = 'ðŸ  ä¼‘æ—¥ç”³è«‹';
     const shiftDates = shiftsInfo.map(s => {
         const d = new Date(s.date);
-        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        return `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
+        const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+        return `${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
     }).join('\n');
-    let content = `${name}さんから休日申請がありました。\n\n【申請シフト】\n${shiftDates}\n\n理由: ${options.reason}`;
+    let content = `${name}ã•ã‚“ã‹ã‚‰ä¼‘æ—¥ç”³è«‹ãŒã‚ã‚Šã¾ã—ãŸã€‚\n\nã€ç”³è«‹ã‚·ãƒ•ãƒˆã€‘\n${shiftDates}\n\nç†ç”±: ${options.reason}`;
     if (options.swapRequested && options.swapPartner) {
-        content += `\nシフト交代: ${options.swapPartner}さんと交代`;
+        content += `\nã‚·ãƒ•ãƒˆäº¤ä»£: ${options.swapPartner}ã•ã‚“ã¨äº¤ä»£`;
     }
-    state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: name, title, content, createdAt: new Date().toISOString(), read: false });
+    state.messages.push({ id: Date.now().toString() + '_admin', to: 'ç®¡ç†è€…', from: name, title, content, createdAt: new Date().toISOString(), read: false });
     saveToFirebase('messages', state.messages);
 }
 
-// 有給申請用のシフトリストを更新
+// æœ‰çµ¦ç”³è«‹ç”¨ã®ã‚·ãƒ•ãƒˆãƒªã‚¹ãƒˆã‚’æ›´æ–°
 function updateLeaveShiftList() {
     const name = document.getElementById('leaveName').value;
     const container = document.getElementById('leaveShiftList');
     
     if (!name) {
-        container.innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        container.innerHTML = '<p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>';
         return;
     }
     
-    const shifts = getEmployeeShiftsForPeriod(name, 4); // 4週間分
+    const shifts = getEmployeeShiftsForPeriod(name, 4); // 4é€±é–“åˆ†
     
     if (shifts.length === 0) {
-        container.innerHTML = '<p class="no-shift-message">該当するシフトがありません</p>';
+        container.innerHTML = '<p class="no-shift-message">è©²å½“ã™ã‚‹ã‚·ãƒ•ãƒˆãŒã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
     
     container.innerHTML = shifts.map(s => {
         const d = new Date(s.date);
-        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
         const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
         const badges = [];
-        if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">固定</span>');
-        if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">夜勤</span>');
+        if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">å›ºå®š</span>');
+        if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">å¤œå‹¤</span>');
         
         const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
-        const dateText = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
-        const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
+        const dateText = `${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰`;
+        const timeText = `${formatTime(s.startHour)} ã€œ ${formatTime(s.endHour)}${s.overnight ? ' ï¼ˆç¿Œæ—¥ï¼‰' : ''}`;
         
         return `
             <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #1e293b; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; width: 100%; box-sizing: border-box;">
@@ -1721,37 +1971,37 @@ function updateLeaveShiftList() {
     }).join('');
 }
 
-// 休日申請用のシフトリストを更新
+// ä¼‘æ—¥ç”³è«‹ç”¨ã®ã‚·ãƒ•ãƒˆãƒªã‚¹ãƒˆã‚’æ›´æ–°
 function updateHolidayShiftList() {
     const name = document.getElementById('holidayName').value;
     const container = document.getElementById('holidayShiftList');
     const timeRangeGroup = document.getElementById('holidayTimeRangeGroup');
     
     if (!name) {
-        container.innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        container.innerHTML = '<p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>';
         timeRangeGroup.style.display = 'none';
         return;
     }
     
-    const shifts = getEmployeeShiftsForPeriod(name, 4); // 4週間分
+    const shifts = getEmployeeShiftsForPeriod(name, 4); // 4é€±é–“åˆ†
     
     if (shifts.length === 0) {
-        container.innerHTML = '<p class="no-shift-message">該当するシフトがありません</p>';
+        container.innerHTML = '<p class="no-shift-message">è©²å½“ã™ã‚‹ã‚·ãƒ•ãƒˆãŒã‚ã‚Šã¾ã›ã‚“</p>';
         timeRangeGroup.style.display = 'none';
         return;
     }
     
     container.innerHTML = shifts.map(s => {
         const d = new Date(s.date);
-        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
         const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
         const badges = [];
-        if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">固定</span>');
-        if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">夜勤</span>');
+        if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">å›ºå®š</span>');
+        if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">å¤œå‹¤</span>');
         
         const shiftInfo = JSON.stringify(s).replace(/"/g, '&quot;');
-        const dateText = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
-        const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
+        const dateText = `${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰`;
+        const timeText = `${formatTime(s.startHour)} ã€œ ${formatTime(s.endHour)}${s.overnight ? ' ï¼ˆç¿Œæ—¥ï¼‰' : ''}`;
         
         return `
             <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #1e293b; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; width: 100%; box-sizing: border-box;">
@@ -1765,62 +2015,62 @@ function updateHolidayShiftList() {
         `;
     }).join('');
     
-    // 時間帯選択を表示
+    // æ™‚é–“å¸¯é¸æŠžã‚’è¡¨ç¤º
     timeRangeGroup.style.display = 'block';
     updateHolidayTimeOptions();
 }
 
-// シフト選択の切り替え
+// ã‚·ãƒ•ãƒˆé¸æŠžã®åˆ‡ã‚Šæ›¿ãˆ
 function toggleShiftSelection(element, type) {
     const checkbox = element.querySelector('.shift-selection-checkbox');
     checkbox.checked = !checkbox.checked;
     element.classList.toggle('selected', checkbox.checked);
     
-    // 休日申請の場合、時間選択を更新
+    // ä¼‘æ—¥ç”³è«‹ã®å ´åˆã€æ™‚é–“é¸æŠžã‚’æ›´æ–°
     if (type === 'holiday') {
         updateHolidayTimeOptions();
     }
 }
 
-// 休日申請の時間選択オプションを更新
+// ä¼‘æ—¥ç”³è«‹ã®æ™‚é–“é¸æŠžã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚’æ›´æ–°
 function updateHolidayTimeOptions() {
     const startSelect = document.getElementById('holidayStartTime');
     const endSelect = document.getElementById('holidayEndTime');
     
-    // 選択されたシフトを取得
+    // é¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆã‚’å–å¾—
     const selectedItems = document.querySelectorAll('#holidayShiftList .shift-selection-checkbox:checked');
     
     if (selectedItems.length === 0) {
-        startSelect.innerHTML = '<option value="">シフト開始時刻</option>';
-        endSelect.innerHTML = '<option value="">シフト終了時刻</option>';
+        startSelect.innerHTML = '<option value="">ã‚·ãƒ•ãƒˆé–‹å§‹æ™‚åˆ»</option>';
+        endSelect.innerHTML = '<option value="">ã‚·ãƒ•ãƒˆçµ‚äº†æ™‚åˆ»</option>';
         return;
     }
     
-    // 最初に選択されたシフトを基準にする
+    // æœ€åˆã«é¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆã‚’åŸºæº–ã«ã™ã‚‹
     const firstItem = selectedItems[0].closest('.shift-selection-item');
     const shiftData = JSON.parse(firstItem.dataset.shiftInfo);
     
-    // 開始時刻の選択肢を生成
-    startSelect.innerHTML = '<option value="">シフト開始時刻</option>';
+    // é–‹å§‹æ™‚åˆ»ã®é¸æŠžè‚¢ã‚’ç”Ÿæˆ
+    startSelect.innerHTML = '<option value="">ã‚·ãƒ•ãƒˆé–‹å§‹æ™‚åˆ»</option>';
     for (let h = shiftData.startHour; h < shiftData.endHour; h += 0.5) {
         startSelect.innerHTML += `<option value="${h}">${formatTime(h)}</option>`;
     }
     
-    // 終了時刻の選択肢を生成
-    endSelect.innerHTML = '<option value="">シフト終了時刻</option>';
+    // çµ‚äº†æ™‚åˆ»ã®é¸æŠžè‚¢ã‚’ç”Ÿæˆ
+    endSelect.innerHTML = '<option value="">ã‚·ãƒ•ãƒˆçµ‚äº†æ™‚åˆ»</option>';
     for (let h = shiftData.startHour + 0.5; h <= shiftData.endHour; h += 0.5) {
         endSelect.innerHTML += `<option value="${h}">${formatTime(h)}</option>`;
     }
 }
 
-// 従業員のシフトを期間分取得
+// å¾“æ¥­å“¡ã®ã‚·ãƒ•ãƒˆã‚’æœŸé–“åˆ†å–å¾—
 function getEmployeeShiftsForPeriod(employeeName, weeks) {
     const shifts = [];
     const today = new Date();
     const endDate = new Date(today);
     endDate.setDate(endDate.getDate() + (weeks * 7));
     
-    // 通常シフトを収集
+    // é€šå¸¸ã‚·ãƒ•ãƒˆã‚’åŽé›†
     state.shifts.forEach(s => {
         if (s.name === employeeName && !s.hidden && !s.isLeaveOverride) {
             const shiftDate = new Date(s.date);
@@ -1837,23 +2087,23 @@ function getEmployeeShiftsForPeriod(employeeName, weeks) {
         }
     });
     
-    // 固定シフトを収集（今日から指定週間分）
+    // å›ºå®šã‚·ãƒ•ãƒˆã‚’åŽé›†ï¼ˆä»Šæ—¥ã‹ã‚‰æŒ‡å®šé€±é–“åˆ†ï¼‰
     const currentDate = new Date(today);
     while (currentDate <= endDate) {
         const dateStr = formatDate(currentDate);
         const dayOfWeek = currentDate.getDay();
         
-        // この日に既に通常シフトがあるか確認
+        // ã“ã®æ—¥ã«æ—¢ã«é€šå¸¸ã‚·ãƒ•ãƒˆãŒã‚ã‚‹ã‹ç¢ºèª
         const hasNormalShift = shifts.some(s => s.date === dateStr);
         
         if (!hasNormalShift) {
-            // 臨時シフト日は固定シフトをスキップ
+            // è‡¨æ™‚ã‚·ãƒ•ãƒˆæ—¥ã¯å›ºå®šã‚·ãƒ•ãƒˆã‚’ã‚¹ã‚­ãƒƒãƒ—
             const isSpecialDay = isSpecialEventDate(dateStr);
             if (isSpecialDay) { currentDate.setDate(currentDate.getDate() + 1); continue; }
-            // 固定シフトを探す
+            // å›ºå®šã‚·ãƒ•ãƒˆã‚’æŽ¢ã™
             state.fixedShifts.forEach(f => {
                 if (f.name === employeeName && f.dayOfWeek === dayOfWeek) {
-                    // 有給や休日で上書きされていないか確認
+                    // æœ‰çµ¦ã‚„ä¼‘æ—¥ã§ä¸Šæ›¸ãã•ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
                     const isOverridden = state.shifts.some(s => 
                         s.date === dateStr && 
                         s.fixedShiftOverride === f.id && 
@@ -1861,7 +2111,7 @@ function getEmployeeShiftsForPeriod(employeeName, weeks) {
                     );
                     
                     if (!isOverridden) {
-                        // 単日上書きがあるか確認
+                        // å˜æ—¥ä¸Šæ›¸ããŒã‚ã‚‹ã‹ç¢ºèª
                         const override = state.shiftOverrides.find(o => o.fixedShiftId === f.id && o.date === dateStr);
                         
                         shifts.push({
@@ -1880,7 +2130,7 @@ function getEmployeeShiftsForPeriod(employeeName, weeks) {
         currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // 日付でソート
+    // æ—¥ä»˜ã§ã‚½ãƒ¼ãƒˆ
     shifts.sort((a, b) => a.date.localeCompare(b.date));
     
     return shifts;
@@ -1892,10 +2142,10 @@ function addSwapRequest(d) {
     saveToFirebase('swapRequests', state.swapRequests);
     trackUsage('request_swap', d.applicant);
 
-    // シフト情報を取得（固定シフトの場合も対応）
+    // ã‚·ãƒ•ãƒˆæƒ…å ±ã‚’å–å¾—ï¼ˆå›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã‚‚å¯¾å¿œï¼‰
     let shiftInfo = null;
     if (d.shiftId && d.shiftId.startsWith('fx-')) {
-        // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+        // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆ: fx-{originalId}-{dateStr} å½¢å¼
         const parts = d.shiftId.split('-');
         const originalId = parts[1];
         const dateStr = parts.slice(2).join('-');
@@ -1910,13 +2160,13 @@ function addSwapRequest(d) {
         }
     }
 
-    // 交代相手にメッセージを送信（管理者は管理者パネルで確認できるため通知しない）
+    // äº¤ä»£ç›¸æ‰‹ã«ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡ï¼ˆç®¡ç†è€…ã¯ç®¡ç†è€…ãƒ‘ãƒãƒ«ã§ç¢ºèªã§ãã‚‹ãŸã‚é€šçŸ¥ã—ãªã„ï¼‰
     if (shiftInfo) {
-        const title = '🤝 シフト交代依頼';
+        const title = 'ðŸ¤ ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼';
         const timeDisplay = `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}`;
-        const content = `${d.applicant}さんから${d.targetEmployee}さんへシフト交代依頼がありました。\nシフト: ${shiftInfo.date} ${timeDisplay}\n現在の担当: ${shiftInfo.name}\n交代先: ${d.targetEmployee}\nメッセージ: ${d.message}`;
+        const content = `${d.applicant}ã•ã‚“ã‹ã‚‰${d.targetEmployee}ã•ã‚“ã¸ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼ãŒã‚ã‚Šã¾ã—ãŸã€‚\nã‚·ãƒ•ãƒˆ: ${shiftInfo.date} ${timeDisplay}\nç¾åœ¨ã®æ‹…å½“: ${shiftInfo.name}\näº¤ä»£å…ˆ: ${d.targetEmployee}\nãƒ¡ãƒƒã‚»ãƒ¼ã‚¸: ${d.message}`;
 
-        // 交代相手に通知
+        // äº¤ä»£ç›¸æ‰‹ã«é€šçŸ¥
         state.messages.push({ id: Date.now().toString() + '_target', to: d.targetEmployee, from: d.applicant, title, content, createdAt: new Date().toISOString(), read: false });
 
         saveToFirebase('messages', state.messages);
@@ -1932,12 +2182,12 @@ function updateEmployee(id, d) {
     }
 }
 
-// ====== 臨時シフト（特別イベント）管理 ======
+// ====== è‡¨æ™‚ã‚·ãƒ•ãƒˆï¼ˆç‰¹åˆ¥ã‚¤ãƒ™ãƒ³ãƒˆï¼‰ç®¡ç† ======
 function addSpecialEvent(d) {
     const e = { id: Date.now().toString(), createdAt: new Date().toISOString(), ...d };
     state.specialEvents.push(e);
     saveToFirebase('specialEvents', state.specialEvents);
-    trackUsage('add_special_event', d.name || '管理者');
+    trackUsage('add_special_event', d.name || 'ç®¡ç†è€…');
 }
 
 function updateSpecialEvent(id, d) {
@@ -1953,21 +2203,21 @@ function deleteSpecialEvent(id) {
     saveToFirebase('specialEvents', state.specialEvents);
 }
 
-// 指定日がイベント日かチェック
+// æŒ‡å®šæ—¥ãŒã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‹ãƒã‚§ãƒƒã‚¯
 function isSpecialEventDate(dateStr) {
     return state.specialEvents.some(e => e.date === dateStr);
 }
 
-// 指定日のイベント情報を取得
+// æŒ‡å®šæ—¥ã®ã‚¤ãƒ™ãƒ³ãƒˆæƒ…å ±ã‚’å–å¾—
 function getSpecialEvent(dateStr) {
     return state.specialEvents.find(e => e.date === dateStr);
 }
 
-// 臨時シフト管理画面をレンダリング
+// è‡¨æ™‚ã‚·ãƒ•ãƒˆç®¡ç†ç”»é¢ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderSpecialEventManagement(container) {
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
     
-    // イベントを日付でソート
+    // ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ—¥ä»˜ã§ã‚½ãƒ¼ãƒˆ
     const sortedEvents = [...state.specialEvents].sort((a, b) => a.date.localeCompare(b.date));
     const today = formatDate(new Date());
     const upcomingEvents = sortedEvents.filter(e => e.date >= today);
@@ -1976,26 +2226,26 @@ function renderSpecialEventManagement(container) {
     let html = `
         <div style="padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h3 style="margin: 0; color: #f8fafc;">⚡ 臨時シフト管理</h3>
-                <button class="btn btn-primary btn-sm" onclick="openSpecialEventModal()">＋ イベント日を追加</button>
+                <h3 style="margin: 0; color: #f8fafc;">âš¡ è‡¨æ™‚ã‚·ãƒ•ãƒˆç®¡ç†</h3>
+                <button class="btn btn-primary btn-sm" onclick="openSpecialEventModal()">ï¼‹ ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‚’è¿½åŠ </button>
             </div>
             <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 16px;">
-                イベント日を登録すると、その日の固定シフトが自動停止され、臨時シフトのみが表示されます。<br>
-                臨時シフトは通常の「シフト追加」から登録してください（自動的に臨時マークが付きます）。
+                ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‚’ç™»éŒ²ã™ã‚‹ã¨ã€ãã®æ—¥ã®å›ºå®šã‚·ãƒ•ãƒˆãŒè‡ªå‹•åœæ­¢ã•ã‚Œã€è‡¨æ™‚ã‚·ãƒ•ãƒˆã®ã¿ãŒè¡¨ç¤ºã•ã‚Œã¾ã™ã€‚<br>
+                è‡¨æ™‚ã‚·ãƒ•ãƒˆã¯é€šå¸¸ã®ã€Œã‚·ãƒ•ãƒˆè¿½åŠ ã€ã‹ã‚‰ç™»éŒ²ã—ã¦ãã ã•ã„ï¼ˆè‡ªå‹•çš„ã«è‡¨æ™‚ãƒžãƒ¼ã‚¯ãŒä»˜ãã¾ã™ï¼‰ã€‚
             </p>
     `;
     
-    // 今後のイベント
-    html += `<h4 style="color: #f59e0b; margin-bottom: 8px;">📅 今後のイベント (${upcomingEvents.length}件)</h4>`;
+    // ä»Šå¾Œã®ã‚¤ãƒ™ãƒ³ãƒˆ
+    html += `<h4 style="color: #f59e0b; margin-bottom: 8px;">ðŸ“… ä»Šå¾Œã®ã‚¤ãƒ™ãƒ³ãƒˆ (${upcomingEvents.length}ä»¶)</h4>`;
     if (upcomingEvents.length === 0) {
-        html += `<p style="color: #64748b; padding: 12px; text-align: center;">予定されているイベントはありません</p>`;
+        html += `<p style="color: #64748b; padding: 12px; text-align: center;">äºˆå®šã•ã‚Œã¦ã„ã‚‹ã‚¤ãƒ™ãƒ³ãƒˆã¯ã‚ã‚Šã¾ã›ã‚“</p>`;
     } else {
         upcomingEvents.forEach(e => {
             const d = new Date(e.date);
             const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
-            const dateDisplay = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
+            const dateDisplay = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰`;
             
-            // この日のシフト数をカウント
+            // ã“ã®æ—¥ã®ã‚·ãƒ•ãƒˆæ•°ã‚’ã‚«ã‚¦ãƒ³ãƒˆ
             const dayShiftCount = state.shifts.filter(s => s.date === e.date && !s.hidden && !s.isLeaveOverride).length;
             
             html += `
@@ -2003,21 +2253,21 @@ function renderSpecialEventManagement(container) {
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                <span style="font-size: 1.2rem;">⚡</span>
+                                <span style="font-size: 1.2rem;">âš¡</span>
                                 <span style="font-weight: 700; font-size: 1rem; color: ${dayColor};">${dateDisplay}</span>
                             </div>
-                            <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem; margin-bottom: 4px;">${e.eventName || 'イベント'}</div>
+                            <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem; margin-bottom: 4px;">${e.eventName || 'ã‚¤ãƒ™ãƒ³ãƒˆ'}</div>
                             ${e.description ? `<div style="color: #94a3b8; font-size: 0.85rem;">${e.description}</div>` : ''}
                             <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
                                 <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: ${e.suppressFixed !== false ? '#dc262640' : '#22c55e40'}; color: ${e.suppressFixed !== false ? '#f87171' : '#4ade80'};">
-                                    固定シフト: ${e.suppressFixed !== false ? '停止' : '有効'}
+                                    å›ºå®šã‚·ãƒ•ãƒˆ: ${e.suppressFixed !== false ? 'åœæ­¢' : 'æœ‰åŠ¹'}
                                 </span>
-                                <span style="font-size: 0.8rem; color: #64748b;">臨時シフト: ${dayShiftCount}件</span>
+                                <span style="font-size: 0.8rem; color: #64748b;">è‡¨æ™‚ã‚·ãƒ•ãƒˆ: ${dayShiftCount}ä»¶</span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn btn-sm" style="background: #334155; color: #94a3b8; border: 1px solid #475569; padding: 4px 10px; font-size: 0.8rem;" onclick="openEditSpecialEventModal('${e.id}')">編集</button>
-                            <button class="btn btn-sm" style="background: #7f1d1d40; color: #f87171; border: 1px solid #7f1d1d; padding: 4px 10px; font-size: 0.8rem;" onclick="if(confirm('このイベントを削除しますか？\\n※臨時シフトは削除されません')){deleteSpecialEvent('${e.id}')}">削除</button>
+                            <button class="btn btn-sm" style="background: #334155; color: #94a3b8; border: 1px solid #475569; padding: 4px 10px; font-size: 0.8rem;" onclick="openEditSpecialEventModal('${e.id}')">ç·¨é›†</button>
+                            <button class="btn btn-sm" style="background: #7f1d1d40; color: #f87171; border: 1px solid #7f1d1d; padding: 4px 10px; font-size: 0.8rem;" onclick="if(confirm('ã“ã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ\\nâ€»è‡¨æ™‚ã‚·ãƒ•ãƒˆã¯å‰Šé™¤ã•ã‚Œã¾ã›ã‚“')){deleteSpecialEvent('${e.id}')}">å‰Šé™¤</button>
                         </div>
                     </div>
                 </div>
@@ -2025,20 +2275,20 @@ function renderSpecialEventManagement(container) {
         });
     }
     
-    // 過去のイベント
+    // éŽåŽ»ã®ã‚¤ãƒ™ãƒ³ãƒˆ
     if (pastEvents.length > 0) {
-        html += `<h4 style="color: #64748b; margin-top: 16px; margin-bottom: 8px;">📋 過去のイベント (${pastEvents.length}件)</h4>`;
+        html += `<h4 style="color: #64748b; margin-top: 16px; margin-bottom: 8px;">ðŸ“‹ éŽåŽ»ã®ã‚¤ãƒ™ãƒ³ãƒˆ (${pastEvents.length}ä»¶)</h4>`;
         pastEvents.slice(-5).reverse().forEach(e => {
             const d = new Date(e.date);
-            const dateDisplay = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
+            const dateDisplay = `${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰`;
             html += `
                 <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; opacity: 0.7;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <span style="color: #64748b;">${dateDisplay}</span>
-                            <span style="color: #94a3b8; margin-left: 8px;">${e.eventName || 'イベント'}</span>
+                            <span style="color: #94a3b8; margin-left: 8px;">${e.eventName || 'ã‚¤ãƒ™ãƒ³ãƒˆ'}</span>
                         </div>
-                        <button class="btn btn-sm" style="background: transparent; color: #64748b; border: 1px solid #334155; padding: 2px 8px; font-size: 0.75rem;" onclick="if(confirm('削除しますか？')){deleteSpecialEvent('${e.id}')}">削除</button>
+                        <button class="btn btn-sm" style="background: transparent; color: #64748b; border: 1px solid #334155; padding: 2px 8px; font-size: 0.75rem;" onclick="if(confirm('å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')){deleteSpecialEvent('${e.id}')}">å‰Šé™¤</button>
                     </div>
                 </div>
             `;
@@ -2049,10 +2299,10 @@ function renderSpecialEventManagement(container) {
     container.innerHTML = html;
 }
 
-// 臨時イベント追加モーダルを開く
+// è‡¨æ™‚ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openSpecialEventModal() {
-    document.getElementById('specialEventModalTitle').textContent = '⚡ イベント日を追加';
-    document.getElementById('specialEventSubmitBtn').textContent = '追加';
+    document.getElementById('specialEventModalTitle').textContent = 'âš¡ ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‚’è¿½åŠ ';
+    document.getElementById('specialEventSubmitBtn').textContent = 'è¿½åŠ ';
     document.getElementById('editSpecialEventId').value = '';
     document.getElementById('specialEventDate').value = formatDate(new Date());
     document.getElementById('specialEventName').value = '';
@@ -2061,12 +2311,12 @@ function openSpecialEventModal() {
     openModal(document.getElementById('specialEventModalOverlay'));
 }
 
-// 臨時イベント編集モーダルを開く
+// è‡¨æ™‚ã‚¤ãƒ™ãƒ³ãƒˆç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditSpecialEventModal(id) {
     const e = state.specialEvents.find(x => x.id === id);
     if (!e) return;
-    document.getElementById('specialEventModalTitle').textContent = '⚡ イベント日を編集';
-    document.getElementById('specialEventSubmitBtn').textContent = '更新';
+    document.getElementById('specialEventModalTitle').textContent = 'âš¡ ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‚’ç·¨é›†';
+    document.getElementById('specialEventSubmitBtn').textContent = 'æ›´æ–°';
     document.getElementById('editSpecialEventId').value = id;
     document.getElementById('specialEventDate').value = e.date;
     document.getElementById('specialEventName').value = e.eventName || '';
@@ -2075,48 +2325,48 @@ function openEditSpecialEventModal(id) {
     openModal(document.getElementById('specialEventModalOverlay'));
 }
 
-// 従業員編集モーダルを開く
+// å¾“æ¥­å“¡ç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditEmployeeModal(id) {
     const emp = state.employees.find(e => e.id === id);
     if (!emp) return;
 
-    // モーダルタイトルとボタンテキストを変更
-    document.getElementById('employeeModalTitle').textContent = '👤 従業員編集';
-    document.getElementById('employeeSubmitBtn').textContent = '更新';
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚¿ã‚¤ãƒˆãƒ«ã¨ãƒœã‚¿ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’å¤‰æ›´
+    document.getElementById('employeeModalTitle').textContent = 'ðŸ‘¤ å¾“æ¥­å“¡ç·¨é›†';
+    document.getElementById('employeeSubmitBtn').textContent = 'æ›´æ–°';
     document.getElementById('editEmployeeId').value = id;
 
-    // フォームに現在の値をセット
+    // ãƒ•ã‚©ãƒ¼ãƒ ã«ç¾åœ¨ã®å€¤ã‚’ã‚»ãƒƒãƒˆ
     document.getElementById('employeeName').value = emp.name || '';
     document.getElementById('employeeRole').value = emp.role || 'staff';
     document.getElementById('employeeShiftTime').value = emp.shiftTime || 'day';
 
-    // 発注担当分類のチェックボックスをリセットして現在の値をセット
+    // ç™ºæ³¨æ‹…å½“åˆ†é¡žã®ãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ã‚’ãƒªã‚»ãƒƒãƒˆã—ã¦ç¾åœ¨ã®å€¤ã‚’ã‚»ãƒƒãƒˆ
     document.querySelectorAll('input[name="orderCategory"]').forEach(cb => {
         cb.checked = emp.orderCategories && emp.orderCategories.includes(cb.value);
     });
 
-    // モーダルを開く
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
     openModal(document.getElementById('employeeModalOverlay'));
 }
 
-// 従業員追加モーダルを開く（リセット用）
+// å¾“æ¥­å“¡è¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ãï¼ˆãƒªã‚»ãƒƒãƒˆç”¨ï¼‰
 function openAddEmployeeModal() {
-    // モーダルタイトルとボタンテキストをリセット
-    document.getElementById('employeeModalTitle').textContent = '👤 従業員追加';
-    document.getElementById('employeeSubmitBtn').textContent = '追加';
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚¿ã‚¤ãƒˆãƒ«ã¨ãƒœã‚¿ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã‚’ãƒªã‚»ãƒƒãƒˆ
+    document.getElementById('employeeModalTitle').textContent = 'ðŸ‘¤ å¾“æ¥­å“¡è¿½åŠ ';
+    document.getElementById('employeeSubmitBtn').textContent = 'è¿½åŠ ';
     document.getElementById('editEmployeeId').value = '';
 
-    // フォームをリセット
+    // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
     document.getElementById('employeeName').value = '';
     document.getElementById('employeeRole').value = 'staff';
     document.getElementById('employeeShiftTime').value = 'day';
 
-    // 発注担当分類のチェックボックスをリセット
+    // ç™ºæ³¨æ‹…å½“åˆ†é¡žã®ãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ã‚’ãƒªã‚»ãƒƒãƒˆ
     document.querySelectorAll('input[name="orderCategory"]').forEach(cb => {
         cb.checked = false;
     });
 
-    // モーダルを開く
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
     openModal(document.getElementById('employeeModalOverlay'));
 }
 
@@ -2126,19 +2376,19 @@ function addHolidayRequest(d) {
     saveToFirebase('holidayRequests', state.holidayRequests);
     trackUsage('request_holiday', d.name);
 
-    // 管理者に通知
-    const title = '🏠 休日申請';
-    let content = `${d.name}さんから休日申請がありました。\n期間: ${d.startDate} 〜 ${d.endDate}\n理由: ${d.reason}`;
+    // ç®¡ç†è€…ã«é€šçŸ¥
+    const title = 'ðŸ  ä¼‘æ—¥ç”³è«‹';
+    let content = `${d.name}ã•ã‚“ã‹ã‚‰ä¼‘æ—¥ç”³è«‹ãŒã‚ã‚Šã¾ã—ãŸã€‚\næœŸé–“: ${d.startDate} ã€œ ${d.endDate}\nç†ç”±: ${d.reason}`;
     if (d.swapRequested && d.swapPartner) {
-        content += `\nシフト交代: ${d.swapPartner}さんと交代`;
+        content += `\nã‚·ãƒ•ãƒˆäº¤ä»£: ${d.swapPartner}ã•ã‚“ã¨äº¤ä»£`;
     }
-    state.messages.push({ id: Date.now().toString() + '_admin', to: '管理者', from: d.name, title, content, createdAt: new Date().toISOString(), read: false });
+    state.messages.push({ id: Date.now().toString() + '_admin', to: 'ç®¡ç†è€…', from: d.name, title, content, createdAt: new Date().toISOString(), read: false });
     saveToFirebase('messages', state.messages);
 }
 
-// 半休を作成する関数
+// åŠä¼‘ã‚’ä½œæˆã™ã‚‹é–¢æ•°
 function createHalfDayOff(s, halfDayType) {
-    // シフトの担当者名と日付を取得
+    // ã‚·ãƒ•ãƒˆã®æ‹…å½“è€…åã¨æ—¥ä»˜ã‚’å–å¾—
     let name, date, startHour, endHour, overnight;
 
     if (s.isFixed) {
@@ -2171,27 +2421,27 @@ function createHalfDayOff(s, halfDayType) {
     }
 
     if (!name || !date) {
-        alert('シフト情報の取得に失敗しました。');
+        alert('ã‚·ãƒ•ãƒˆæƒ…å ±ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚');
         return;
     }
 
-    // 半休の時間を計算（12時を境界とする）
+    // åŠä¼‘ã®æ™‚é–“ã‚’è¨ˆç®—ï¼ˆ12æ™‚ã‚’å¢ƒç•Œã¨ã™ã‚‹ï¼‰
     let halfStartHour, halfEndHour;
     if (halfDayType === 'morning') {
-        // 午前半休: シフト開始〜12:00 を休みにする
+        // åˆå‰åŠä¼‘: ã‚·ãƒ•ãƒˆé–‹å§‹ã€œ12:00 ã‚’ä¼‘ã¿ã«ã™ã‚‹
         halfStartHour = Math.min(startHour, 12);
         halfEndHour = 12;
     } else {
-        // 午後半休: 12:00〜シフト終了 を休みにする
+        // åˆå¾ŒåŠä¼‘: 12:00ã€œã‚·ãƒ•ãƒˆçµ‚äº† ã‚’ä¼‘ã¿ã«ã™ã‚‹
         halfStartHour = 12;
         halfEndHour = Math.max(endHour, 12);
-        // 夜勤で翌日にまたがる場合
+        // å¤œå‹¤ã§ç¿Œæ—¥ã«ã¾ãŸãŒã‚‹å ´åˆ
         if (overnight) {
             halfEndHour = 24;
         }
     }
 
-    // 承認済みの半休リクエストを作成
+    // æ‰¿èªæ¸ˆã¿ã®åŠä¼‘ãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’ä½œæˆ
     const holidayRequest = {
         id: Date.now().toString(),
         name: name,
@@ -2201,38 +2451,38 @@ function createHalfDayOff(s, halfDayType) {
         endHour: halfEndHour,
         overnight: false,
         halfDayType: halfDayType,  // 'morning' or 'afternoon'
-        reason: halfDayType === 'morning' ? '午前半休' : '午後半休',
+        reason: halfDayType === 'morning' ? 'åˆå‰åŠä¼‘' : 'åˆå¾ŒåŠä¼‘',
         swapRequested: false,
         swapPartner: null,
         status: 'approved',
         createdAt: new Date().toISOString(),
         approvedAt: new Date().toISOString(),
-        processedBy: '管理者（即時承認）'
+        processedBy: 'ç®¡ç†è€…ï¼ˆå³æ™‚æ‰¿èªï¼‰'
     };
     state.holidayRequests.push(holidayRequest);
     saveToFirebase('holidayRequests', state.holidayRequests);
     trackUsage('create_halfday', name);
 
-    // シフトは削除せず、半休バーを表示する（シフトは残したまま）
-    // 必要に応じてシフトを削除する場合はここに追加
+    // ã‚·ãƒ•ãƒˆã¯å‰Šé™¤ã›ãšã€åŠä¼‘ãƒãƒ¼ã‚’è¡¨ç¤ºã™ã‚‹ï¼ˆã‚·ãƒ•ãƒˆã¯æ®‹ã—ãŸã¾ã¾ï¼‰
+    // å¿…è¦ã«å¿œã˜ã¦ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤ã™ã‚‹å ´åˆã¯ã“ã“ã«è¿½åŠ 
 
-    const typeText = halfDayType === 'morning' ? '午前半休' : '午後半休';
-    alert(`${typeText}に変更しました。`);
+    const typeText = halfDayType === 'morning' ? 'åˆå‰åŠä¼‘' : 'åˆå¾ŒåŠä¼‘';
+    alert(`${typeText}ã«å¤‰æ›´ã—ã¾ã—ãŸã€‚`);
     render();
 }
 function sendBroadcast(title, content) {
-    trackUsage('send_broadcast', '管理者');
+    trackUsage('send_broadcast', 'ç®¡ç†è€…');
     state.employees.forEach(e => {
-        state.messages.push({ id: Date.now().toString() + e.id, to: e.name, from: '管理者', title, content, createdAt: new Date().toISOString(), read: false });
+        state.messages.push({ id: Date.now().toString() + e.id, to: e.name, from: 'ç®¡ç†è€…', title, content, createdAt: new Date().toISOString(), read: false });
     });
     saveToFirebase('messages', state.messages);
 }
 
-// 承認・却下
+// æ‰¿èªãƒ»å´ä¸‹
 function approveRequest(type, id) {
     const processedAt = new Date().toISOString();
-    const processedBy = '管理者'; // 現在は管理者のみが承認可能
-    trackUsage('admin_approve', '管理者');
+    const processedBy = 'ç®¡ç†è€…'; // ç¾åœ¨ã¯ç®¡ç†è€…ã®ã¿ãŒæ‰¿èªå¯èƒ½
+    trackUsage('admin_approve', 'ç®¡ç†è€…');
 
     if (type === 'change') {
         const r = state.changeRequests.find(x => x.id === id);
@@ -2242,7 +2492,7 @@ function approveRequest(type, id) {
             r.processedBy = processedBy;
             const s = state.shifts.find(x => x.id === r.originalShiftId);
             if (s) {
-                // 変更前の情報を保存
+                // å¤‰æ›´å‰ã®æƒ…å ±ã‚’ä¿å­˜
                 s.changeHistory = {
                     previousDate: s.date,
                     previousStartHour: s.startHour,
@@ -2250,7 +2500,7 @@ function approveRequest(type, id) {
                     changedAt: processedAt,
                     reason: r.reason
                 };
-                // 新しい情報に更新
+                // æ–°ã—ã„æƒ…å ±ã«æ›´æ–°
                 s.date = r.newDate;
                 s.startHour = r.newStartHour;
                 s.endHour = r.newEndHour;
@@ -2265,17 +2515,17 @@ function approveRequest(type, id) {
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
             
-            console.log('有給承認処理:', { name: r.name, startDate: r.startDate, endDate: r.endDate, selectedShifts: r.selectedShifts });
+            console.log('æœ‰çµ¦æ‰¿èªå‡¦ç†:', { name: r.name, startDate: r.startDate, endDate: r.endDate, selectedShifts: r.selectedShifts });
             
-            // 選択シフト形式かどうかで処理を分岐
+            // é¸æŠžã‚·ãƒ•ãƒˆå½¢å¼ã‹ã©ã†ã‹ã§å‡¦ç†ã‚’åˆ†å²
             if (r.selectedShifts && r.selectedShifts.length > 0) {
-                // 新形式：選択されたシフトのみを処理
+                // æ–°å½¢å¼ï¼šé¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆã®ã¿ã‚’å‡¦ç†
                 r.shiftTimes = {};
                 
                 r.selectedShifts.forEach(shiftInfo => {
                     const dateStr = shiftInfo.date;
                     
-                    // シフト時間情報を保存（ガントチャート表示用）
+                    // ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ã‚’ä¿å­˜ï¼ˆã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆè¡¨ç¤ºç”¨ï¼‰
                     r.shiftTimes[dateStr] = {
                         startHour: shiftInfo.startHour,
                         endHour: shiftInfo.endHour,
@@ -2283,7 +2533,7 @@ function approveRequest(type, id) {
                     };
                     
                     if (shiftInfo.isFixed && shiftInfo.fixedShiftId) {
-                        // 固定シフトの場合：上書きシフトを追加
+                        // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆï¼šä¸Šæ›¸ãã‚·ãƒ•ãƒˆã‚’è¿½åŠ 
                         const existingOverride = state.shifts.find(s => 
                             s.date === dateStr && 
                             s.fixedShiftOverride === shiftInfo.fixedShiftId
@@ -2303,31 +2553,31 @@ function approveRequest(type, id) {
                                     isLeaveOverride: true,
                                     hidden: true
                                 });
-                                console.log('固定シフト上書き追加:', dateStr);
+                                console.log('å›ºå®šã‚·ãƒ•ãƒˆä¸Šæ›¸ãè¿½åŠ :', dateStr);
                             }
                         }
                     } else {
-                        // 通常シフトの場合：該当シフトを削除
+                        // é€šå¸¸ã‚·ãƒ•ãƒˆã®å ´åˆï¼šè©²å½“ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤
                         state.shifts = state.shifts.filter(s => {
                             const isTarget = s.date === dateStr && s.name === r.name;
-                            if (isTarget) console.log('削除対象シフト:', s);
+                            if (isTarget) console.log('å‰Šé™¤å¯¾è±¡ã‚·ãƒ•ãƒˆ:', s);
                             return !isTarget;
                         });
                     }
                 });
             } else {
-                // 従来形式：期間内の全シフトを処理
+                // å¾“æ¥å½¢å¼ï¼šæœŸé–“å†…ã®å…¨ã‚·ãƒ•ãƒˆã‚’å‡¦ç†
                 const startDate = new Date(r.startDate);
                 const endDate = new Date(r.endDate);
                 
-                // 各日のシフト時間情報を保存（ガントチャート表示用）
+                // å„æ—¥ã®ã‚·ãƒ•ãƒˆæ™‚é–“æƒ…å ±ã‚’ä¿å­˜ï¼ˆã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆè¡¨ç¤ºç”¨ï¼‰
                 r.shiftTimes = {};
                 const currentDateForShift = new Date(startDate);
                 while (currentDateForShift <= endDate) {
                     const dateStr = formatDate(currentDateForShift);
                     const dayOfWeek = currentDateForShift.getDay();
                     
-                    // その日の通常シフトを探す
+                    // ãã®æ—¥ã®é€šå¸¸ã‚·ãƒ•ãƒˆã‚’æŽ¢ã™
                     const normalShift = state.shifts.find(s => s.date === dateStr && s.name === r.name);
                     if (normalShift) {
                         r.shiftTimes[dateStr] = {
@@ -2336,7 +2586,7 @@ function approveRequest(type, id) {
                             overnight: normalShift.overnight || false
                         };
                     } else {
-                        // 固定シフトを探す
+                        // å›ºå®šã‚·ãƒ•ãƒˆã‚’æŽ¢ã™
                         const fixedShift = state.fixedShifts.find(f => f.name === r.name && f.dayOfWeek === dayOfWeek);
                         if (fixedShift) {
                             r.shiftTimes[dateStr] = {
@@ -2349,22 +2599,22 @@ function approveRequest(type, id) {
                     currentDateForShift.setDate(currentDateForShift.getDate() + 1);
                 }
                 
-                // 通常シフトから該当者・該当期間のシフトを削除
+                // é€šå¸¸ã‚·ãƒ•ãƒˆã‹ã‚‰è©²å½“è€…ãƒ»è©²å½“æœŸé–“ã®ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤
                 const beforeCount = state.shifts.length;
                 state.shifts = state.shifts.filter(s => {
                     const shiftDate = new Date(s.date);
                     const isInRange = shiftDate >= startDate && shiftDate <= endDate;
                     const isSamePerson = s.name === r.name;
                     if (isInRange && isSamePerson) {
-                        console.log('削除対象シフト:', s);
+                        console.log('å‰Šé™¤å¯¾è±¡ã‚·ãƒ•ãƒˆ:', s);
                     }
                     return !(isInRange && isSamePerson);
                 });
-                console.log('通常シフト削除:', beforeCount, '->', state.shifts.length);
+                console.log('é€šå¸¸ã‚·ãƒ•ãƒˆå‰Šé™¤:', beforeCount, '->', state.shifts.length);
                 
-                // 固定シフトの場合：該当日に「削除」マークのシフトを追加して上書き
+                // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆï¼šè©²å½“æ—¥ã«ã€Œå‰Šé™¤ã€ãƒžãƒ¼ã‚¯ã®ã‚·ãƒ•ãƒˆã‚’è¿½åŠ ã—ã¦ä¸Šæ›¸ã
                 const fixedShiftsToOverride = state.fixedShifts.filter(f => f.name === r.name);
-                console.log('固定シフト対象:', fixedShiftsToOverride);
+                console.log('å›ºå®šã‚·ãƒ•ãƒˆå¯¾è±¡:', fixedShiftsToOverride);
                 
                 if (fixedShiftsToOverride.length > 0) {
                     const currentDate = new Date(startDate);
@@ -2391,7 +2641,7 @@ function approveRequest(type, id) {
                                         isLeaveOverride: true,
                                         hidden: true
                                     });
-                                    console.log('固定シフト上書き追加:', dateStr, fixed.name);
+                                    console.log('å›ºå®šã‚·ãƒ•ãƒˆä¸Šæ›¸ãè¿½åŠ :', dateStr, fixed.name);
                                 }
                             }
                         });
@@ -2411,18 +2661,18 @@ function approveRequest(type, id) {
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
 
-            // シフト情報を取得して更新（固定シフトの場合も対応）
+            // ã‚·ãƒ•ãƒˆæƒ…å ±ã‚’å–å¾—ã—ã¦æ›´æ–°ï¼ˆå›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã‚‚å¯¾å¿œï¼‰
             let updated = false;
 
             if (r.shiftId && r.shiftId.startsWith('fx-')) {
-                // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
-                // 新しい通常シフトを作成して担当者を変更
+                // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆ: fx-{originalId}-{dateStr} å½¢å¼
+                // æ–°ã—ã„é€šå¸¸ã‚·ãƒ•ãƒˆã‚’ä½œæˆã—ã¦æ‹…å½“è€…ã‚’å¤‰æ›´
                 const parts = r.shiftId.split('-');
                 const originalId = parts[1];
                 const dateStr = parts.slice(2).join('-');
                 const fixed = state.fixedShifts.find(f => f.id === originalId);
                 if (fixed) {
-                    // 固定シフトを元に新しい通常シフトを作成
+                    // å›ºå®šã‚·ãƒ•ãƒˆã‚’å…ƒã«æ–°ã—ã„é€šå¸¸ã‚·ãƒ•ãƒˆã‚’ä½œæˆ
                     const newShift = {
                         id: Date.now().toString(),
                         date: dateStr,
@@ -2442,17 +2692,17 @@ function approveRequest(type, id) {
                     updated = true;
                 }
             } else if (r.shiftId) {
-                // 通常シフトの場合
+                // é€šå¸¸ã‚·ãƒ•ãƒˆã®å ´åˆ
                 const s = state.shifts.find(x => x.id === r.shiftId);
                 if (s) {
-                    // 交代前の情報を保存
+                    // äº¤ä»£å‰ã®æƒ…å ±ã‚’ä¿å­˜
                     s.swapHistory = {
                         previousName: s.name,
                         newName: r.targetEmployee,
                         swappedAt: processedAt,
                         message: r.message
                     };
-                    // 新しい担当者に更新
+                    // æ–°ã—ã„æ‹…å½“è€…ã«æ›´æ–°
                     s.name = r.targetEmployee;
                     updated = true;
                 }
@@ -2461,9 +2711,9 @@ function approveRequest(type, id) {
             saveToFirebase('swapRequests', state.swapRequests);
 
             if (updated) {
-                alert('シフト交代を承認しました。\\n' + r.fromEmployee + ' → ' + r.targetEmployee + '\\nシフト表が更新されました。');
+                alert('ã‚·ãƒ•ãƒˆäº¤ä»£ã‚’æ‰¿èªã—ã¾ã—ãŸã€‚\\n' + r.fromEmployee + ' â†’ ' + r.targetEmployee + '\\nã‚·ãƒ•ãƒˆè¡¨ãŒæ›´æ–°ã•ã‚Œã¾ã—ãŸã€‚');
             } else {
-                alert('承認しましたが、シフト表の更新に失敗しました。\\nshiftId: ' + (r.shiftId || '未設定'));
+                alert('æ‰¿èªã—ã¾ã—ãŸãŒã€ã‚·ãƒ•ãƒˆè¡¨ã®æ›´æ–°ã«å¤±æ•—ã—ã¾ã—ãŸã€‚\\nshiftId: ' + (r.shiftId || 'æœªè¨­å®š'));
             }
         }
     } else if (type === 'holiday') {
@@ -2473,7 +2723,7 @@ function approveRequest(type, id) {
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
             
-            // 選択シフト形式の場合、shiftTimes情報を作成
+            // é¸æŠžã‚·ãƒ•ãƒˆå½¢å¼ã®å ´åˆã€shiftTimesæƒ…å ±ã‚’ä½œæˆ
             if (r.selectedShifts && r.selectedShifts.length > 0) {
                 r.shiftTimes = {};
                 r.selectedShifts.forEach(shiftInfo => {
@@ -2486,15 +2736,15 @@ function approveRequest(type, id) {
             }
             
             saveToFirebase('holidayRequests', state.holidayRequests);
-            alert('休日申請を承認しました。');
+            alert('ä¼‘æ—¥ç”³è«‹ã‚’æ‰¿èªã—ã¾ã—ãŸã€‚');
         }
     }
     render(); renderAdminPanel(); updateMessageBar();
 }
 function rejectRequest(type, id) {
     const processedAt = new Date().toISOString();
-    const processedBy = '管理者';
-    trackUsage('admin_reject', '管理者');
+    const processedBy = 'ç®¡ç†è€…';
+    trackUsage('admin_reject', 'ç®¡ç†è€…');
 
     let arr, refName;
     if (type === 'change') {
@@ -2520,18 +2770,18 @@ function rejectRequest(type, id) {
     renderAdminPanel(); updateMessageBar();
 }
 
-// ナビ
+// ãƒŠãƒ“
 function goToPrevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); render(); fetchWeatherData(); }
 function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); render(); fetchWeatherData(); }
 
-// 認証
+// èªè¨¼
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
 function verifyPin(p) { return p === CONFIG.ADMIN_PIN; }
-function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); }
-function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; }
+function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = 'ç®¡ç†è€…'; document.querySelector('.role-icon').textContent = 'ðŸ‘‘'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); }
+function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'ã‚¹ã‚¿ãƒƒãƒ•'; document.querySelector('.role-icon').textContent = 'ðŸ‘¤'; document.getElementById('adminPanel').style.display = 'none'; }
 function toggleRole() { state.isAdmin ? switchToStaff() : showPinModal(); }
 
-// 管理者タブの通知バッジ更新
+// ç®¡ç†è€…ã‚¿ãƒ–ã®é€šçŸ¥ãƒãƒƒã‚¸æ›´æ–°
 function updateAdminBadges() {
     const changeCount = state.changeRequests.filter(r => r.status === 'pending').length;
     const swapCount = state.swapRequests.filter(r => r.status === 'pending').length;
@@ -2539,7 +2789,7 @@ function updateAdminBadges() {
     const holidayCount = state.holidayRequests.filter(r => r.status === 'pending').length;
 
     document.querySelectorAll('.admin-tab').forEach(tab => {
-        // 既存のバッジを削除
+        // æ—¢å­˜ã®ãƒãƒƒã‚¸ã‚’å‰Šé™¤
         const existingBadge = tab.querySelector('.tab-badge');
         if (existingBadge) existingBadge.remove();
 
@@ -2558,17 +2808,17 @@ function updateAdminBadges() {
     });
 }
 
-// 固定シフト管理画面をレンダリング
+// å›ºå®šã‚·ãƒ•ãƒˆç®¡ç†ç”»é¢ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderFixedShiftManagement(container) {
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
     
-    // 固定シフトを曜日でグループ化
+    // å›ºå®šã‚·ãƒ•ãƒˆã‚’æ›œæ—¥ã§ã‚°ãƒ«ãƒ¼ãƒ—åŒ–
     const groupedByDay = {};
     for (let i = 0; i < 7; i++) {
         groupedByDay[i] = state.fixedShifts.filter(f => f.dayOfWeek === i);
     }
     
-    // 有効/無効を判定する関数
+    // æœ‰åŠ¹/ç„¡åŠ¹ã‚’åˆ¤å®šã™ã‚‹é–¢æ•°
     const isActive = (f) => {
         const today = formatDate(new Date());
         if (f.startDate && today < f.startDate) return false;
@@ -2576,7 +2826,7 @@ function renderFixedShiftManagement(container) {
         return true;
     };
     
-    // 統計情報
+    // çµ±è¨ˆæƒ…å ±
     const totalFixed = state.fixedShifts.length;
     const activeFixed = state.fixedShifts.filter(isActive).length;
     const expiredFixed = state.fixedShifts.filter(f => f.endDate && formatDate(new Date()) > f.endDate).length;
@@ -2585,15 +2835,15 @@ function renderFixedShiftManagement(container) {
         <div class="fixed-shift-management">
             <div class="fixed-shift-summary">
                 <div class="summary-item">
-                    <span class="summary-label">総固定シフト数</span>
+                    <span class="summary-label">ç·å›ºå®šã‚·ãƒ•ãƒˆæ•°</span>
                     <span class="summary-value">${totalFixed}</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">有効</span>
+                    <span class="summary-label">æœ‰åŠ¹</span>
                     <span class="summary-value active">${activeFixed}</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">期限切れ</span>
+                    <span class="summary-label">æœŸé™åˆ‡ã‚Œ</span>
                     <span class="summary-value expired">${expiredFixed}</span>
                 </div>
             </div>
@@ -2601,8 +2851,8 @@ function renderFixedShiftManagement(container) {
             <div class="fixed-shift-list">
     `;
     
-    // 月曜日から始めて曜日ごとに表示
-    const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // 月火水木金土日
+    // æœˆæ›œæ—¥ã‹ã‚‰å§‹ã‚ã¦æ›œæ—¥ã”ã¨ã«è¡¨ç¤º
+    const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // æœˆç«æ°´æœ¨é‡‘åœŸæ—¥
     
     dayOrder.forEach(dayIndex => {
         const shifts = groupedByDay[dayIndex];
@@ -2611,19 +2861,19 @@ function renderFixedShiftManagement(container) {
         
         html += `
             <div class="fixed-shift-day-group">
-                <h4 class="day-header ${dayClass}">${dayName}曜日 (${shifts.length}件)</h4>
+                <h4 class="day-header ${dayClass}">${dayName}æ›œæ—¥ (${shifts.length}ä»¶)</h4>
         `;
         
         if (shifts.length === 0) {
-            html += `<p class="no-shifts">固定シフトなし</p>`;
+            html += `<p class="no-shifts">å›ºå®šã‚·ãƒ•ãƒˆãªã—</p>`;
         } else {
             shifts.forEach(f => {
                 const active = isActive(f);
                 const statusClass = active ? 'active' : 'inactive';
-                const statusText = active ? '有効' : (f.endDate && formatDate(new Date()) > f.endDate ? '期限切れ' : '開始前');
+                const statusText = active ? 'æœ‰åŠ¹' : (f.endDate && formatDate(new Date()) > f.endDate ? 'æœŸé™åˆ‡ã‚Œ' : 'é–‹å§‹å‰');
                 
-                const startDateStr = f.startDate ? f.startDate : '指定なし';
-                const endDateStr = f.endDate ? f.endDate : '無期限';
+                const startDateStr = f.startDate ? f.startDate : 'æŒ‡å®šãªã—';
+                const endDateStr = f.endDate ? f.endDate : 'ç„¡æœŸé™';
                 
                 html += `
                     <div class="fixed-shift-card ${statusClass}">
@@ -2632,17 +2882,17 @@ function renderFixedShiftManagement(container) {
                             <div class="fixed-shift-name">${f.name}</div>
                             <div class="fixed-shift-time">
                                 ${formatTime(f.startHour)} - ${formatTime(f.endHour)}
-                                ${f.overnight ? '<span class="overnight-badge">🌙夜勤</span>' : ''}
+                                ${f.overnight ? '<span class="overnight-badge">ðŸŒ™å¤œå‹¤</span>' : ''}
                             </div>
                             <div class="fixed-shift-period">
-                                <span class="period-label">有効期間:</span>
-                                <span class="period-value">${startDateStr} ～ ${endDateStr}</span>
+                                <span class="period-label">æœ‰åŠ¹æœŸé–“:</span>
+                                <span class="period-value">${startDateStr} ï½ž ${endDateStr}</span>
                             </div>
                         </div>
                         <div class="fixed-shift-status ${statusClass}">${statusText}</div>
                         <div class="fixed-shift-actions">
-                            <button class="btn btn-secondary btn-sm" onclick="openEditFixedShiftModal('${f.id}')">✏️ 編集</button>
-                            <button class="btn btn-danger btn-sm" onclick="confirmDeleteFixedShift('${f.id}')">🗑️ 削除</button>
+                            <button class="btn btn-secondary btn-sm" onclick="openEditFixedShiftModal('${f.id}')">âœï¸ ç·¨é›†</button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmDeleteFixedShift('${f.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                         </div>
                     </div>
                 `;
@@ -2660,20 +2910,20 @@ function renderFixedShiftManagement(container) {
     container.innerHTML = html;
 }
 
-// 固定シフト編集モーダルを開く
+// å›ºå®šã‚·ãƒ•ãƒˆç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditFixedShiftModal(id) {
     const f = state.fixedShifts.find(s => s.id === id);
     if (!f) return;
     
-    // 曜日から日付を逆算（今週の該当曜日）
+    // æ›œæ—¥ã‹ã‚‰æ—¥ä»˜ã‚’é€†ç®—ï¼ˆä»Šé€±ã®è©²å½“æ›œæ—¥ï¼‰
     const today = new Date();
     const currentDow = today.getDay();
     const diff = f.dayOfWeek - currentDow;
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + diff);
     
-    document.getElementById('shiftModalTitle').textContent = '固定シフト編集';
-    document.getElementById('shiftSubmitBtn').textContent = '更新';
+    document.getElementById('shiftModalTitle').textContent = 'å›ºå®šã‚·ãƒ•ãƒˆç·¨é›†';
+    document.getElementById('shiftSubmitBtn').textContent = 'æ›´æ–°';
     document.getElementById('editShiftId').value = id;
     document.getElementById('shiftDate').value = formatDate(targetDate);
     updateShiftDateDay();
@@ -2682,16 +2932,16 @@ function openEditFixedShiftModal(id) {
     document.getElementById('shiftEnd').value = f.endHour;
     document.getElementById('overnightShift').checked = f.overnight || false;
     document.getElementById('fixedShift').checked = true;
-    document.getElementById('fixedShift').disabled = true; // 固定シフト編集時はチェックを外せないように
+    document.getElementById('fixedShift').disabled = true; // å›ºå®šã‚·ãƒ•ãƒˆç·¨é›†æ™‚ã¯ãƒã‚§ãƒƒã‚¯ã‚’å¤–ã›ãªã„ã‚ˆã†ã«
     
-    // 有効期間を設定
+    // æœ‰åŠ¹æœŸé–“ã‚’è¨­å®š
     document.getElementById('fixedShiftPeriod').style.display = 'block';
     document.getElementById('fixedStartDate').value = f.startDate || '';
     document.getElementById('fixedEndDate').value = f.endDate || '';
     document.getElementById('fixedNoEndDate').checked = !f.endDate;
     document.getElementById('fixedEndDate').disabled = !f.endDate;
     
-    // 色を設定
+    // è‰²ã‚’è¨­å®š
     state.selectedColor = f.color || '#6366f1';
     document.querySelectorAll('.color-option').forEach(o => {
         o.classList.toggle('selected', o.dataset.color === state.selectedColor);
@@ -2700,25 +2950,25 @@ function openEditFixedShiftModal(id) {
     openModal(document.getElementById('modalOverlay'));
 }
 
-// 固定シフト削除確認
+// å›ºå®šã‚·ãƒ•ãƒˆå‰Šé™¤ç¢ºèª
 function confirmDeleteFixedShift(id) {
     const f = state.fixedShifts.find(s => s.id === id);
     if (!f) return;
     
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    if (confirm(`${f.name}さんの${dayNames[f.dayOfWeek]}曜日の固定シフトを削除しますか？\n\n※この操作は取り消せません。`)) {
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+    if (confirm(`${f.name}ã•ã‚“ã®${dayNames[f.dayOfWeek]}æ›œæ—¥ã®å›ºå®šã‚·ãƒ•ãƒˆã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ\n\nâ€»ã“ã®æ“ä½œã¯å–ã‚Šæ¶ˆã›ã¾ã›ã‚“ã€‚`)) {
         deleteFixedShift(id);
         renderAdminPanel();
     }
 }
 
-// 管理者パネル
+// ç®¡ç†è€…ãƒ‘ãƒãƒ«
 function renderAdminPanel() {
     updateAdminBadges();
     const c = document.getElementById('adminContent');
     c.innerHTML = '';
     
-    // トレンドレポートタブの場合はmax-heightを解除
+    // ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆã‚¿ãƒ–ã®å ´åˆã¯max-heightã‚’è§£é™¤
     if (state.activeAdminTab === 'trendReports' || state.activeAdminTab === 'newProductReport') {
         c.classList.add('trend-reports-content');
     } else {
@@ -2727,18 +2977,18 @@ function renderAdminPanel() {
     
     if (state.activeAdminTab === 'shiftChanges') {
         const reqs = state.changeRequests.filter(r => r.status === 'pending');
-        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
+        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">æ‰¿èªå¾…ã¡ãªã—</p>'; return; }
         reqs.forEach(r => {
             const s = state.shifts.find(x => x.id === r.originalShiftId);
             const card = document.createElement('div'); card.className = 'request-card';
-            card.innerHTML = `<div class="request-info"><h4>🔄 シフト変更申請</h4><p>申請者: ${r.applicant || '不明'}</p><p>対象シフト: ${s?.name || '不明'} - ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00</p><p>変更後: ${r.newDate} ${r.newStartHour}:00-${r.newEndHour}:00</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('change','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('change','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>ðŸ”„ ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹</h4><p>ç”³è«‹è€…: ${r.applicant || 'ä¸æ˜Ž'}</p><p>å¯¾è±¡ã‚·ãƒ•ãƒˆ: ${s?.name || 'ä¸æ˜Ž'} - ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00</p><p>å¤‰æ›´å¾Œ: ${r.newDate} ${r.newStartHour}:00-${r.newEndHour}:00</p><p>ç†ç”±: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('change','${r.id}')">æ‰¿èª</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('change','${r.id}')">å´ä¸‹</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'shiftSwaps') {
         const reqs = state.swapRequests.filter(r => r.status === 'pending');
-        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
+        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">æ‰¿èªå¾…ã¡ãªã—</p>'; return; }
         reqs.forEach(r => {
-            // シフト情報を取得（固定シフトの場合も対応）
+            // ã‚·ãƒ•ãƒˆæƒ…å ±ã‚’å–å¾—ï¼ˆå›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã‚‚å¯¾å¿œï¼‰
             let shiftInfo = null;
             if (r.shiftId && r.shiftId.startsWith('fx-')) {
                 const parts = r.shiftId.split('-');
@@ -2757,111 +3007,111 @@ function renderAdminPanel() {
             const dateDisplay = shiftInfo?.date || '?';
             const timeDisplay = shiftInfo ? `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}` : '?:00-?:00';
             const card = document.createElement('div'); card.className = 'request-card';
-            card.innerHTML = `<div class="request-info"><h4>🤝 シフト交換依頼</h4><p>申請者: ${r.applicant || '不明'}</p><p>シフト: ${dateDisplay} ${timeDisplay}</p><p>現在の担当: ${r.fromEmployee} → 交代先: ${r.targetEmployee}</p><p>メッセージ: ${r.message}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>ðŸ¤ ã‚·ãƒ•ãƒˆäº¤æ›ä¾é ¼</h4><p>ç”³è«‹è€…: ${r.applicant || 'ä¸æ˜Ž'}</p><p>ã‚·ãƒ•ãƒˆ: ${dateDisplay} ${timeDisplay}</p><p>ç¾åœ¨ã®æ‹…å½“: ${r.fromEmployee} â†’ äº¤ä»£å…ˆ: ${r.targetEmployee}</p><p>ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸: ${r.message}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${r.id}')">æ‰¿èª</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${r.id}')">å´ä¸‹</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'leaveRequests') {
         const reqs = state.leaveRequests.filter(r => r.status === 'pending');
-        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
+        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">æ‰¿èªå¾…ã¡ãªã—</p>'; return; }
         reqs.forEach(r => {
             const card = document.createElement('div'); card.className = 'request-card';
             
-            // 選択されたシフト情報を表示
+            // é¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆæƒ…å ±ã‚’è¡¨ç¤º
             let shiftsHtml = '';
             if (r.selectedShifts && r.selectedShifts.length > 0) {
-                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
                 shiftsHtml = '<div class="selected-shifts-list">' + 
                     r.selectedShifts.map(s => {
                         const d = new Date(s.date);
                         const badges = [];
-                        if (s.isFixed) badges.push('<span class="shift-badge fixed">固定</span>');
-                        if (s.overnight) badges.push('<span class="shift-badge overnight">夜勤</span>');
-                        return `<div class="shift-item">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${formatTime(s.startHour)}-${formatTime(s.endHour)} ${badges.join('')}</div>`;
+                        if (s.isFixed) badges.push('<span class="shift-badge fixed">å›ºå®š</span>');
+                        if (s.overnight) badges.push('<span class="shift-badge overnight">å¤œå‹¤</span>');
+                        return `<div class="shift-item">${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰${formatTime(s.startHour)}-${formatTime(s.endHour)} ${badges.join('')}</div>`;
                     }).join('') + 
                 '</div>';
             } else {
-                // 従来の開始日〜終了日形式
-                shiftsHtml = `<p>期間: ${r.startDate} 〜 ${r.endDate}</p>`;
+                // å¾“æ¥ã®é–‹å§‹æ—¥ã€œçµ‚äº†æ—¥å½¢å¼
+                shiftsHtml = `<p>æœŸé–“: ${r.startDate} ã€œ ${r.endDate}</p>`;
             }
             
-            card.innerHTML = `<div class="request-info"><h4>🏖️ ${r.name} - 有給申請</h4>${shiftsHtml}<p>理由: ${r.reason || '有給休暇'}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('leave','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('leave','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>ðŸ–ï¸ ${r.name} - æœ‰çµ¦ç”³è«‹</h4>${shiftsHtml}<p>ç†ç”±: ${r.reason || 'æœ‰çµ¦ä¼‘æš‡'}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('leave','${r.id}')">æ‰¿èª</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('leave','${r.id}')">å´ä¸‹</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'holidayRequests') {
         const reqs = state.holidayRequests.filter(r => r.status === 'pending');
-        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
+        if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">æ‰¿èªå¾…ã¡ãªã—</p>'; return; }
         reqs.forEach(r => {
             const card = document.createElement('div'); card.className = 'request-card';
             
-            // 選択されたシフト情報を表示
+            // é¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆæƒ…å ±ã‚’è¡¨ç¤º
             let shiftsHtml = '';
             if (r.selectedShifts && r.selectedShifts.length > 0) {
-                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
                 shiftsHtml = '<div class="selected-shifts-list">' + 
                     r.selectedShifts.map(s => {
                         const d = new Date(s.date);
                         const badges = [];
-                        if (s.isFixed) badges.push('<span class="shift-badge fixed">固定</span>');
-                        if (s.overnight) badges.push('<span class="shift-badge overnight">夜勤</span>');
+                        if (s.isFixed) badges.push('<span class="shift-badge fixed">å›ºå®š</span>');
+                        if (s.overnight) badges.push('<span class="shift-badge overnight">å¤œå‹¤</span>');
                         const timeDisplay = s.originalStartHour !== undefined && (s.startHour !== s.originalStartHour || s.endHour !== s.originalEndHour) 
-                            ? `${formatTime(s.startHour)}-${formatTime(s.endHour)} <span class="custom-time">(元: ${formatTime(s.originalStartHour)}-${formatTime(s.originalEndHour)})</span>`
+                            ? `${formatTime(s.startHour)}-${formatTime(s.endHour)} <span class="custom-time">(å…ƒ: ${formatTime(s.originalStartHour)}-${formatTime(s.originalEndHour)})</span>`
                             : `${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
-                        return `<div class="shift-item">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）${timeDisplay} ${badges.join('')}</div>`;
+                        return `<div class="shift-item">${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰${timeDisplay} ${badges.join('')}</div>`;
                     }).join('') + 
                 '</div>';
             } else {
-                // 従来の開始日〜終了日形式
-                shiftsHtml = `<p>期間: ${r.startDate} 〜 ${r.endDate}</p>`;
+                // å¾“æ¥ã®é–‹å§‹æ—¥ã€œçµ‚äº†æ—¥å½¢å¼
+                shiftsHtml = `<p>æœŸé–“: ${r.startDate} ã€œ ${r.endDate}</p>`;
             }
             
-            let swapInfo = r.swapRequested && r.swapPartner ? `<p>シフト交代: ${r.swapPartner}さんと交代</p>` : '<p>シフト交代: なし</p>';
-            card.innerHTML = `<div class="request-info"><h4>🏠 ${r.name} - 休日申請</h4>${shiftsHtml}${swapInfo}<p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('holiday','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('holiday','${r.id}')">却下</button></div>`;
+            let swapInfo = r.swapRequested && r.swapPartner ? `<p>ã‚·ãƒ•ãƒˆäº¤ä»£: ${r.swapPartner}ã•ã‚“ã¨äº¤ä»£</p>` : '<p>ã‚·ãƒ•ãƒˆäº¤ä»£: ãªã—</p>';
+            card.innerHTML = `<div class="request-info"><h4>ðŸ  ${r.name} - ä¼‘æ—¥ç”³è«‹</h4>${shiftsHtml}${swapInfo}<p>ç†ç”±: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('holiday','${r.id}')">æ‰¿èª</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('holiday','${r.id}')">å´ä¸‹</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'specialEvents') {
-        // 臨時シフト管理
+        // è‡¨æ™‚ã‚·ãƒ•ãƒˆç®¡ç†
         renderSpecialEventManagement(c);
     } else if (state.activeAdminTab === 'fixedShiftManage') {
-        // 固定シフト管理
+        // å›ºå®šã‚·ãƒ•ãƒˆç®¡ç†
         renderFixedShiftManagement(c);
     } else if (state.activeAdminTab === 'employees') {
-        c.innerHTML = `<div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openAddEmployeeModal()">+ 従業員追加</button></div><div class="employee-list" id="employeeList"></div>`;
+        c.innerHTML = `<div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openAddEmployeeModal()">+ å¾“æ¥­å“¡è¿½åŠ </button></div><div class="employee-list" id="employeeList"></div>`;
         const list = document.getElementById('employeeList');
-        const roleNames = { staff: 'スタッフ', shiftLeader: 'シフトリーダー', employee: '社員', manager: 'マネージャー', leader: 'リーダー' };
-        const shiftNames = { day: '日勤', evening: '夕勤', night: '夜勤' };
+        const roleNames = { staff: 'ã‚¹ã‚¿ãƒƒãƒ•', shiftLeader: 'ã‚·ãƒ•ãƒˆãƒªãƒ¼ãƒ€ãƒ¼', employee: 'ç¤¾å“¡', manager: 'ãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼', leader: 'ãƒªãƒ¼ãƒ€ãƒ¼' };
+        const shiftNames = { day: 'æ—¥å‹¤', evening: 'å¤•å‹¤', night: 'å¤œå‹¤' };
         state.employees.forEach(e => {
             const card = document.createElement('div'); card.className = 'employee-card';
             const roleName = roleNames[e.role] || e.role;
             const shiftName = shiftNames[e.shiftTime] || '';
 
-            // 発注担当分類タグを生成
+            // ç™ºæ³¨æ‹…å½“åˆ†é¡žã‚¿ã‚°ã‚’ç”Ÿæˆ
             let orderCategoriesHtml = '';
             if (e.orderCategories && e.orderCategories.length > 0) {
                 orderCategoriesHtml = `<div class="order-categories-display">${e.orderCategories.map(cat => `<span class="order-category-tag">${cat}</span>`).join('')}</div>`;
             }
 
-            card.innerHTML = `<div class="employee-info"><div class="employee-avatar">${e.name.charAt(0)}</div><div><div class="employee-name">${e.name}</div><div class="employee-role">${roleName}${shiftName ? ' / ' + shiftName : ''}</div>${orderCategoriesHtml}</div></div><div class="employee-actions"><button class="btn btn-secondary btn-sm" onclick="openEditEmployeeModal('${e.id}')">✏️ 編集</button><button class="btn btn-danger btn-sm" onclick="deleteEmployee('${e.id}')">削除</button></div>`;
+            card.innerHTML = `<div class="employee-info"><div class="employee-avatar">${e.name.charAt(0)}</div><div><div class="employee-name">${e.name}</div><div class="employee-role">${roleName}${shiftName ? ' / ' + shiftName : ''}</div>${orderCategoriesHtml}</div></div><div class="employee-actions"><button class="btn btn-secondary btn-sm" onclick="openEditEmployeeModal('${e.id}')">âœï¸ ç·¨é›†</button><button class="btn btn-danger btn-sm" onclick="deleteEmployee('${e.id}')">å‰Šé™¤</button></div>`;
             list.appendChild(card);
         });
     } else if (state.activeAdminTab === 'broadcast') {
-        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
+        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">å…¨å¾“æ¥­å“¡ã«ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">ðŸ“¢ ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ä½œæˆ</button></div>`;
     } else if (state.activeAdminTab === 'settings') {
-        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button></div>`;
+        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">ç®¡ç†è€…è¨­å®š</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">ðŸ”‘ æš—è¨¼ç•ªå·ã‚’å¤‰æ›´</button></div>`;
     } else if (state.activeAdminTab === 'dailyEvents') {
-        // 店舗スケジュール管理
+        // åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†
         const icons = getEventTypeIcons();
-        const typeNames = { sale: 'セール', notice: '連絡事項', training: '研修', inventory: '棚卸', delivery: '特発納品', other: 'その他' };
+        const typeNames = { sale: 'ã‚»ãƒ¼ãƒ«', notice: 'é€£çµ¡äº‹é …', training: 'ç ”ä¿®', inventory: 'æ£šå¸', delivery: 'ç‰¹ç™ºç´å“', other: 'ãã®ä»–' };
 
-        // 現在のフィルター状態を取得（初期値は'all'）
+        // ç¾åœ¨ã®ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼çŠ¶æ…‹ã‚’å–å¾—ï¼ˆåˆæœŸå€¤ã¯'all'ï¼‰
         const currentFilter = state.eventTypeFilter || 'all';
 
         c.innerHTML = `
             <div class="daily-events-header">
-                <h3>📅 店舗スケジュール管理</h3>
-                <button class="btn btn-primary btn-sm" onclick="openEventModal()">+ イベント追加</button>
+                <h3>ðŸ“… åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ç®¡ç†</h3>
+                <button class="btn btn-primary btn-sm" onclick="openEventModal()">+ ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ </button>
             </div>
             <div class="filter-tabs" id="eventFilterTabs">
-                <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="filterEventsByType('all')">すべて</button>
+                <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="filterEventsByType('all')">ã™ã¹ã¦</button>
                 ${Object.entries(typeNames).map(([key, name]) =>
             `<button class="filter-tab ${currentFilter === key ? 'active' : ''}" data-filter="${key}" onclick="filterEventsByType('${key}')">${icons[key]} ${name}</button>`
         ).join('')}
@@ -2871,7 +3121,7 @@ function renderAdminPanel() {
 
         const list = document.getElementById('dailyEventsList');
 
-        // フィルタリングして開始日順にソート
+        // ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°ã—ã¦é–‹å§‹æ—¥é †ã«ã‚½ãƒ¼ãƒˆ
         let filteredEvents = [...state.dailyEvents];
         if (currentFilter !== 'all') {
             filteredEvents = filteredEvents.filter(e => e.type === currentFilter);
@@ -2883,23 +3133,23 @@ function renderAdminPanel() {
         });
 
         if (sortedEvents.length === 0) {
-            list.innerHTML = '<p class="no-events-message">登録されているイベントはありません</p>';
+            list.innerHTML = '<p class="no-events-message">ç™»éŒ²ã•ã‚Œã¦ã„ã‚‹ã‚¤ãƒ™ãƒ³ãƒˆã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         } else {
             sortedEvents.forEach(e => {
                 const icon = icons[e.type] || icons.other;
-                const typeName = typeNames[e.type] || 'その他';
+                const typeName = typeNames[e.type] || 'ãã®ä»–';
                 const startDate = e.startDate || e.date;
                 const endDate = e.endDate || e.date;
                 const startObj = new Date(startDate);
                 const endObj = new Date(endDate);
-                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
 
-                // 期間表示（同じ日なら1日のみ、違う日なら期間表示）
+                // æœŸé–“è¡¨ç¤ºï¼ˆåŒã˜æ—¥ãªã‚‰1æ—¥ã®ã¿ã€é•ã†æ—¥ãªã‚‰æœŸé–“è¡¨ç¤ºï¼‰
                 let dateDisplay;
                 if (startDate === endDate) {
-                    dateDisplay = `${startObj.getMonth() + 1}/${startObj.getDate()}（${dayNames[startObj.getDay()]}）`;
+                    dateDisplay = `${startObj.getMonth() + 1}/${startObj.getDate()}ï¼ˆ${dayNames[startObj.getDay()]}ï¼‰`;
                 } else {
-                    dateDisplay = `${startObj.getMonth() + 1}/${startObj.getDate()} 〜 ${endObj.getMonth() + 1}/${endObj.getDate()}`;
+                    dateDisplay = `${startObj.getMonth() + 1}/${startObj.getDate()} ã€œ ${endObj.getMonth() + 1}/${endObj.getDate()}`;
                 }
 
                 const card = document.createElement('div');
@@ -2914,45 +3164,45 @@ function renderAdminPanel() {
                         ${e.description ? `<div class="event-description">${e.description}</div>` : ''}
                     </div>
                     <div class="event-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="openEditEventModal('${e.id}')">✏️ 編集</button>
-                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteEvent('${e.id}')">🗑️ 削除</button>
+                        <button class="btn btn-secondary btn-sm" onclick="openEditEventModal('${e.id}')">âœï¸ ç·¨é›†</button>
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteEvent('${e.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                     </div>
                 `;
                 list.appendChild(card);
             });
         }
     } else if (state.activeAdminTab === 'nonDailyAdvice') {
-        // 非デイリーアドバイス管理
+        // éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç®¡ç†
         renderNonDailyAdminPanel(c);
     } else if (state.activeAdminTab === 'feedbackStats') {
-        // フィードバック集計
+        // ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é›†è¨ˆ
         renderFeedbackStats(c);
     } else if (state.activeAdminTab === 'productCategories') {
-        // 商品分類管理
+        // å•†å“åˆ†é¡žç®¡ç†
         renderProductCategoriesPanel(c);
     } else if (state.activeAdminTab === 'trendReports') {
-        // コンビニ3社 新商品ヒット予測レポート管理
+        // ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆç®¡ç†
         renderTrendReportsAdmin(c);
     } else if (state.activeAdminTab === 'newProductReport') {
-        // 週次インテリジェンス（マクロ環境）管理
+        // é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ç®¡ç†
         renderNewProductReportAdmin(c);
     } else if (state.activeAdminTab === 'usageStats') {
-        // 利用統計
+        // åˆ©ç”¨çµ±è¨ˆ
         renderUsageStats(c);
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
 }
 
-// 履歴表示関数
+// å±¥æ­´è¡¨ç¤ºé–¢æ•°
 function renderRequestHistory(container) {
-    // 処理済みの申請を全て取得
+    // å‡¦ç†æ¸ˆã¿ã®ç”³è«‹ã‚’å…¨ã¦å–å¾—
     const changeHistory = state.changeRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
     const swapHistory = state.swapRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
     const leaveHistory = state.leaveRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
     const holidayHistory = state.holidayRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
 
-    // 全ての履歴を一つの配列にまとめ、処理日時で降順ソート
+    // å…¨ã¦ã®å±¥æ­´ã‚’ä¸€ã¤ã®é…åˆ—ã«ã¾ã¨ã‚ã€å‡¦ç†æ—¥æ™‚ã§é™é †ã‚½ãƒ¼ãƒˆ
     const allHistory = [
         ...changeHistory.map(r => ({ ...r, type: 'change', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
         ...swapHistory.map(r => ({ ...r, type: 'swap', processedAt: r.approvedAt || r.rejectedAt || r.createdAt })),
@@ -2961,25 +3211,25 @@ function renderRequestHistory(container) {
     ].sort((a, b) => new Date(b.processedAt) - new Date(a.processedAt));
 
     if (!allHistory.length) {
-        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">処理済みの申請履歴はありません</p>';
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">å‡¦ç†æ¸ˆã¿ã®ç”³è«‹å±¥æ­´ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
 
-    // フィルタボタンを追加
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒœã‚¿ãƒ³ã‚’è¿½åŠ 
     container.innerHTML = `
         <div class="history-filters" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-sm history-filter-btn active" data-filter="all">すべて (${allHistory.length})</button>
-            <button class="btn btn-sm history-filter-btn" data-filter="change">シフト変更 (${changeHistory.length})</button>
-            <button class="btn btn-sm history-filter-btn" data-filter="swap">シフト交代 (${swapHistory.length})</button>
-            <button class="btn btn-sm history-filter-btn" data-filter="leave">有給申請 (${leaveHistory.length})</button>
-            <button class="btn btn-sm history-filter-btn" data-filter="holiday">休日申請 (${holidayHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn active" data-filter="all">ã™ã¹ã¦ (${allHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="change">ã‚·ãƒ•ãƒˆå¤‰æ›´ (${changeHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="swap">ã‚·ãƒ•ãƒˆäº¤ä»£ (${swapHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="leave">æœ‰çµ¦ç”³è«‹ (${leaveHistory.length})</button>
+            <button class="btn btn-sm history-filter-btn" data-filter="holiday">ä¼‘æ—¥ç”³è«‹ (${holidayHistory.length})</button>
         </div>
         <div id="historyList"></div>
     `;
 
     const listEl = document.getElementById('historyList');
 
-    // フィルタボタンのイベント
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒœã‚¿ãƒ³ã®ã‚¤ãƒ™ãƒ³ãƒˆ
     container.querySelectorAll('.history-filter-btn').forEach(btn => {
         btn.onclick = () => {
             container.querySelectorAll('.history-filter-btn').forEach(b => b.classList.remove('active'));
@@ -2988,16 +3238,16 @@ function renderRequestHistory(container) {
         };
     });
 
-    // 初期表示
+    // åˆæœŸè¡¨ç¤º
     renderHistoryItems(listEl, allHistory, 'all');
 }
 
-// 履歴アイテムのレンダリング
+// å±¥æ­´ã‚¢ã‚¤ãƒ†ãƒ ã®ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderHistoryItems(container, allHistory, filter) {
     const filtered = filter === 'all' ? allHistory : allHistory.filter(h => h.type === filter);
 
     if (!filtered.length) {
-        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">該当する履歴はありません</p>';
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">è©²å½“ã™ã‚‹å±¥æ­´ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
 
@@ -3007,79 +3257,79 @@ function renderHistoryItems(container, allHistory, filter) {
         const card = document.createElement('div');
         card.className = `request-card history-card ${h.status}`;
 
-        // ステータスバッジ
+        // ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒãƒƒã‚¸
         const statusBadge = h.status === 'approved'
-            ? '<span class="status-badge approved">✅ 承認済み</span>'
-            : '<span class="status-badge rejected">❌ 却下</span>';
+            ? '<span class="status-badge approved">âœ… æ‰¿èªæ¸ˆã¿</span>'
+            : '<span class="status-badge rejected">âŒ å´ä¸‹</span>';
 
-        // 処理日時
+        // å‡¦ç†æ—¥æ™‚
         const processedAtStr = h.approvedAt || h.rejectedAt
             ? formatDateTime(h.approvedAt || h.rejectedAt)
-            : '不明';
+            : 'ä¸æ˜Ž';
 
-        // 申請日時
-        const createdAtStr = h.createdAt ? formatDateTime(h.createdAt) : '不明';
+        // ç”³è«‹æ—¥æ™‚
+        const createdAtStr = h.createdAt ? formatDateTime(h.createdAt) : 'ä¸æ˜Ž';
 
-        // 処理者
-        const processedByStr = h.processedBy || '管理者';
+        // å‡¦ç†è€…
+        const processedByStr = h.processedBy || 'ç®¡ç†è€…';
 
         let content = '';
 
         if (h.type === 'change') {
             content = `
                 <div class="request-info">
-                    <h4>🔄 シフト変更申請 ${statusBadge}</h4>
-                    <p><strong>申請者:</strong> ${h.applicant || '不明'}</p>
-                    <p><strong>変更後:</strong> ${h.newDate} ${h.newStartHour}:00-${h.newEndHour}:00</p>
-                    <p><strong>理由:</strong> ${h.reason}</p>
+                    <h4>ðŸ”„ ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹ ${statusBadge}</h4>
+                    <p><strong>ç”³è«‹è€…:</strong> ${h.applicant || 'ä¸æ˜Ž'}</p>
+                    <p><strong>å¤‰æ›´å¾Œ:</strong> ${h.newDate} ${h.newStartHour}:00-${h.newEndHour}:00</p>
+                    <p><strong>ç†ç”±:</strong> ${h.reason}</p>
                     <div class="history-meta">
-                        <p>📅 申請日時: ${createdAtStr}</p>
-                        <p>✍️ 処理日時: ${processedAtStr}</p>
-                        <p>👤 処理者: ${processedByStr}</p>
+                        <p>ðŸ“… ç”³è«‹æ—¥æ™‚: ${createdAtStr}</p>
+                        <p>âœï¸ å‡¦ç†æ—¥æ™‚: ${processedAtStr}</p>
+                        <p>ðŸ‘¤ å‡¦ç†è€…: ${processedByStr}</p>
                     </div>
                 </div>
             `;
         } else if (h.type === 'swap') {
             content = `
                 <div class="request-info">
-                    <h4>🤝 シフト交代依頼 ${statusBadge}</h4>
-                    <p><strong>申請者:</strong> ${h.applicant || '不明'}</p>
-                    <p><strong>交代:</strong> ${h.fromEmployee} → ${h.targetEmployee}</p>
-                    <p><strong>メッセージ:</strong> ${h.message}</p>
+                    <h4>ðŸ¤ ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼ ${statusBadge}</h4>
+                    <p><strong>ç”³è«‹è€…:</strong> ${h.applicant || 'ä¸æ˜Ž'}</p>
+                    <p><strong>äº¤ä»£:</strong> ${h.fromEmployee} â†’ ${h.targetEmployee}</p>
+                    <p><strong>ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸:</strong> ${h.message}</p>
                     <div class="history-meta">
-                        <p>📅 申請日時: ${createdAtStr}</p>
-                        <p>✍️ 処理日時: ${processedAtStr}</p>
-                        <p>👤 処理者: ${processedByStr}</p>
+                        <p>ðŸ“… ç”³è«‹æ—¥æ™‚: ${createdAtStr}</p>
+                        <p>âœï¸ å‡¦ç†æ—¥æ™‚: ${processedAtStr}</p>
+                        <p>ðŸ‘¤ å‡¦ç†è€…: ${processedByStr}</p>
                     </div>
                 </div>
             `;
         } else if (h.type === 'leave') {
             content = `
                 <div class="request-info">
-                    <h4>🏖️ 有給申請 ${statusBadge}</h4>
-                    <p><strong>申請者:</strong> ${h.name || '不明'}</p>
-                    <p><strong>期間:</strong> ${h.startDate} 〜 ${h.endDate}</p>
-                    <p><strong>理由:</strong> ${h.reason}</p>
+                    <h4>ðŸ–ï¸ æœ‰çµ¦ç”³è«‹ ${statusBadge}</h4>
+                    <p><strong>ç”³è«‹è€…:</strong> ${h.name || 'ä¸æ˜Ž'}</p>
+                    <p><strong>æœŸé–“:</strong> ${h.startDate} ã€œ ${h.endDate}</p>
+                    <p><strong>ç†ç”±:</strong> ${h.reason}</p>
                     <div class="history-meta">
-                        <p>📅 申請日時: ${createdAtStr}</p>
-                        <p>✍️ 処理日時: ${processedAtStr}</p>
-                        <p>👤 処理者: ${processedByStr}</p>
+                        <p>ðŸ“… ç”³è«‹æ—¥æ™‚: ${createdAtStr}</p>
+                        <p>âœï¸ å‡¦ç†æ—¥æ™‚: ${processedAtStr}</p>
+                        <p>ðŸ‘¤ å‡¦ç†è€…: ${processedByStr}</p>
                     </div>
                 </div>
             `;
         } else if (h.type === 'holiday') {
-            let swapInfo = h.swapRequested && h.swapPartner ? `<p><strong>シフト交代:</strong> ${h.swapPartner}さんと交代</p>` : '';
+            let swapInfo = h.swapRequested && h.swapPartner ? `<p><strong>ã‚·ãƒ•ãƒˆäº¤ä»£:</strong> ${h.swapPartner}ã•ã‚“ã¨äº¤ä»£</p>` : '';
             content = `
                 <div class="request-info">
-                    <h4>🏠 休日申請 ${statusBadge}</h4>
-                    <p><strong>申請者:</strong> ${h.name || '不明'}</p>
-                    <p><strong>期間:</strong> ${h.startDate} 〜 ${h.endDate}</p>
+                    <h4>ðŸ  ä¼‘æ—¥ç”³è«‹ ${statusBadge}</h4>
+                    <p><strong>ç”³è«‹è€…:</strong> ${h.name || 'ä¸æ˜Ž'}</p>
+                    <p><strong>æœŸé–“:</strong> ${h.startDate} ã€œ ${h.endDate}</p>
                     ${swapInfo}
-                    <p><strong>理由:</strong> ${h.reason}</p>
+                    <p><strong>ç†ç”±:</strong> ${h.reason}</p>
                     <div class="history-meta">
-                        <p>📅 申請日時: ${createdAtStr}</p>
-                        <p>✍️ 処理日時: ${processedAtStr}</p>
-                        <p>👤 処理者: ${processedByStr}</p>
+                        <p>ðŸ“… ç”³è«‹æ—¥æ™‚: ${createdAtStr}</p>
+                        <p>âœï¸ å‡¦ç†æ—¥æ™‚: ${processedAtStr}</p>
+                        <p>ðŸ‘¤ å‡¦ç†è€…: ${processedByStr}</p>
                     </div>
                 </div>
             `;
@@ -3090,25 +3340,25 @@ function renderHistoryItems(container, allHistory, filter) {
     });
 }
 
-// メッセージ表示
+// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸è¡¨ç¤º
 function renderMessages() {
     const c = document.getElementById('messagesContent');
     const all = [...state.messages.map(m => ({ ...m, type: 'message' })), ...state.swapRequests.filter(r => r.status === 'pending').map(r => ({ ...r, type: 'swap' }))].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (!all.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center">メッセージなし</p>'; return; }
+    if (!all.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center">ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãªã—</p>'; return; }
 
-    // ヘッダーに全削除ボタンを追加
-    c.innerHTML = '<div style="text-align:right;margin-bottom:12px;"><button class="btn btn-danger btn-sm" onclick="clearAllMessages()">🗑️ 全てのメッセージを削除</button></div>';
+    // ãƒ˜ãƒƒãƒ€ãƒ¼ã«å…¨å‰Šé™¤ãƒœã‚¿ãƒ³ã‚’è¿½åŠ 
+    c.innerHTML = '<div style="text-align:right;margin-bottom:12px;"><button class="btn btn-danger btn-sm" onclick="clearAllMessages()">ðŸ—‘ï¸ å…¨ã¦ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤</button></div>';
 
     all.forEach(m => {
         const card = document.createElement('div'); card.className = 'message-card' + (!m.read ? ' unread' : '');
         if (m.type === 'message') {
-            card.innerHTML = `<div class="message-header"><span class="message-from">${m.from}</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.title}</strong><br>${m.content}</div><div class="message-actions"><button class="btn btn-danger btn-sm" onclick="deleteMessage('${m.id}')">削除</button></div>`;
+            card.innerHTML = `<div class="message-header"><span class="message-from">${m.from}</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.title}</strong><br>${m.content}</div><div class="message-actions"><button class="btn btn-danger btn-sm" onclick="deleteMessage('${m.id}')">å‰Šé™¤</button></div>`;
             card.onclick = (e) => { if (e.target.tagName !== 'BUTTON') { m.read = true; saveToFirebase('messages', state.messages); updateMessageBar(); renderMessages(); } };
         } else {
-            // シフト情報を取得（固定シフトの場合も対応）
+            // ã‚·ãƒ•ãƒˆæƒ…å ±ã‚’å–å¾—ï¼ˆå›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã‚‚å¯¾å¿œï¼‰
             let shiftInfo = null;
             if (m.shiftId && m.shiftId.startsWith('fx-')) {
-                // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+                // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆ: fx-{originalId}-{dateStr} å½¢å¼
                 const parts = m.shiftId.split('-');
                 const originalId = parts[1];
                 const dateStr = parts.slice(2).join('-');
@@ -3124,13 +3374,13 @@ function renderMessages() {
             }
             const dateDisplay = shiftInfo?.date || '?';
             const timeDisplay = shiftInfo ? `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}` : '?:00-?:00';
-            card.innerHTML = `<div class="message-header"><span class="message-from">🤝 シフト交代依頼</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.fromEmployee}</strong>さんから、<strong>${m.targetEmployee}</strong>さんへの依頼<br>シフト: ${dateDisplay} ${timeDisplay}<br>${m.message}</div><div class="message-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${m.id}')">交代する</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${m.id}')">お断り</button></div>`;
+            card.innerHTML = `<div class="message-header"><span class="message-from">ðŸ¤ ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.fromEmployee}</strong>ã•ã‚“ã‹ã‚‰ã€<strong>${m.targetEmployee}</strong>ã•ã‚“ã¸ã®ä¾é ¼<br>ã‚·ãƒ•ãƒˆ: ${dateDisplay} ${timeDisplay}<br>${m.message}</div><div class="message-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${m.id}')">äº¤ä»£ã™ã‚‹</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${m.id}')">ãŠæ–­ã‚Š</button></div>`;
         }
         c.appendChild(card);
     });
 }
 
-// メッセージ削除
+// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å‰Šé™¤
 function deleteMessage(id) {
     state.messages = state.messages.filter(m => m.id !== id);
     saveToFirebase('messages', state.messages);
@@ -3138,24 +3388,24 @@ function deleteMessage(id) {
     renderMessages();
 }
 
-// 全メッセージ削除
+// å…¨ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å‰Šé™¤
 function clearAllMessages() {
-    if (confirm('全てのメッセージを削除しますか？')) {
+    if (confirm('å…¨ã¦ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) {
         state.messages = [];
         saveToFirebase('messages', state.messages);
         updateMessageBar();
         renderMessages();
-        alert('全てのメッセージを削除しました。');
+        alert('å…¨ã¦ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å‰Šé™¤ã—ã¾ã—ãŸã€‚');
     }
 }
 
 function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList(); }
 
-// モーダル操作
+// ãƒ¢ãƒ¼ãƒ€ãƒ«æ“ä½œ
 function openModal(o) { o.classList.add('active'); }
 function closeModal(o) { 
     o.classList.remove('active'); 
-    // シフトモーダルを閉じる時に固定シフト関連をリセット
+    // ã‚·ãƒ•ãƒˆãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹æ™‚ã«å›ºå®šã‚·ãƒ•ãƒˆé–¢é€£ã‚’ãƒªã‚»ãƒƒãƒˆ
     if (o.id === 'modalOverlay') {
         document.getElementById('fixedShift').disabled = false;
         document.getElementById('fixedShiftPeriod').style.display = 'none';
@@ -3163,12 +3413,12 @@ function closeModal(o) {
 }
 
 function openEditShiftModal(s) {
-    // 固定シフトや夜勤継続の場合、元のシフトを取得
+    // å›ºå®šã‚·ãƒ•ãƒˆã‚„å¤œå‹¤ç¶™ç¶šã®å ´åˆã€å…ƒã®ã‚·ãƒ•ãƒˆã‚’å–å¾—
     let actualShift = s;
     let actualId = s.id;
 
     if (s.isFixed) {
-        // 固定シフトの場合（IDが fx-123-date または fxo-123-date 形式）
+        // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆï¼ˆIDãŒ fx-123-date ã¾ãŸã¯ fxo-123-date å½¢å¼ï¼‰
         const parts = s.id.split('-');
         const originalId = parts[1];
         const original = state.fixedShifts.find(f => f.id === originalId);
@@ -3177,7 +3427,7 @@ function openEditShiftModal(s) {
             actualId = originalId;
         }
     } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
-        // 夜勤継続の場合（IDが on-123 形式）
+        // å¤œå‹¤ç¶™ç¶šã®å ´åˆï¼ˆIDãŒ on-123 å½¢å¼ï¼‰
         const originalId = s.id.replace('on-', '');
         const original = state.shifts.find(x => x.id === originalId);
         if (original) {
@@ -3187,8 +3437,8 @@ function openEditShiftModal(s) {
     }
 
     state.editingShiftId = actualId;
-    document.getElementById('shiftModalTitle').textContent = s.isFixed ? '固定シフト編集' : 'シフト編集';
-    document.getElementById('shiftSubmitBtn').textContent = '更新';
+    document.getElementById('shiftModalTitle').textContent = s.isFixed ? 'å›ºå®šã‚·ãƒ•ãƒˆç·¨é›†' : 'ã‚·ãƒ•ãƒˆç·¨é›†';
+    document.getElementById('shiftSubmitBtn').textContent = 'æ›´æ–°';
     document.getElementById('editShiftId').value = actualId;
     document.getElementById('shiftDate').value = actualShift.date || s.date;
     updateShiftDateDay();
@@ -3198,11 +3448,11 @@ function openEditShiftModal(s) {
     document.getElementById('overnightShift').checked = actualShift.overnight || false;
     document.getElementById('fixedShift').checked = s.isFixed || false;
     
-    // 固定シフトの場合は有効期間セクションを表示し、値を設定
+    // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã¯æœ‰åŠ¹æœŸé–“ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã‚’è¡¨ç¤ºã—ã€å€¤ã‚’è¨­å®š
     const fixedShiftPeriod = document.getElementById('fixedShiftPeriod');
     if (s.isFixed) {
         fixedShiftPeriod.style.display = 'block';
-        document.getElementById('fixedShift').disabled = true; // 固定シフト編集時はチェックを外せない
+        document.getElementById('fixedShift').disabled = true; // å›ºå®šã‚·ãƒ•ãƒˆç·¨é›†æ™‚ã¯ãƒã‚§ãƒƒã‚¯ã‚’å¤–ã›ãªã„
         document.getElementById('fixedStartDate').value = actualShift.startDate || '';
         if (actualShift.endDate) {
             document.getElementById('fixedNoEndDate').checked = false;
@@ -3215,7 +3465,7 @@ function openEditShiftModal(s) {
         }
     } else {
         fixedShiftPeriod.style.display = 'none';
-        document.getElementById('fixedShift').disabled = false; // 通常シフト編集時は固定シフトに変換可能
+        document.getElementById('fixedShift').disabled = false; // é€šå¸¸ã‚·ãƒ•ãƒˆç·¨é›†æ™‚ã¯å›ºå®šã‚·ãƒ•ãƒˆã«å¤‰æ›å¯èƒ½
         document.getElementById('fixedStartDate').value = actualShift.date || s.date;
         document.getElementById('fixedNoEndDate').checked = true;
         document.getElementById('fixedEndDate').value = '';
@@ -3229,9 +3479,9 @@ function openEditShiftModal(s) {
 
 function openChangeModal() {
     const sel = document.getElementById('changeShiftSelect');
-    sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+    sel.innerHTML = '<option value="">å…ˆã«ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</option>';
 
-    // 申請者を選択時にシフトをフィルタリング
+    // ç”³è«‹è€…ã‚’é¸æŠžæ™‚ã«ã‚·ãƒ•ãƒˆã‚’ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
     document.getElementById('changeApplicant').value = '';
 
     document.getElementById('changeDate').value = formatDate(new Date());
@@ -3240,17 +3490,17 @@ function openChangeModal() {
     openModal(document.getElementById('changeModalOverlay'));
 }
 
-// 申請者に該当するシフトのみをドロップダウンに表示
+// ç”³è«‹è€…ã«è©²å½“ã™ã‚‹ã‚·ãƒ•ãƒˆã®ã¿ã‚’ãƒ‰ãƒ­ãƒƒãƒ—ãƒ€ã‚¦ãƒ³ã«è¡¨ç¤º
 function updateChangeShiftOptions(applicantName) {
     const sel = document.getElementById('changeShiftSelect');
-    sel.innerHTML = '<option value="">選択してください</option>';
+    sel.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
 
     if (!applicantName) {
-        sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+        sel.innerHTML = '<option value="">å…ˆã«ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</option>';
         return;
     }
 
-    // 通常シフトを追加（申請者のみ）
+    // é€šå¸¸ã‚·ãƒ•ãƒˆã‚’è¿½åŠ ï¼ˆç”³è«‹è€…ã®ã¿ï¼‰
     state.shifts.filter(s => s.name === applicantName).forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
@@ -3258,7 +3508,7 @@ function updateChangeShiftOptions(applicantName) {
         sel.appendChild(o);
     });
 
-    // 現在の週の固定シフトも追加（申請者のみ）
+    // ç¾åœ¨ã®é€±ã®å›ºå®šã‚·ãƒ•ãƒˆã‚‚è¿½åŠ ï¼ˆç”³è«‹è€…ã®ã¿ï¼‰
     for (let i = 0; i < 7; i++) {
         const d = new Date(state.currentWeekStart);
         d.setDate(d.getDate() + i);
@@ -3268,7 +3518,7 @@ function updateChangeShiftOptions(applicantName) {
             const virtualId = `fx-${f.id}-${dateStr}`;
             const o = document.createElement('option');
             o.value = virtualId;
-            o.textContent = `${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
+            o.textContent = `${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [å›ºå®š]`;
             sel.appendChild(o);
         });
     }
@@ -3276,25 +3526,25 @@ function updateChangeShiftOptions(applicantName) {
 
 function openSwapModal() {
     const sel = document.getElementById('swapShiftSelect');
-    sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+    sel.innerHTML = '<option value="">å…ˆã«ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</option>';
 
-    // 申請者を選択時にシフトをフィルタリング
+    // ç”³è«‹è€…ã‚’é¸æŠžæ™‚ã«ã‚·ãƒ•ãƒˆã‚’ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
     document.getElementById('swapApplicant').value = '';
 
     openModal(document.getElementById('swapModalOverlay'));
 }
 
-// 申請者に該当するシフトのみをドロップダウンに表示（交代依頼用）
+// ç”³è«‹è€…ã«è©²å½“ã™ã‚‹ã‚·ãƒ•ãƒˆã®ã¿ã‚’ãƒ‰ãƒ­ãƒƒãƒ—ãƒ€ã‚¦ãƒ³ã«è¡¨ç¤ºï¼ˆäº¤ä»£ä¾é ¼ç”¨ï¼‰
 function updateSwapShiftOptions(applicantName) {
     const sel = document.getElementById('swapShiftSelect');
-    sel.innerHTML = '<option value="">選択してください</option>';
+    sel.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
 
     if (!applicantName) {
-        sel.innerHTML = '<option value="">先に申請者を選択してください</option>';
+        sel.innerHTML = '<option value="">å…ˆã«ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</option>';
         return;
     }
 
-    // 通常シフトを追加（申請者のみ）
+    // é€šå¸¸ã‚·ãƒ•ãƒˆã‚’è¿½åŠ ï¼ˆç”³è«‹è€…ã®ã¿ï¼‰
     state.shifts.filter(s => s.name === applicantName).forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
@@ -3302,7 +3552,7 @@ function updateSwapShiftOptions(applicantName) {
         sel.appendChild(o);
     });
 
-    // 現在の週の固定シフトも追加（申請者のみ）
+    // ç¾åœ¨ã®é€±ã®å›ºå®šã‚·ãƒ•ãƒˆã‚‚è¿½åŠ ï¼ˆç”³è«‹è€…ã®ã¿ï¼‰
     for (let i = 0; i < 7; i++) {
         const d = new Date(state.currentWeekStart);
         d.setDate(d.getDate() + i);
@@ -3312,13 +3562,13 @@ function updateSwapShiftOptions(applicantName) {
             const virtualId = `fx-${f.id}-${dateStr}`;
             const o = document.createElement('option');
             o.value = virtualId;
-            o.textContent = `${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [固定]`;
+            o.textContent = `${dateStr} ${formatTime(f.startHour)}-${formatTime(f.endHour)} [å›ºå®š]`;
             sel.appendChild(o);
         });
     }
 }
 
-// 時刻選択肢（30分単位）
+// æ™‚åˆ»é¸æŠžè‚¢ï¼ˆ30åˆ†å˜ä½ï¼‰
 function initTimeSelects() {
     [{ id: 'shiftStart', max: 23.5 }, { id: 'shiftEnd', min: 0.5, max: 24 }, { id: 'changeStart', max: 23.5 }, { id: 'changeEnd', min: 0.5, max: 24 }].forEach(({ id, min = 0, max }) => {
         const s = document.getElementById(id); if (!s) return;
@@ -3335,7 +3585,7 @@ function initTimeSelects() {
     document.getElementById('changeEnd').value = 17;
 }
 
-// イベント設定
+// ã‚¤ãƒ™ãƒ³ãƒˆè¨­å®š
 function initEventListeners() {
     document.getElementById('prevWeek').onclick = goToPrevWeek;
     document.getElementById('nextWeek').onclick = goToNextWeek;
@@ -3344,8 +3594,8 @@ function initEventListeners() {
 
     document.getElementById('addShiftBtn').onclick = () => {
         state.editingShiftId = null;
-        document.getElementById('shiftModalTitle').textContent = 'シフト追加';
-        document.getElementById('shiftSubmitBtn').textContent = '追加';
+        document.getElementById('shiftModalTitle').textContent = 'ã‚·ãƒ•ãƒˆè¿½åŠ ';
+        document.getElementById('shiftSubmitBtn').textContent = 'è¿½åŠ ';
         document.getElementById('editShiftId').value = '';
         document.getElementById('shiftDate').value = formatDate(new Date());
         updateShiftDateDay();
@@ -3362,12 +3612,12 @@ function initEventListeners() {
         openModal(document.getElementById('modalOverlay'));
     };
 
-    // 固定シフトチェックボックスのトグル
+    // å›ºå®šã‚·ãƒ•ãƒˆãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ã®ãƒˆã‚°ãƒ«
     document.getElementById('fixedShift').onchange = (e) => {
         const periodDiv = document.getElementById('fixedShiftPeriod');
         periodDiv.style.display = e.target.checked ? 'block' : 'none';
         if (e.target.checked) {
-            // 開始日のデフォルトを選択された日付に
+            // é–‹å§‹æ—¥ã®ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã‚’é¸æŠžã•ã‚ŒãŸæ—¥ä»˜ã«
             const shiftDate = document.getElementById('shiftDate').value;
             if (shiftDate && !document.getElementById('fixedStartDate').value) {
                 document.getElementById('fixedStartDate').value = shiftDate;
@@ -3375,7 +3625,7 @@ function initEventListeners() {
         }
     };
 
-    // 終了日なしチェックボックスのトグル
+    // çµ‚äº†æ—¥ãªã—ãƒã‚§ãƒƒã‚¯ãƒœãƒƒã‚¯ã‚¹ã®ãƒˆã‚°ãƒ«
     document.getElementById('fixedNoEndDate').onchange = (e) => {
         const endDateInput = document.getElementById('fixedEndDate');
         endDateInput.disabled = e.target.checked;
@@ -3384,7 +3634,7 @@ function initEventListeners() {
         }
     };
 
-    // 日付変更時に曜日を表示
+    // æ—¥ä»˜å¤‰æ›´æ™‚ã«æ›œæ—¥ã‚’è¡¨ç¤º
     document.getElementById('shiftDate').onchange = updateShiftDateDay;
 
     document.getElementById('modalClose').onclick = () => closeModal(document.getElementById('modalOverlay'));
@@ -3400,10 +3650,10 @@ function initEventListeners() {
         let shiftData = null;
 
         if (sid.startsWith('fx-')) {
-            // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
+            // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆ: fx-{originalId}-{dateStr} å½¢å¼
             const parts = sid.split('-');
             const originalId = parts[1];
-            const dateStr = parts.slice(2).join('-'); // 日付部分を結合
+            const dateStr = parts.slice(2).join('-'); // æ—¥ä»˜éƒ¨åˆ†ã‚’çµåˆ
             const fixed = state.fixedShifts.find(f => f.id === originalId);
             if (fixed) {
                 shiftData = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour };
@@ -3422,7 +3672,7 @@ function initEventListeners() {
         }
     };
 
-    // 申請者選択時にシフトドロップダウンを更新
+    // ç”³è«‹è€…é¸æŠžæ™‚ã«ã‚·ãƒ•ãƒˆãƒ‰ãƒ­ãƒƒãƒ—ãƒ€ã‚¦ãƒ³ã‚’æ›´æ–°
     document.getElementById('changeApplicant').onchange = e => {
         updateChangeShiftOptions(e.target.value);
     };
@@ -3432,24 +3682,24 @@ function initEventListeners() {
     document.getElementById('swapCancelBtn').onclick = () => closeModal(document.getElementById('swapModalOverlay'));
     document.getElementById('swapModalOverlay').onclick = e => { if (e.target.id === 'swapModalOverlay') closeModal(document.getElementById('swapModalOverlay')); };
 
-    // 申請者選択時にシフトドロップダウンを更新（交代依頼用）
+    // ç”³è«‹è€…é¸æŠžæ™‚ã«ã‚·ãƒ•ãƒˆãƒ‰ãƒ­ãƒƒãƒ—ãƒ€ã‚¦ãƒ³ã‚’æ›´æ–°ï¼ˆäº¤ä»£ä¾é ¼ç”¨ï¼‰
     document.getElementById('swapApplicant').onchange = e => {
         updateSwapShiftOptions(e.target.value);
     };
 
     document.getElementById('requestLeaveBtn').onclick = () => { 
         document.getElementById('leaveName').value = '';
-        document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>';
         openModal(document.getElementById('leaveModalOverlay')); 
     };
     document.getElementById('leaveModalClose').onclick = () => closeModal(document.getElementById('leaveModalOverlay'));
     document.getElementById('leaveCancelBtn').onclick = () => closeModal(document.getElementById('leaveModalOverlay'));
     document.getElementById('leaveModalOverlay').onclick = e => { if (e.target.id === 'leaveModalOverlay') closeModal(document.getElementById('leaveModalOverlay')); };
 
-    // 休日申請モーダル
+    // ä¼‘æ—¥ç”³è«‹ãƒ¢ãƒ¼ãƒ€ãƒ«
     document.getElementById('requestHolidayBtn').onclick = () => {
         document.getElementById('holidayName').value = '';
-        document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>';
         document.getElementById('holidayTimeRangeGroup').style.display = 'none';
         document.getElementById('holidaySwapPartnerGroup').style.display = 'none';
         document.querySelectorAll('input[name="holidaySwapRequested"]').forEach(r => {
@@ -3461,7 +3711,7 @@ function initEventListeners() {
     document.getElementById('holidayCancelBtn').onclick = () => closeModal(document.getElementById('holidayModalOverlay'));
     document.getElementById('holidayModalOverlay').onclick = e => { if (e.target.id === 'holidayModalOverlay') closeModal(document.getElementById('holidayModalOverlay')); };
 
-    // シフト交代の有無でフィールドの表示切り替え
+    // ã‚·ãƒ•ãƒˆäº¤ä»£ã®æœ‰ç„¡ã§ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã®è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
     document.querySelectorAll('input[name="holidaySwapRequested"]').forEach(radio => {
         radio.onchange = () => {
             const isYes = document.querySelector('input[name="holidaySwapRequested"]:checked').value === 'yes';
@@ -3475,7 +3725,7 @@ function initEventListeners() {
     document.getElementById('pinModalOverlay').onclick = e => { if (e.target.id === 'pinModalOverlay') closeModal(document.getElementById('pinModalOverlay')); };
     document.getElementById('pinForm').onsubmit = e => { e.preventDefault(); if (verifyPin(document.getElementById('adminPin').value)) { closeModal(document.getElementById('pinModalOverlay')); switchToAdmin(); } else { document.getElementById('pinError').style.display = 'block'; document.getElementById('adminPin').value = ''; } };
 
-    document.getElementById('viewMessagesBtn').onclick = () => { trackUsage('view_messages', '匿名'); renderMessages(); openModal(document.getElementById('messagesModalOverlay')); };
+    document.getElementById('viewMessagesBtn').onclick = () => { trackUsage('view_messages', 'åŒ¿å'); renderMessages(); openModal(document.getElementById('messagesModalOverlay')); };
     document.getElementById('messagesModalClose').onclick = () => closeModal(document.getElementById('messagesModalOverlay'));
     document.getElementById('messagesModalOverlay').onclick = e => { if (e.target.id === 'messagesModalOverlay') closeModal(document.getElementById('messagesModalOverlay')); };
 
@@ -3485,7 +3735,7 @@ function initEventListeners() {
     document.getElementById('employeeForm').onsubmit = e => {
         e.preventDefault();
 
-        // 発注担当分類を取得
+        // ç™ºæ³¨æ‹…å½“åˆ†é¡žã‚’å–å¾—
         const orderCategories = [];
         document.querySelectorAll('input[name="orderCategory"]:checked').forEach(cb => {
             orderCategories.push(cb.value);
@@ -3500,13 +3750,13 @@ function initEventListeners() {
 
         const editId = document.getElementById('editEmployeeId').value;
         if (editId) {
-            // 編集モード
+            // ç·¨é›†ãƒ¢ãƒ¼ãƒ‰
             updateEmployee(editId, employeeData);
-            alert('従業員情報を更新しました');
+            alert('å¾“æ¥­å“¡æƒ…å ±ã‚’æ›´æ–°ã—ã¾ã—ãŸ');
         } else {
-            // 追加モード
+            // è¿½åŠ ãƒ¢ãƒ¼ãƒ‰
             addEmployee(employeeData);
-            alert('従業員を追加しました');
+            alert('å¾“æ¥­å“¡ã‚’è¿½åŠ ã—ã¾ã—ãŸ');
         }
 
         closeModal(document.getElementById('employeeModalOverlay'));
@@ -3514,7 +3764,7 @@ function initEventListeners() {
         document.getElementById('editEmployeeId').value = '';
     };
 
-    // 臨時シフト（特別イベント）モーダルのイベントリスナー
+    // è‡¨æ™‚ã‚·ãƒ•ãƒˆï¼ˆç‰¹åˆ¥ã‚¤ãƒ™ãƒ³ãƒˆï¼‰ãƒ¢ãƒ¼ãƒ€ãƒ«ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼
     document.getElementById('specialEventModalClose').onclick = () => closeModal(document.getElementById('specialEventModalOverlay'));
     document.getElementById('specialEventCancelBtn').onclick = () => closeModal(document.getElementById('specialEventModalOverlay'));
     document.getElementById('specialEventModalOverlay').onclick = e => { if (e.target.id === 'specialEventModalOverlay') closeModal(document.getElementById('specialEventModalOverlay')); };
@@ -3527,33 +3777,52 @@ function initEventListeners() {
             description: document.getElementById('specialEventDescription').value.trim(),
             suppressFixed: document.getElementById('suppressFixedShifts').checked
         };
-        if (!d.date || !d.eventName) { alert('日付とイベント名を入力してください'); return; }
+        if (!d.date || !d.eventName) { alert('æ—¥ä»˜ã¨ã‚¤ãƒ™ãƒ³ãƒˆåã‚’å…¥åŠ›ã—ã¦ãã ã•ã„'); return; }
         
-        // 重複チェック（編集時は自身を除外）
+        // é‡è¤‡ãƒã‚§ãƒƒã‚¯ï¼ˆç·¨é›†æ™‚ã¯è‡ªèº«ã‚’é™¤å¤–ï¼‰
         const duplicate = state.specialEvents.find(x => x.date === d.date && x.id !== id);
-        if (duplicate) { alert('この日付には既にイベントが登録されています'); return; }
+        if (duplicate) { alert('ã“ã®æ—¥ä»˜ã«ã¯æ—¢ã«ã‚¤ãƒ™ãƒ³ãƒˆãŒç™»éŒ²ã•ã‚Œã¦ã„ã¾ã™'); return; }
         
         if (id) {
             updateSpecialEvent(id, d);
-            alert('イベントを更新しました');
+            alert('ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ›´æ–°ã—ã¾ã—ãŸ');
         } else {
             addSpecialEvent(d);
-            alert('イベント日を追加しました。\nこの日のシフトは「シフト追加」から個別に登録してください。');
+            alert('ã‚¤ãƒ™ãƒ³ãƒˆæ—¥ã‚’è¿½åŠ ã—ã¾ã—ãŸã€‚\nã“ã®æ—¥ã®ã‚·ãƒ•ãƒˆã¯ã€Œã‚·ãƒ•ãƒˆè¿½åŠ ã€ã‹ã‚‰å€‹åˆ¥ã«ç™»éŒ²ã—ã¦ãã ã•ã„ã€‚');
         }
         closeModal(document.getElementById('specialEventModalOverlay'));
         document.getElementById('specialEventForm').reset();
     };
 
+    // ========================================
+    // タスクモーダルのイベントハンドラー
+    // ========================================
+    document.getElementById('taskModalClose').onclick = () => closeModal(document.getElementById('taskModalOverlay'));
+    document.getElementById('taskModalCancelBtn').onclick = () => closeModal(document.getElementById('taskModalOverlay'));
+    document.getElementById('taskModalOverlay').onclick = e => { if (e.target.id === 'taskModalOverlay') closeModal(document.getElementById('taskModalOverlay')); };
+    
+    document.getElementById('addTaskBtn').onclick = () => handleAddOrUpdateTask();
+    
+    // タスクカラー選択
+    document.querySelectorAll('#taskColorPicker .task-color-option').forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            selectedTaskColor = btn.dataset.color;
+            document.querySelectorAll('#taskColorPicker .task-color-option').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        };
+    });
+
     document.getElementById('broadcastModalClose').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
     document.getElementById('broadcastCancelBtn').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
     document.getElementById('broadcastModalOverlay').onclick = e => { if (e.target.id === 'broadcastModalOverlay') closeModal(document.getElementById('broadcastModalOverlay')); };
-    document.getElementById('broadcastForm').onsubmit = e => { e.preventDefault(); sendBroadcast(document.getElementById('broadcastTitle').value.trim(), document.getElementById('broadcastMessage').value.trim()); closeModal(document.getElementById('broadcastModalOverlay')); document.getElementById('broadcastForm').reset(); alert('全従業員にメッセージを送信しました'); };
+    document.getElementById('broadcastForm').onsubmit = e => { e.preventDefault(); sendBroadcast(document.getElementById('broadcastTitle').value.trim(), document.getElementById('broadcastMessage').value.trim()); closeModal(document.getElementById('broadcastModalOverlay')); document.getElementById('broadcastForm').reset(); alert('å…¨å¾“æ¥­å“¡ã«ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡ã—ã¾ã—ãŸ'); };
 
     document.querySelectorAll('.color-option').forEach(o => o.onclick = (e) => { 
         e.preventDefault();
         e.stopPropagation();
         const color = o.dataset.color;
-        // 色が正しく取得できた場合のみ処理
+        // è‰²ãŒæ­£ã—ãå–å¾—ã§ããŸå ´åˆã®ã¿å‡¦ç†
         if (color && color.startsWith('#')) {
             document.querySelectorAll('.color-option').forEach(x => x.classList.remove('selected')); 
             o.classList.add('selected'); 
@@ -3565,13 +3834,13 @@ function initEventListeners() {
         e.preventDefault();
         const id = document.getElementById('editShiftId').value;
         const isFixedChecked = document.getElementById('fixedShift').checked;
-        // 色のバリデーション - 正しくない場合はデフォルト色を使用
+        // è‰²ã®ãƒãƒªãƒ‡ãƒ¼ã‚·ãƒ§ãƒ³ - æ­£ã—ããªã„å ´åˆã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆè‰²ã‚’ä½¿ç”¨
         const validColor = (state.selectedColor && state.selectedColor.startsWith('#') && state.selectedColor.length >= 4) ? state.selectedColor : '#6366f1';
         const d = { date: document.getElementById('shiftDate').value, name: document.getElementById('shiftName').value, startHour: +document.getElementById('shiftStart').value, endHour: +document.getElementById('shiftEnd').value, color: validColor, overnight: document.getElementById('overnightShift').checked };
-        if (!d.overnight && d.startHour >= d.endHour) { alert('終了時刻は開始時刻より後に'); return; }
-        if (d.overnight && d.startHour <= d.endHour) { alert('夜勤は終了時刻を翌日の時刻に'); return; }
+        if (!d.overnight && d.startHour >= d.endHour) { alert('çµ‚äº†æ™‚åˆ»ã¯é–‹å§‹æ™‚åˆ»ã‚ˆã‚Šå¾Œã«'); return; }
+        if (d.overnight && d.startHour <= d.endHour) { alert('å¤œå‹¤ã¯çµ‚äº†æ™‚åˆ»ã‚’ç¿Œæ—¥ã®æ™‚åˆ»ã«'); return; }
 
-        // 固定シフトの場合、有効期間を追加
+        // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã€æœ‰åŠ¹æœŸé–“ã‚’è¿½åŠ 
         if (isFixedChecked) {
             const fixedStartDate = document.getElementById('fixedStartDate').value;
             const fixedNoEndDate = document.getElementById('fixedNoEndDate').checked;
@@ -3582,12 +3851,12 @@ function initEventListeners() {
         }
 
         if (id) {
-            // 編集の場合：固定シフトか通常シフトかを判定
+            // ç·¨é›†ã®å ´åˆï¼šå›ºå®šã‚·ãƒ•ãƒˆã‹é€šå¸¸ã‚·ãƒ•ãƒˆã‹ã‚’åˆ¤å®š
             const isCurrentlyFixedShift = state.fixedShifts.some(s => s.id === id);
             const isCurrentlyNormalShift = state.shifts.some(s => s.id === id);
             
             if (isCurrentlyFixedShift) {
-                // 固定シフトの編集時も有効期間を取得
+                // å›ºå®šã‚·ãƒ•ãƒˆã®ç·¨é›†æ™‚ã‚‚æœ‰åŠ¹æœŸé–“ã‚’å–å¾—
                 const fixedStartDate = document.getElementById('fixedStartDate').value;
                 const fixedNoEndDate = document.getElementById('fixedNoEndDate').checked;
                 const fixedEndDate = document.getElementById('fixedEndDate').value;
@@ -3595,10 +3864,10 @@ function initEventListeners() {
                 d.fixedEndDate = fixedNoEndDate ? null : (fixedEndDate || null);
                 updateFixedShift(id, d);
             } else if (isCurrentlyNormalShift && isFixedChecked) {
-                // 通常シフトを固定シフトに変換する場合
-                // 1. 通常シフトを削除
+                // é€šå¸¸ã‚·ãƒ•ãƒˆã‚’å›ºå®šã‚·ãƒ•ãƒˆã«å¤‰æ›ã™ã‚‹å ´åˆ
+                // 1. é€šå¸¸ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤
                 deleteShift(id);
-                // 2. 固定シフトとして新規追加
+                // 2. å›ºå®šã‚·ãƒ•ãƒˆã¨ã—ã¦æ–°è¦è¿½åŠ 
                 addFixedShift(d);
             } else {
                 updateShift(id, d);
@@ -3610,7 +3879,7 @@ function initEventListeners() {
         }
         closeModal(document.getElementById('modalOverlay'));
         document.getElementById('shiftForm').reset();
-        // 有効期間セクションを非表示に戻す
+        // æœ‰åŠ¹æœŸé–“ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã‚’éžè¡¨ç¤ºã«æˆ»ã™
         document.getElementById('fixedShiftPeriod').style.display = 'none';
         document.getElementById('fixedNoEndDate').checked = true;
     };
@@ -3619,11 +3888,11 @@ function initEventListeners() {
         e.preventDefault();
         const applicant = document.getElementById('changeApplicant').value;
         const d = { applicant, originalShiftId: document.getElementById('changeShiftSelect').value, newDate: document.getElementById('changeDate').value, newStartHour: +document.getElementById('changeStart').value, newEndHour: +document.getElementById('changeEnd').value, reason: document.getElementById('changeReason').value.trim() };
-        if (d.newStartHour >= d.newEndHour) { alert('終了時刻は開始時刻より後に'); return; }
+        if (d.newStartHour >= d.newEndHour) { alert('çµ‚äº†æ™‚åˆ»ã¯é–‹å§‹æ™‚åˆ»ã‚ˆã‚Šå¾Œã«'); return; }
         addChangeRequest(d);
         closeModal(document.getElementById('changeModalOverlay'));
         document.getElementById('changeForm').reset();
-        alert('シフト変更申請を送信しました');
+        alert('ã‚·ãƒ•ãƒˆå¤‰æ›´ç”³è«‹ã‚’é€ä¿¡ã—ã¾ã—ãŸ');
     };
 
     document.getElementById('swapForm').onsubmit = e => {
@@ -3631,29 +3900,29 @@ function initEventListeners() {
         const applicant = document.getElementById('swapApplicant').value;
         const sid = document.getElementById('swapShiftSelect').value;
 
-        // 固定シフトの場合はIDから元のシフト情報を取得
+        // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã¯IDã‹ã‚‰å…ƒã®ã‚·ãƒ•ãƒˆæƒ…å ±ã‚’å–å¾—
         let shiftName;
         if (sid.startsWith('fx-')) {
             const parts = sid.split('-');
             const originalId = parts[1];
             const fixed = state.fixedShifts.find(f => f.id === originalId);
-            shiftName = fixed ? fixed.name : '不明';
+            shiftName = fixed ? fixed.name : 'ä¸æ˜Ž';
         } else {
             const s = state.shifts.find(x => x.id === sid);
-            shiftName = s ? s.name : '不明';
+            shiftName = s ? s.name : 'ä¸æ˜Ž';
         }
 
         addSwapRequest({ applicant, shiftId: sid, fromEmployee: shiftName, targetEmployee: document.getElementById('swapTargetEmployee').value, message: document.getElementById('swapMessage').value.trim() });
         closeModal(document.getElementById('swapModalOverlay'));
         document.getElementById('swapForm').reset();
-        alert('シフト交代依頼を送信しました');
+        alert('ã‚·ãƒ•ãƒˆäº¤ä»£ä¾é ¼ã‚’é€ä¿¡ã—ã¾ã—ãŸ');
     };
 
     document.getElementById('leaveForm').onsubmit = e => {
         e.preventDefault();
         const name = document.getElementById('leaveName').value;
         
-        // 選択されたシフトを取得
+        // é¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆã‚’å–å¾—
         const selectedShifts = [];
         document.querySelectorAll('#leaveShiftList .shift-selection-checkbox:checked').forEach(cb => {
             const item = cb.closest('.shift-selection-item');
@@ -3662,16 +3931,16 @@ function initEventListeners() {
         });
         
         if (selectedShifts.length === 0) {
-            alert('有給を取得したいシフトを1つ以上選択してください');
+            alert('æœ‰çµ¦ã‚’å–å¾—ã—ãŸã„ã‚·ãƒ•ãƒˆã‚’1ã¤ä»¥ä¸Šé¸æŠžã—ã¦ãã ã•ã„');
             return;
         }
         
-        // 複数シフトの有給申請を作成
+        // è¤‡æ•°ã‚·ãƒ•ãƒˆã®æœ‰çµ¦ç”³è«‹ã‚’ä½œæˆ
         addLeaveRequestMultiple(name, selectedShifts);
         closeModal(document.getElementById('leaveModalOverlay'));
         document.getElementById('leaveForm').reset();
-        document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
-        alert('有給申請を送信しました');
+        document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>';
+        alert('æœ‰çµ¦ç”³è«‹ã‚’é€ä¿¡ã—ã¾ã—ãŸ');
     };
 
     document.getElementById('holidayForm').onsubmit = e => {
@@ -3679,7 +3948,7 @@ function initEventListeners() {
         const name = document.getElementById('holidayName').value;
         const swapRequested = document.querySelector('input[name="holidaySwapRequested"]:checked').value === 'yes';
         
-        // 選択されたシフトを取得
+        // é¸æŠžã•ã‚ŒãŸã‚·ãƒ•ãƒˆã‚’å–å¾—
         const selectedShifts = [];
         document.querySelectorAll('#holidayShiftList .shift-selection-checkbox:checked').forEach(cb => {
             const item = cb.closest('.shift-selection-item');
@@ -3688,20 +3957,20 @@ function initEventListeners() {
         });
         
         if (selectedShifts.length === 0) {
-            alert('休日を申請したいシフトを1つ以上選択してください');
+            alert('ä¼‘æ—¥ã‚’ç”³è«‹ã—ãŸã„ã‚·ãƒ•ãƒˆã‚’1ã¤ä»¥ä¸Šé¸æŠžã—ã¦ãã ã•ã„');
             return;
         }
         
-        // 時間帯指定の取得
+        // æ™‚é–“å¸¯æŒ‡å®šã®å–å¾—
         const customStartTime = document.getElementById('holidayStartTime').value;
         const customEndTime = document.getElementById('holidayEndTime').value;
         
         if (swapRequested && !document.getElementById('holidaySwapPartner').value) { 
-            alert('シフト交代相手を選択してください'); 
+            alert('ã‚·ãƒ•ãƒˆäº¤ä»£ç›¸æ‰‹ã‚’é¸æŠžã—ã¦ãã ã•ã„'); 
             return; 
         }
         
-        // 複数シフトの休日申請を作成
+        // è¤‡æ•°ã‚·ãƒ•ãƒˆã®ä¼‘æ—¥ç”³è«‹ã‚’ä½œæˆ
         addHolidayRequestMultiple(name, selectedShifts, {
             swapRequested: swapRequested,
             swapPartner: swapRequested ? document.getElementById('holidaySwapPartner').value : null,
@@ -3711,14 +3980,14 @@ function initEventListeners() {
         });
         closeModal(document.getElementById('holidayModalOverlay'));
         document.getElementById('holidayForm').reset();
-        document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
+        document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">ç”³è«‹è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</p>';
         document.getElementById('holidayTimeRangeGroup').style.display = 'none';
-        alert('休日申請を送信しました');
+        alert('ä¼‘æ—¥ç”³è«‹ã‚’é€ä¿¡ã—ã¾ã—ãŸ');
     };
 
     document.onkeydown = e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => closeModal(m)); };
 
-    // 暗証番号変更モーダル
+    // æš—è¨¼ç•ªå·å¤‰æ›´ãƒ¢ãƒ¼ãƒ€ãƒ«
     document.getElementById('changePinModalClose').onclick = () => closeModal(document.getElementById('changePinModalOverlay'));
     document.getElementById('changePinCancelBtn').onclick = () => closeModal(document.getElementById('changePinModalOverlay'));
     document.getElementById('changePinModalOverlay').onclick = e => { if (e.target.id === 'changePinModalOverlay') closeModal(document.getElementById('changePinModalOverlay')); };
@@ -3728,27 +3997,27 @@ function initEventListeners() {
         const newPin = document.getElementById('newPin').value;
         const confirm = document.getElementById('confirmPin').value;
         const errEl = document.getElementById('changePinError');
-        if (current !== CONFIG.ADMIN_PIN) { errEl.textContent = '現在の暗証番号が違います'; errEl.style.display = 'block'; return; }
-        if (newPin !== confirm) { errEl.textContent = '新しい暗証番号が一致しません'; errEl.style.display = 'block'; return; }
-        if (newPin.length !== 4) { errEl.textContent = '暗証番号は4桁で入力してください'; errEl.style.display = 'block'; return; }
+        if (current !== CONFIG.ADMIN_PIN) { errEl.textContent = 'ç¾åœ¨ã®æš—è¨¼ç•ªå·ãŒé•ã„ã¾ã™'; errEl.style.display = 'block'; return; }
+        if (newPin !== confirm) { errEl.textContent = 'æ–°ã—ã„æš—è¨¼ç•ªå·ãŒä¸€è‡´ã—ã¾ã›ã‚“'; errEl.style.display = 'block'; return; }
+        if (newPin.length !== 4) { errEl.textContent = 'æš—è¨¼ç•ªå·ã¯4æ¡ã§å…¥åŠ›ã—ã¦ãã ã•ã„'; errEl.style.display = 'block'; return; }
         CONFIG.ADMIN_PIN = newPin;
         database.ref('settings/adminPin').set(newPin);
         closeModal(document.getElementById('changePinModalOverlay'));
         document.getElementById('changePinForm').reset();
         errEl.style.display = 'none';
-        alert('暗証番号を変更しました');
+        alert('æš—è¨¼ç•ªå·ã‚’å¤‰æ›´ã—ã¾ã—ãŸ');
     };
 }
 
 // ========================================
-// ズーム機能
+// ã‚ºãƒ¼ãƒ æ©Ÿèƒ½
 // ========================================
 function setZoom(level) {
-    // 50% - 150% の範囲に制限
+    // 50% - 150% ã®ç¯„å›²ã«åˆ¶é™
     state.zoomLevel = Math.min(150, Math.max(50, level));
     applyZoom();
 
-    // UI更新
+    // UIæ›´æ–°
     const slider = document.getElementById('zoomSlider');
     const value = document.getElementById('zoomValue');
     if (slider) slider.value = state.zoomLevel;
@@ -3761,7 +4030,7 @@ function applyZoom() {
 
     const scale = state.zoomLevel / 100;
 
-    // ガントチャートのセル幅を調整
+    // ã‚¬ãƒ³ãƒˆãƒãƒ£ãƒ¼ãƒˆã®ã‚»ãƒ«å¹…ã‚’èª¿æ•´
     const timeCells = document.querySelectorAll('.time-cell');
     const hourCells = document.querySelectorAll('.hour-cell');
 
@@ -3776,7 +4045,7 @@ function applyZoom() {
         cell.style.minWidth = `${newWidth}px`;
     });
 
-    // ヘッダーと行の最小幅を更新
+    // ãƒ˜ãƒƒãƒ€ãƒ¼ã¨è¡Œã®æœ€å°å¹…ã‚’æ›´æ–°
     const minWidth = Math.round((window.innerWidth <= 768 ? 60 : 120) + (newWidth * 24));
     const ganttHeader = document.querySelector('.gantt-header');
     const ganttRows = document.querySelectorAll('.gantt-row');
@@ -3809,13 +4078,13 @@ function initZoomControls() {
         zoomReset.onclick = () => setZoom(100);
     }
 
-    // ピンチジェスチャー対応（モバイル）
+    // ãƒ”ãƒ³ãƒã‚¸ã‚§ã‚¹ãƒãƒ£ãƒ¼å¯¾å¿œï¼ˆãƒ¢ãƒã‚¤ãƒ«ï¼‰
     let lastTouchDistance = 0;
     let isPinching = false;
     const ganttContainer = document.querySelector('.gantt-container');
 
     if (ganttContainer) {
-        // タッチ開始時
+        // ã‚¿ãƒƒãƒé–‹å§‹æ™‚
         ganttContainer.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
                 isPinching = true;
@@ -3823,15 +4092,15 @@ function initZoomControls() {
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
                 );
-                // 2本指タッチの場合はデフォルト動作を防止
+                // 2æœ¬æŒ‡ã‚¿ãƒƒãƒã®å ´åˆã¯ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå‹•ä½œã‚’é˜²æ­¢
                 e.preventDefault();
             }
         }, { passive: false });
 
-        // タッチ移動時（ピンチズーム）
+        // ã‚¿ãƒƒãƒç§»å‹•æ™‚ï¼ˆãƒ”ãƒ³ãƒã‚ºãƒ¼ãƒ ï¼‰
         ganttContainer.addEventListener('touchmove', (e) => {
             if (e.touches.length === 2 && isPinching) {
-                // ブラウザのデフォルトピンチズームを防止
+                // ãƒ–ãƒ©ã‚¦ã‚¶ã®ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆãƒ”ãƒ³ãƒã‚ºãƒ¼ãƒ ã‚’é˜²æ­¢
                 e.preventDefault();
 
                 const currentDistance = Math.hypot(
@@ -3848,7 +4117,7 @@ function initZoomControls() {
             }
         }, { passive: false });
 
-        // タッチ終了時
+        // ã‚¿ãƒƒãƒçµ‚äº†æ™‚
         ganttContainer.addEventListener('touchend', (e) => {
             if (e.touches.length < 2) {
                 isPinching = false;
@@ -3859,20 +4128,20 @@ function initZoomControls() {
 }
 
 // ========================================
-// PDF出力・印刷機能
+// PDFå‡ºåŠ›ãƒ»å°åˆ·æ©Ÿèƒ½
 // ========================================
 function exportToPdf() {
-    trackUsage('export_pdf', state.isAdmin ? '管理者' : '匿名');
+    trackUsage('export_pdf', state.isAdmin ? 'ç®¡ç†è€…' : 'åŒ¿å');
     const element = document.querySelector('.app-container');
     if (!element) return;
 
-    // PDF出力中のローディング表示
+    // PDFå‡ºåŠ›ä¸­ã®ãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°è¡¨ç¤º
     const loadingOverlay = document.createElement('div');
     loadingOverlay.className = 'pdf-loading-overlay';
     loadingOverlay.innerHTML = `
         <div class="pdf-loading-content">
             <div class="pdf-loading-spinner"></div>
-            <p>PDFを生成中...</p>
+            <p>PDFã‚’ç”Ÿæˆä¸­...</p>
         </div>
     `;
     loadingOverlay.style.cssText = `
@@ -3888,14 +4157,14 @@ function exportToPdf() {
     `;
     document.body.appendChild(loadingOverlay);
 
-    // PDF出力用のクラスを追加
+    // PDFå‡ºåŠ›ç”¨ã®ã‚¯ãƒ©ã‚¹ã‚’è¿½åŠ 
     document.body.classList.add('pdf-export-mode');
 
-    // 期間情報を取得
-    const periodText = document.getElementById('currentPeriod')?.textContent || 'シフト表';
-    const fileName = `シフト表_${periodText.replace(/\s/g, '_')}.pdf`;
+    // æœŸé–“æƒ…å ±ã‚’å–å¾—
+    const periodText = document.getElementById('currentPeriod')?.textContent || 'ã‚·ãƒ•ãƒˆè¡¨';
+    const fileName = `ã‚·ãƒ•ãƒˆè¡¨_${periodText.replace(/\s/g, '_')}.pdf`;
 
-    // html2pdf のオプション
+    // html2pdf ã®ã‚ªãƒ—ã‚·ãƒ§ãƒ³
     const opt = {
         margin: [10, 10, 10, 10],
         filename: fileName,
@@ -3916,22 +4185,22 @@ function exportToPdf() {
         pagebreak: { mode: 'avoid-all' }
     };
 
-    // PDF生成
+    // PDFç”Ÿæˆ
     html2pdf().set(opt).from(element).save().then(() => {
-        // クラスを削除
+        // ã‚¯ãƒ©ã‚¹ã‚’å‰Šé™¤
         document.body.classList.remove('pdf-export-mode');
-        // ローディング削除
+        // ãƒ­ãƒ¼ãƒ‡ã‚£ãƒ³ã‚°å‰Šé™¤
         loadingOverlay.remove();
     }).catch(err => {
-        console.error('PDF生成エラー:', err);
+        console.error('PDFç”Ÿæˆã‚¨ãƒ©ãƒ¼:', err);
         document.body.classList.remove('pdf-export-mode');
         loadingOverlay.remove();
-        alert('PDFの生成に失敗しました。もう一度お試しください。');
+        alert('PDFã®ç”Ÿæˆã«å¤±æ•—ã—ã¾ã—ãŸã€‚ã‚‚ã†ä¸€åº¦ãŠè©¦ã—ãã ã•ã„ã€‚');
     });
 }
 
 function printShiftTable() {
-    trackUsage('print_shift', state.isAdmin ? '管理者' : '匿名');
+    trackUsage('print_shift', state.isAdmin ? 'ç®¡ç†è€…' : 'åŒ¿å');
     window.print();
 }
 
@@ -3949,19 +4218,19 @@ function initPdfExport() {
 }
 
 // ========================================
-// 単日上書き（この日のみ変更）機能
+// å˜æ—¥ä¸Šæ›¸ãï¼ˆã“ã®æ—¥ã®ã¿å¤‰æ›´ï¼‰æ©Ÿèƒ½
 // ========================================
 function openShiftOverrideModal(shift) {
-    // 固定シフトのIDを取得
+    // å›ºå®šã‚·ãƒ•ãƒˆã®IDã‚’å–å¾—
     const parts = shift.id.split('-');
     const fixedShiftId = parts[1];
     const dateStr = shift.date;
     
-    // 元の固定シフトを取得
+    // å…ƒã®å›ºå®šã‚·ãƒ•ãƒˆã‚’å–å¾—
     const fixedShift = state.fixedShifts.find(f => f.id === fixedShiftId);
     if (!fixedShift) return;
     
-    // 既存の上書きがあるか確認
+    // æ—¢å­˜ã®ä¸Šæ›¸ããŒã‚ã‚‹ã‹ç¢ºèª
     const existingOverride = state.shiftOverrides.find(o => 
         o.fixedShiftId === fixedShiftId && o.date === dateStr
     );
@@ -3970,7 +4239,7 @@ function openShiftOverrideModal(shift) {
     const currentEndHour = existingOverride ? existingOverride.endHour : fixedShift.endHour;
     const currentOvernight = existingOverride ? existingOverride.overnight : (fixedShift.overnight || false);
     
-    // モーダル作成
+    // ãƒ¢ãƒ¼ãƒ€ãƒ«ä½œæˆ
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay category-modal-overlay active';
     overlay.id = 'overrideModalOverlay';
@@ -3986,26 +4255,26 @@ function openShiftOverrideModal(shift) {
     overlay.innerHTML = `
         <div class="modal category-modal" style="max-width: 400px;">
             <div class="modal-header">
-                <h2 class="modal-title">📝 この日のみ変更</h2>
-                <button class="modal-close" onclick="closeOverrideModal()">×</button>
+                <h2 class="modal-title">ðŸ“ ã“ã®æ—¥ã®ã¿å¤‰æ›´</h2>
+                <button class="modal-close" onclick="closeOverrideModal()">Ã—</button>
             </div>
             <div class="modal-body">
                 <div class="override-info" style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                    <p style="margin: 0 0 8px 0; font-weight: 600;">📅 ${dateStr} のみの変更</p>
+                    <p style="margin: 0 0 8px 0; font-weight: 600;">ðŸ“… ${dateStr} ã®ã¿ã®å¤‰æ›´</p>
                     <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">
-                        元の固定シフト: ${fixedShift.name} ${formatTime(fixedShift.startHour)}〜${formatTime(fixedShift.endHour)}
+                        å…ƒã®å›ºå®šã‚·ãƒ•ãƒˆ: ${fixedShift.name} ${formatTime(fixedShift.startHour)}ã€œ${formatTime(fixedShift.endHour)}
                     </p>
                 </div>
                 
                 <div class="form-group">
-                    <label>開始時刻</label>
+                    <label>é–‹å§‹æ™‚åˆ»</label>
                     <select id="overrideStartHour" class="form-control">
                         ${hourOptions}
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label>終了時刻</label>
+                    <label>çµ‚äº†æ™‚åˆ»</label>
                     <select id="overrideEndHour" class="form-control">
                         ${hourOptionsEnd}
                     </select>
@@ -4014,22 +4283,22 @@ function openShiftOverrideModal(shift) {
                 <div class="form-group checkbox-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="overrideOvernight" ${currentOvernight ? 'checked' : ''}>
-                        <span>🌙 夜勤（翌日に跨ぐ）</span>
+                        <span>ðŸŒ™ å¤œå‹¤ï¼ˆç¿Œæ—¥ã«è·¨ãï¼‰</span>
                     </label>
                 </div>
                 
                 ${existingOverride ? `
                 <div class="form-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
                     <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteOverrideAndClose('${existingOverride.id}')" style="width: 100%;">
-                        🗑️ 単日変更を削除（元のシフトに戻す）
+                        ðŸ—‘ï¸ å˜æ—¥å¤‰æ›´ã‚’å‰Šé™¤ï¼ˆå…ƒã®ã‚·ãƒ•ãƒˆã«æˆ»ã™ï¼‰
                     </button>
                 </div>
                 ` : ''}
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeOverrideModal()">キャンセル</button>
+                <button type="button" class="btn btn-secondary" onclick="closeOverrideModal()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
                 <button type="button" class="btn btn-primary" onclick="saveShiftOverride('${fixedShiftId}', '${dateStr}', ${existingOverride ? `'${existingOverride.id}'` : 'null'})">
-                    ${existingOverride ? '更新' : '変更を保存'}
+                    ${existingOverride ? 'æ›´æ–°' : 'å¤‰æ›´ã‚’ä¿å­˜'}
                 </button>
             </div>
         </div>
@@ -4069,7 +4338,7 @@ function saveShiftOverride(fixedShiftId, dateStr, existingOverrideId) {
 }
 
 function deleteOverrideAndClose(overrideId) {
-    if (confirm('単日変更を削除しますか？\n元の固定シフトの時間に戻ります。')) {
+    if (confirm('å˜æ—¥å¤‰æ›´ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ\nå…ƒã®å›ºå®šã‚·ãƒ•ãƒˆã®æ™‚é–“ã«æˆ»ã‚Šã¾ã™ã€‚')) {
         deleteShiftOverride(overrideId);
         closeOverrideModal();
         render();
@@ -4077,7 +4346,7 @@ function deleteOverrideAndClose(overrideId) {
 }
 
 // ========================================
-// ポップオーバーイベントリスナー
+// ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼
 // ========================================
 function initPopoverEvents() {
     const popover = document.getElementById('shiftPopover');
@@ -4085,7 +4354,7 @@ function initPopoverEvents() {
     const editBtn = document.getElementById('popoverEditBtn');
     const deleteBtn = document.getElementById('popoverDeleteBtn');
 
-    // 閉じるボタン
+    // é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³
     if (closeBtn) {
         closeBtn.onclick = closeShiftPopover;
         closeBtn.addEventListener('touchend', (e) => {
@@ -4095,12 +4364,12 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 編集ボタン
+    // ç·¨é›†ãƒœã‚¿ãƒ³
     const handleEdit = () => {
         if (state.currentPopoverShift) {
             const shift = state.currentPopoverShift;
             closeShiftPopover();
-            // 少し遅延を入れてポップオーバーが閉じてから開く
+            // å°‘ã—é…å»¶ã‚’å…¥ã‚Œã¦ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ãŒé–‰ã˜ã¦ã‹ã‚‰é–‹ã
             setTimeout(() => {
                 openEditShiftModal(shift);
             }, 100);
@@ -4116,24 +4385,24 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 削除ボタン
+    // å‰Šé™¤ãƒœã‚¿ãƒ³
     const handleDelete = () => {
         if (state.currentPopoverShift) {
             const s = state.currentPopoverShift;
             closeShiftPopover();
-            // 少し遅延を入れてから確認ダイアログを表示
+            // å°‘ã—é…å»¶ã‚’å…¥ã‚Œã¦ã‹ã‚‰ç¢ºèªãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤º
             setTimeout(() => {
-                if (confirm('このシフトを削除しますか？')) {
+                if (confirm('ã“ã®ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) {
                     if (s.isFixed) {
-                        // 固定シフトの場合
+                        // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆ
                         const parts = s.id.split('-');
                         deleteFixedShift(parts[1]);
                     } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
-                        // 夜勤継続シフトの場合、元のシフトを削除
+                        // å¤œå‹¤ç¶™ç¶šã‚·ãƒ•ãƒˆã®å ´åˆã€å…ƒã®ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤
                         const originalId = s.id.replace('on-', '');
                         deleteShift(originalId);
                     } else {
-                        // 通常シフトの場合
+                        // é€šå¸¸ã‚·ãƒ•ãƒˆã®å ´åˆ
                         deleteShift(s.id);
                     }
                 }
@@ -4150,15 +4419,35 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 休みボタン
+    // 業務内容ボタン
+    const taskBtn = document.getElementById('popoverTaskBtn');
+    const handleTask = () => {
+        if (state.currentPopoverShift) {
+            const shift = state.currentPopoverShift;
+            closeShiftPopover();
+            setTimeout(() => {
+                openTaskModal(shift);
+            }, 100);
+        }
+    };
+    if (taskBtn) {
+        taskBtn.onclick = handleTask;
+        taskBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleTask();
+        }, { passive: false });
+    }
+
+    // ä¼‘ã¿ãƒœã‚¿ãƒ³
     const dayOffBtn = document.getElementById('popoverDayOffBtn');
     const handleDayOff = () => {
         if (state.currentPopoverShift) {
             const s = state.currentPopoverShift;
             closeShiftPopover();
             setTimeout(() => {
-                if (confirm('このシフトを休みにしますか？\nシフトが削除され、休日バーが表示されます。')) {
-                    // シフトの担当者名と日付を取得
+                if (confirm('ã“ã®ã‚·ãƒ•ãƒˆã‚’ä¼‘ã¿ã«ã—ã¾ã™ã‹ï¼Ÿ\nã‚·ãƒ•ãƒˆãŒå‰Šé™¤ã•ã‚Œã€ä¼‘æ—¥ãƒãƒ¼ãŒè¡¨ç¤ºã•ã‚Œã¾ã™ã€‚')) {
+                    // ã‚·ãƒ•ãƒˆã®æ‹…å½“è€…åã¨æ—¥ä»˜ã‚’å–å¾—
                     let name, date;
                     if (s.isFixed) {
                         const parts = s.id.split('-');
@@ -4181,7 +4470,7 @@ function initPopoverEvents() {
                     }
 
                     if (name && date) {
-                        // シフトの時間情報も取得
+                        // ã‚·ãƒ•ãƒˆã®æ™‚é–“æƒ…å ±ã‚‚å–å¾—
                         let startHour, endHour, overnight;
                         if (s.isFixed) {
                             const parts = s.id.split('-');
@@ -4206,7 +4495,7 @@ function initPopoverEvents() {
                             overnight = s.overnight || false;
                         }
 
-                        // 承認済みの休日リクエストを直接追加（管理者による即時承認）
+                        // æ‰¿èªæ¸ˆã¿ã®ä¼‘æ—¥ãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’ç›´æŽ¥è¿½åŠ ï¼ˆç®¡ç†è€…ã«ã‚ˆã‚‹å³æ™‚æ‰¿èªï¼‰
                         const holidayRequest = {
                             id: Date.now().toString(),
                             name: name,
@@ -4215,21 +4504,21 @@ function initPopoverEvents() {
                             startHour: startHour,
                             endHour: endHour,
                             overnight: overnight,
-                            reason: '突発的な休み',
+                            reason: 'çªç™ºçš„ãªä¼‘ã¿',
                             swapRequested: false,
                             swapPartner: null,
                             status: 'approved',
                             createdAt: new Date().toISOString(),
                             approvedAt: new Date().toISOString(),
-                            processedBy: '管理者（即時承認）'
+                            processedBy: 'ç®¡ç†è€…ï¼ˆå³æ™‚æ‰¿èªï¼‰'
                         };
                         state.holidayRequests.push(holidayRequest);
                         saveToFirebase('holidayRequests', state.holidayRequests);
 
-                        // シフトを削除
+                        // ã‚·ãƒ•ãƒˆã‚’å‰Šé™¤
                         if (s.isFixed) {
-                            // 固定シフトの場合は削除しない（休日バーだけ表示）
-                            // 必要に応じて固定シフトを削除する場合はコメントアウトを解除
+                            // å›ºå®šã‚·ãƒ•ãƒˆã®å ´åˆã¯å‰Šé™¤ã—ãªã„ï¼ˆä¼‘æ—¥ãƒãƒ¼ã ã‘è¡¨ç¤ºï¼‰
+                            // å¿…è¦ã«å¿œã˜ã¦å›ºå®šã‚·ãƒ•ãƒˆã‚’å‰Šé™¤ã™ã‚‹å ´åˆã¯ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆã‚’è§£é™¤
                             // const parts = s.id.split('-');
                             // deleteFixedShift(parts[1]);
                         } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
@@ -4239,7 +4528,7 @@ function initPopoverEvents() {
                             deleteShift(s.id);
                         }
 
-                        alert('休みに変更しました。');
+                        alert('ä¼‘ã¿ã«å¤‰æ›´ã—ã¾ã—ãŸã€‚');
                         render();
                     }
                 }
@@ -4257,14 +4546,14 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 午前半休ボタン
+    // åˆå‰åŠä¼‘ãƒœã‚¿ãƒ³
     const morningHalfDayBtn = document.getElementById('popoverMorningHalfDayBtn');
     const handleMorningHalfDay = () => {
         if (state.currentPopoverShift) {
             const s = state.currentPopoverShift;
             closeShiftPopover();
             setTimeout(() => {
-                if (confirm('このシフトを午前半休にしますか？\n午前中（〜12:00）が休みになります。')) {
+                if (confirm('ã“ã®ã‚·ãƒ•ãƒˆã‚’åˆå‰åŠä¼‘ã«ã—ã¾ã™ã‹ï¼Ÿ\nåˆå‰ä¸­ï¼ˆã€œ12:00ï¼‰ãŒä¼‘ã¿ã«ãªã‚Šã¾ã™ã€‚')) {
                     createHalfDayOff(s, 'morning');
                 }
             }, 100);
@@ -4280,14 +4569,14 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 午後半休ボタン
+    // åˆå¾ŒåŠä¼‘ãƒœã‚¿ãƒ³
     const afternoonHalfDayBtn = document.getElementById('popoverAfternoonHalfDayBtn');
     const handleAfternoonHalfDay = () => {
         if (state.currentPopoverShift) {
             const s = state.currentPopoverShift;
             closeShiftPopover();
             setTimeout(() => {
-                if (confirm('このシフトを午後半休にしますか？\n午後（12:00〜）が休みになります。')) {
+                if (confirm('ã“ã®ã‚·ãƒ•ãƒˆã‚’åˆå¾ŒåŠä¼‘ã«ã—ã¾ã™ã‹ï¼Ÿ\nåˆå¾Œï¼ˆ12:00ã€œï¼‰ãŒä¼‘ã¿ã«ãªã‚Šã¾ã™ã€‚')) {
                     createHalfDayOff(s, 'afternoon');
                 }
             }, 100);
@@ -4303,7 +4592,7 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 「この日のみ変更」ボタン
+    // ã€Œã“ã®æ—¥ã®ã¿å¤‰æ›´ã€ãƒœã‚¿ãƒ³
     const overrideBtn = document.getElementById('popoverOverrideBtn');
     const handleOverride = () => {
         if (state.currentPopoverShift && state.currentPopoverShift.isFixed) {
@@ -4324,10 +4613,10 @@ function initPopoverEvents() {
         }, { passive: false });
     }
 
-    // 外側クリック/タッチで閉じる
+    // å¤–å´ã‚¯ãƒªãƒƒã‚¯/ã‚¿ãƒƒãƒã§é–‰ã˜ã‚‹
     const handleOutsideInteraction = (e) => {
         if (popover && popover.classList.contains('active')) {
-            // タッチイベントの場合は位置から要素を取得
+            // ã‚¿ãƒƒãƒã‚¤ãƒ™ãƒ³ãƒˆã®å ´åˆã¯ä½ç½®ã‹ã‚‰è¦ç´ ã‚’å–å¾—
             let targetElement = e.target;
             if (e.type === 'touchend' && e.changedTouches && e.changedTouches[0]) {
                 const touch = e.changedTouches[0];
@@ -4344,7 +4633,7 @@ function initPopoverEvents() {
     document.addEventListener('touchend', handleOutsideInteraction, { passive: true });
 
 
-    // Escapeキーで閉じる
+    // Escapeã‚­ãƒ¼ã§é–‰ã˜ã‚‹
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && popover && popover.classList.contains('active')) {
             closeShiftPopover();
@@ -4352,10 +4641,10 @@ function initPopoverEvents() {
     });
 }
 
-// 初期化
+// åˆæœŸåŒ–
 function init() {
-    // アプリ閲覧をトラッキング
-    trackUsage('app_view', '匿名');
+    // ã‚¢ãƒ—ãƒªé–²è¦§ã‚’ãƒˆãƒ©ãƒƒã‚­ãƒ³ã‚°
+    trackUsage('app_view', 'åŒ¿å');
     
     initTimeSelects();
     initEventListeners();
@@ -4363,17 +4652,17 @@ function init() {
     initPdfExport();
     initPopoverEvents();
     initEventModal();
-    initAdvisorGroupToggle(); // グループトグルを初期化
-    initReportsGroupToggle(); // レポートグループのトグルを初期化
-    initTrendReportToggle(); // コンビニ3社 新商品ヒット予測レポートのトグルを初期化
-    initNewProductToggle(); // 週次インテリジェンス（マクロ環境）のトグルを初期化
+    initAdvisorGroupToggle(); // ã‚°ãƒ«ãƒ¼ãƒ—ãƒˆã‚°ãƒ«ã‚’åˆæœŸåŒ–
+    initReportsGroupToggle(); // ãƒ¬ãƒãƒ¼ãƒˆã‚°ãƒ«ãƒ¼ãƒ—ã®ãƒˆã‚°ãƒ«ã‚’åˆæœŸåŒ–
+    initTrendReportToggle(); // ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆã®ãƒˆã‚°ãƒ«ã‚’åˆæœŸåŒ–
+    initNewProductToggle(); // é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ã®ãƒˆã‚°ãƒ«ã‚’åˆæœŸåŒ–
     loadData();
     render();
 
-    // 天気データを取得
+    // å¤©æ°—ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
     fetchWeatherData();
 
-    // ウィンドウリサイズ時にシフトバーを再描画
+    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒªã‚µã‚¤ã‚ºæ™‚ã«ã‚·ãƒ•ãƒˆãƒãƒ¼ã‚’å†æç”»
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
@@ -4385,35 +4674,35 @@ function init() {
 }
 
 // ========================================
-// イベント（店舗スケジュール）関連の関数
+// ã‚¤ãƒ™ãƒ³ãƒˆï¼ˆåº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ï¼‰é–¢é€£ã®é–¢æ•°
 // ========================================
 
-// イベントタイプとアイコンのマッピング
+// ã‚¤ãƒ™ãƒ³ãƒˆã‚¿ã‚¤ãƒ—ã¨ã‚¢ã‚¤ã‚³ãƒ³ã®ãƒžãƒƒãƒ”ãƒ³ã‚°
 function getEventTypeIcons() {
     return {
-        sale: '🏷️',
-        notice: '📢',
-        training: '📚',
-        inventory: '📦',
-        delivery: '🚚',
-        other: '📌'
+        sale: 'ðŸ·ï¸',
+        notice: 'ðŸ“¢',
+        training: 'ðŸ“š',
+        inventory: 'ðŸ“¦',
+        delivery: 'ðŸšš',
+        other: 'ðŸ“Œ'
     };
 }
 
-// イベントタイプ名を取得
+// ã‚¤ãƒ™ãƒ³ãƒˆã‚¿ã‚¤ãƒ—åã‚’å–å¾—
 function getEventTypeName(type) {
     const names = {
-        sale: 'セール',
-        notice: '連絡事項',
-        training: '研修',
-        inventory: '棚卸',
-        delivery: '特発納品',
-        other: 'その他'
+        sale: 'ã‚»ãƒ¼ãƒ«',
+        notice: 'é€£çµ¡äº‹é …',
+        training: 'ç ”ä¿®',
+        inventory: 'æ£šå¸',
+        delivery: 'ç‰¹ç™ºç´å“',
+        other: 'ãã®ä»–'
     };
-    return names[type] || 'その他';
+    return names[type] || 'ãã®ä»–';
 }
 
-// イベント追加
+// ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ 
 function addDailyEvent(data) {
     const event = {
         id: Date.now().toString(),
@@ -4422,48 +4711,48 @@ function addDailyEvent(data) {
     };
     state.dailyEvents.push(event);
     saveToFirebase('dailyEvents', state.dailyEvents);
-    trackUsage('add_daily_event', '管理者');
+    trackUsage('add_daily_event', 'ç®¡ç†è€…');
 }
 
-// イベント更新
+// ã‚¤ãƒ™ãƒ³ãƒˆæ›´æ–°
 function updateDailyEvent(id, data) {
     const index = state.dailyEvents.findIndex(e => e.id === id);
     if (index >= 0) {
         state.dailyEvents[index] = { ...state.dailyEvents[index], ...data };
         saveToFirebase('dailyEvents', state.dailyEvents);
-        trackUsage('edit_daily_event', '管理者');
+        trackUsage('edit_daily_event', 'ç®¡ç†è€…');
     }
 }
 
-// イベント削除
+// ã‚¤ãƒ™ãƒ³ãƒˆå‰Šé™¤
 function deleteDailyEvent(id) {
     state.dailyEvents = state.dailyEvents.filter(e => e.id !== id);
     saveToFirebase('dailyEvents', state.dailyEvents);
 }
 
-// イベント詳細ポップオーバーを表示
+// ã‚¤ãƒ™ãƒ³ãƒˆè©³ç´°ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚’è¡¨ç¤º
 function showEventPopover(dateStr, event) {
     const popover = document.getElementById('eventPopover');
     const body = document.getElementById('eventPopoverBody');
 
-    // 期間内にある日付を含むイベントを取得
+    // æœŸé–“å†…ã«ã‚ã‚‹æ—¥ä»˜ã‚’å«ã‚€ã‚¤ãƒ™ãƒ³ãƒˆã‚’å–å¾—
     const dayEvents = state.dailyEvents.filter(e => {
-        const startDate = e.startDate || e.date; // 後方互換性
+        const startDate = e.startDate || e.date; // å¾Œæ–¹äº’æ›æ€§
         const endDate = e.endDate || e.date;
         return dateStr >= startDate && dateStr <= endDate;
     });
     if (dayEvents.length === 0) return;
 
-    // 日付を表示用にフォーマット
+    // æ—¥ä»˜ã‚’è¡¨ç¤ºç”¨ã«ãƒ•ã‚©ãƒ¼ãƒžãƒƒãƒˆ
     const dateObj = new Date(dateStr);
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    const dateDisplay = `${dateObj.getMonth() + 1}月${dateObj.getDate()}日（${dayNames[dateObj.getDay()]}）`;
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+    const dateDisplay = `${dateObj.getMonth() + 1}æœˆ${dateObj.getDate()}æ—¥ï¼ˆ${dayNames[dateObj.getDay()]}ï¼‰`;
 
-    document.getElementById('eventPopoverTitle').textContent = `📅 ${dateDisplay}`;
+    document.getElementById('eventPopoverTitle').textContent = `ðŸ“… ${dateDisplay}`;
 
     const icons = getEventTypeIcons();
 
-    // イベント一覧を生成
+    // ã‚¤ãƒ™ãƒ³ãƒˆä¸€è¦§ã‚’ç”Ÿæˆ
     let html = '';
     dayEvents.forEach(e => {
         const icon = icons[e.type] || icons.other;
@@ -4476,8 +4765,8 @@ function showEventPopover(dateStr, event) {
                 ${e.description ? `<div class="event-item-description">${e.description.replace(/\n/g, '<br>')}</div>` : ''}
                 ${state.isAdmin ? `
                 <div class="event-item-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="openEditEventModal('${e.id}')">✏️ 編集</button>
-                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEvent('${e.id}')">🗑️ 削除</button>
+                    <button class="btn btn-sm btn-secondary" onclick="openEditEventModal('${e.id}')">âœï¸ ç·¨é›†</button>
+                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEvent('${e.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                 </div>` : ''}
             </div>
         `;
@@ -4485,7 +4774,7 @@ function showEventPopover(dateStr, event) {
 
     body.innerHTML = html;
 
-    // ポップオーバーの位置を計算
+    // ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã®ä½ç½®ã‚’è¨ˆç®—
     const popoverWidth = 320;
     const popoverHeight = 250;
     let left, top;
@@ -4495,7 +4784,7 @@ function showEventPopover(dateStr, event) {
         left = rect.right + 10;
         top = rect.top;
 
-        // 右にはみ出す場合は左に配置
+        // å³ã«ã¯ã¿å‡ºã™å ´åˆã¯å·¦ã«é…ç½®
         if (left + popoverWidth > window.innerWidth - 10) {
             left = rect.left - popoverWidth - 10;
         }
@@ -4507,7 +4796,7 @@ function showEventPopover(dateStr, event) {
         top = (window.innerHeight - popoverHeight) / 2;
     }
 
-    // はみ出し調整
+    // ã¯ã¿å‡ºã—èª¿æ•´
     if (left < 10) left = 10;
     if (left + popoverWidth > window.innerWidth - 10) {
         left = window.innerWidth - popoverWidth - 10;
@@ -4522,17 +4811,17 @@ function showEventPopover(dateStr, event) {
     popover.classList.add('show');
 }
 
-// イベントポップオーバーを閉じる
+// ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã‚’é–‰ã˜ã‚‹
 function closeEventPopover() {
     const popover = document.getElementById('eventPopover');
     popover.classList.remove('show');
 }
 
-// イベント削除確認
+// ã‚¤ãƒ™ãƒ³ãƒˆå‰Šé™¤ç¢ºèª
 function confirmDeleteEvent(id) {
     const event = state.dailyEvents.find(e => e.id === id);
-    if (event && confirm(`「${event.title}」を削除しますか？`)) {
-        trackUsage('delete_daily_event', '管理者');
+    if (event && confirm(`ã€Œ${event.title}ã€ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ`)) {
+        trackUsage('delete_daily_event', 'ç®¡ç†è€…');
         deleteDailyEvent(id);
         closeEventPopover();
         render();
@@ -4540,46 +4829,46 @@ function confirmDeleteEvent(id) {
     }
 }
 
-// イベント追加モーダルを開く
+// ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEventModal(date = null) {
     const overlay = document.getElementById('eventModalOverlay');
     const today = formatDate(new Date());
-    document.getElementById('eventModalTitle').textContent = '📅 イベント追加';
+    document.getElementById('eventModalTitle').textContent = 'ðŸ“… ã‚¤ãƒ™ãƒ³ãƒˆè¿½åŠ ';
     document.getElementById('editEventId').value = '';
     document.getElementById('eventStartDate').value = date || today;
     document.getElementById('eventEndDate').value = date || today;
     document.getElementById('eventType').value = 'notice';
     document.getElementById('eventTitle').value = '';
     document.getElementById('eventDescription').value = '';
-    document.getElementById('eventSubmitBtn').textContent = '追加';
+    document.getElementById('eventSubmitBtn').textContent = 'è¿½åŠ ';
     overlay.classList.add('active');
 }
 
-// イベント編集モーダルを開く
+// ã‚¤ãƒ™ãƒ³ãƒˆç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditEventModal(id) {
     closeEventPopover();
     const event = state.dailyEvents.find(e => e.id === id);
     if (!event) return;
 
     const overlay = document.getElementById('eventModalOverlay');
-    document.getElementById('eventModalTitle').textContent = '📅 イベント編集';
+    document.getElementById('eventModalTitle').textContent = 'ðŸ“… ã‚¤ãƒ™ãƒ³ãƒˆç·¨é›†';
     document.getElementById('editEventId').value = id;
-    // 後方互換性: 旧データはdateのみの場合
+    // å¾Œæ–¹äº’æ›æ€§: æ—§ãƒ‡ãƒ¼ã‚¿ã¯dateã®ã¿ã®å ´åˆ
     document.getElementById('eventStartDate').value = event.startDate || event.date;
     document.getElementById('eventEndDate').value = event.endDate || event.date;
     document.getElementById('eventType').value = event.type;
     document.getElementById('eventTitle').value = event.title;
     document.getElementById('eventDescription').value = event.description || '';
-    document.getElementById('eventSubmitBtn').textContent = '保存';
+    document.getElementById('eventSubmitBtn').textContent = 'ä¿å­˜';
     overlay.classList.add('active');
 }
 
-// イベントモーダルを閉じる
+// ã‚¤ãƒ™ãƒ³ãƒˆãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
 function closeEventModal() {
     document.getElementById('eventModalOverlay').classList.remove('active');
 }
 
-// イベントモーダルの初期化
+// ã‚¤ãƒ™ãƒ³ãƒˆãƒ¢ãƒ¼ãƒ€ãƒ«ã®åˆæœŸåŒ–
 function initEventModal() {
     const overlay = document.getElementById('eventModalOverlay');
     const closeBtn = document.getElementById('eventModalClose');
@@ -4616,13 +4905,13 @@ function initEventModal() {
         });
     }
 
-    // イベントポップオーバーの閉じるボタン
+    // ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼ã®é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³
     const popoverClose = document.getElementById('eventPopoverClose');
     if (popoverClose) {
         popoverClose.addEventListener('click', closeEventPopover);
     }
 
-    // ポップオーバー外クリックで閉じる
+    // ãƒãƒƒãƒ—ã‚ªãƒ¼ãƒãƒ¼å¤–ã‚¯ãƒªãƒƒã‚¯ã§é–‰ã˜ã‚‹
     document.addEventListener('click', (e) => {
         const popover = document.getElementById('eventPopover');
         if (popover && popover.classList.contains('show')) {
@@ -4636,10 +4925,10 @@ function initEventModal() {
 document.addEventListener('DOMContentLoaded', init);
 
 // ========================================
-// 日本の祝日関連の関数
+// æ—¥æœ¬ã®ç¥æ—¥é–¢é€£ã®é–¢æ•°
 // ========================================
 
-// 日本の祝日を取得（2024年〜2030年対応）
+// æ—¥æœ¬ã®ç¥æ—¥ã‚’å–å¾—ï¼ˆ2024å¹´ã€œ2030å¹´å¯¾å¿œï¼‰
 function getJapaneseHoliday(date) {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -4647,76 +4936,76 @@ function getJapaneseHoliday(date) {
     const day = d.getDate();
     const dateStr = `${month}/${day}`;
     
-    // 固定祝日
+    // å›ºå®šç¥æ—¥
     const fixedHolidays = {
-        '1/1': '元日',
-        '2/11': '建国記念の日',
-        '2/23': '天皇誕生日',
-        '4/29': '昭和の日',
-        '5/3': '憲法記念日',
-        '5/4': 'みどりの日',
-        '5/5': 'こどもの日',
-        '8/11': '山の日',
-        '11/3': '文化の日',
-        '11/23': '勤労感謝の日'
+        '1/1': 'å…ƒæ—¥',
+        '2/11': 'å»ºå›½è¨˜å¿µã®æ—¥',
+        '2/23': 'å¤©çš‡èª•ç”Ÿæ—¥',
+        '4/29': 'æ˜­å’Œã®æ—¥',
+        '5/3': 'æ†²æ³•è¨˜å¿µæ—¥',
+        '5/4': 'ã¿ã©ã‚Šã®æ—¥',
+        '5/5': 'ã“ã©ã‚‚ã®æ—¥',
+        '8/11': 'å±±ã®æ—¥',
+        '11/3': 'æ–‡åŒ–ã®æ—¥',
+        '11/23': 'å‹¤åŠ´æ„Ÿè¬ã®æ—¥'
     };
     
-    // 固定祝日チェック
+    // å›ºå®šç¥æ—¥ãƒã‚§ãƒƒã‚¯
     if (fixedHolidays[dateStr]) {
         return fixedHolidays[dateStr];
     }
     
-    // ハッピーマンデー（第n月曜日）
+    // ãƒãƒƒãƒ”ãƒ¼ãƒžãƒ³ãƒ‡ãƒ¼ï¼ˆç¬¬næœˆæ›œæ—¥ï¼‰
     const dayOfWeek = d.getDay();
-    if (dayOfWeek === 1) { // 月曜日のみチェック
+    if (dayOfWeek === 1) { // æœˆæ›œæ—¥ã®ã¿ãƒã‚§ãƒƒã‚¯
         const weekNum = Math.ceil(day / 7);
         
-        // 成人の日（1月第2月曜）
-        if (month === 1 && weekNum === 2) return '成人の日';
-        // 海の日（7月第3月曜）
-        if (month === 7 && weekNum === 3) return '海の日';
-        // 敬老の日（9月第3月曜）
-        if (month === 9 && weekNum === 3) return '敬老の日';
-        // スポーツの日（10月第2月曜）
-        if (month === 10 && weekNum === 2) return 'スポーツの日';
+        // æˆäººã®æ—¥ï¼ˆ1æœˆç¬¬2æœˆæ›œï¼‰
+        if (month === 1 && weekNum === 2) return 'æˆäººã®æ—¥';
+        // æµ·ã®æ—¥ï¼ˆ7æœˆç¬¬3æœˆæ›œï¼‰
+        if (month === 7 && weekNum === 3) return 'æµ·ã®æ—¥';
+        // æ•¬è€ã®æ—¥ï¼ˆ9æœˆç¬¬3æœˆæ›œï¼‰
+        if (month === 9 && weekNum === 3) return 'æ•¬è€ã®æ—¥';
+        // ã‚¹ãƒãƒ¼ãƒ„ã®æ—¥ï¼ˆ10æœˆç¬¬2æœˆæ›œï¼‰
+        if (month === 10 && weekNum === 2) return 'ã‚¹ãƒãƒ¼ãƒ„ã®æ—¥';
     }
     
-    // 春分の日（3月20日または21日）
+    // æ˜¥åˆ†ã®æ—¥ï¼ˆ3æœˆ20æ—¥ã¾ãŸã¯21æ—¥ï¼‰
     if (month === 3) {
         const vernalEquinox = calcVernalEquinox(year);
-        if (day === vernalEquinox) return '春分の日';
+        if (day === vernalEquinox) return 'æ˜¥åˆ†ã®æ—¥';
     }
     
-    // 秋分の日（9月22日または23日）
+    // ç§‹åˆ†ã®æ—¥ï¼ˆ9æœˆ22æ—¥ã¾ãŸã¯23æ—¥ï¼‰
     if (month === 9) {
         const autumnalEquinox = calcAutumnalEquinox(year);
-        if (day === autumnalEquinox) return '秋分の日';
+        if (day === autumnalEquinox) return 'ç§‹åˆ†ã®æ—¥';
     }
     
-    // 振替休日チェック（祝日が日曜の場合、翌日が休み）
-    if (dayOfWeek === 1) { // 月曜日
+    // æŒ¯æ›¿ä¼‘æ—¥ãƒã‚§ãƒƒã‚¯ï¼ˆç¥æ—¥ãŒæ—¥æ›œã®å ´åˆã€ç¿Œæ—¥ãŒä¼‘ã¿ï¼‰
+    if (dayOfWeek === 1) { // æœˆæ›œæ—¥
         const yesterday = new Date(d);
         yesterday.setDate(day - 1);
         const yesterdayHoliday = getHolidayName(yesterday);
         if (yesterdayHoliday) {
-            return '振替休日';
+            return 'æŒ¯æ›¿ä¼‘æ—¥';
         }
     }
     
-    // 国民の休日（祝日に挟まれた平日）
+    // å›½æ°‘ã®ä¼‘æ—¥ï¼ˆç¥æ—¥ã«æŒŸã¾ã‚ŒãŸå¹³æ—¥ï¼‰
     if (month === 9) {
-        // 敬老の日と秋分の日に挟まれる場合
-        const keirouDay = getHappyMonday(year, 9, 3); // 9月第3月曜
+        // æ•¬è€ã®æ—¥ã¨ç§‹åˆ†ã®æ—¥ã«æŒŸã¾ã‚Œã‚‹å ´åˆ
+        const keirouDay = getHappyMonday(year, 9, 3); // 9æœˆç¬¬3æœˆæ›œ
         const autumnalEquinox = calcAutumnalEquinox(year);
         if (day > keirouDay && day < autumnalEquinox && autumnalEquinox - keirouDay === 2) {
-            return '国民の休日';
+            return 'å›½æ°‘ã®ä¼‘æ—¥';
         }
     }
     
     return null;
 }
 
-// 祝日名を取得（振替休日判定用のヘルパー）
+// ç¥æ—¥åã‚’å–å¾—ï¼ˆæŒ¯æ›¿ä¼‘æ—¥åˆ¤å®šç”¨ã®ãƒ˜ãƒ«ãƒ‘ãƒ¼ï¼‰
 function getHolidayName(date) {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -4725,38 +5014,38 @@ function getHolidayName(date) {
     const dateStr = `${month}/${day}`;
     
     const fixedHolidays = {
-        '1/1': '元日',
-        '2/11': '建国記念の日',
-        '2/23': '天皇誕生日',
-        '4/29': '昭和の日',
-        '5/3': '憲法記念日',
-        '5/4': 'みどりの日',
-        '5/5': 'こどもの日',
-        '8/11': '山の日',
-        '11/3': '文化の日',
-        '11/23': '勤労感謝の日'
+        '1/1': 'å…ƒæ—¥',
+        '2/11': 'å»ºå›½è¨˜å¿µã®æ—¥',
+        '2/23': 'å¤©çš‡èª•ç”Ÿæ—¥',
+        '4/29': 'æ˜­å’Œã®æ—¥',
+        '5/3': 'æ†²æ³•è¨˜å¿µæ—¥',
+        '5/4': 'ã¿ã©ã‚Šã®æ—¥',
+        '5/5': 'ã“ã©ã‚‚ã®æ—¥',
+        '8/11': 'å±±ã®æ—¥',
+        '11/3': 'æ–‡åŒ–ã®æ—¥',
+        '11/23': 'å‹¤åŠ´æ„Ÿè¬ã®æ—¥'
     };
     
     if (fixedHolidays[dateStr]) return fixedHolidays[dateStr];
     
-    // ハッピーマンデー
+    // ãƒãƒƒãƒ”ãƒ¼ãƒžãƒ³ãƒ‡ãƒ¼
     const dayOfWeek = d.getDay();
     if (dayOfWeek === 1) {
         const weekNum = Math.ceil(day / 7);
-        if (month === 1 && weekNum === 2) return '成人の日';
-        if (month === 7 && weekNum === 3) return '海の日';
-        if (month === 9 && weekNum === 3) return '敬老の日';
-        if (month === 10 && weekNum === 2) return 'スポーツの日';
+        if (month === 1 && weekNum === 2) return 'æˆäººã®æ—¥';
+        if (month === 7 && weekNum === 3) return 'æµ·ã®æ—¥';
+        if (month === 9 && weekNum === 3) return 'æ•¬è€ã®æ—¥';
+        if (month === 10 && weekNum === 2) return 'ã‚¹ãƒãƒ¼ãƒ„ã®æ—¥';
     }
     
-    // 春分・秋分
-    if (month === 3 && day === calcVernalEquinox(year)) return '春分の日';
-    if (month === 9 && day === calcAutumnalEquinox(year)) return '秋分の日';
+    // æ˜¥åˆ†ãƒ»ç§‹åˆ†
+    if (month === 3 && day === calcVernalEquinox(year)) return 'æ˜¥åˆ†ã®æ—¥';
+    if (month === 9 && day === calcAutumnalEquinox(year)) return 'ç§‹åˆ†ã®æ—¥';
     
     return null;
 }
 
-// ハッピーマンデーの日付を計算
+// ãƒãƒƒãƒ”ãƒ¼ãƒžãƒ³ãƒ‡ãƒ¼ã®æ—¥ä»˜ã‚’è¨ˆç®—
 function getHappyMonday(year, month, weekNum) {
     const firstDay = new Date(year, month - 1, 1);
     const firstMonday = firstDay.getDay() <= 1 
@@ -4765,86 +5054,86 @@ function getHappyMonday(year, month, weekNum) {
     return firstMonday + (weekNum - 1) * 7;
 }
 
-// 春分の日を計算（簡易版：2000年〜2099年対応）
+// æ˜¥åˆ†ã®æ—¥ã‚’è¨ˆç®—ï¼ˆç°¡æ˜“ç‰ˆï¼š2000å¹´ã€œ2099å¹´å¯¾å¿œï¼‰
 function calcVernalEquinox(year) {
     if (year >= 2000 && year <= 2099) {
         return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
     }
-    return 21; // デフォルト
+    return 21; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆ
 }
 
-// 秋分の日を計算（簡易版：2000年〜2099年対応）
+// ç§‹åˆ†ã®æ—¥ã‚’è¨ˆç®—ï¼ˆç°¡æ˜“ç‰ˆï¼š2000å¹´ã€œ2099å¹´å¯¾å¿œï¼‰
 function calcAutumnalEquinox(year) {
     if (year >= 2000 && year <= 2099) {
         return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
     }
-    return 23; // デフォルト
+    return 23; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆ
 }
 
-// 祝日かどうかを判定（外部から呼び出し可能）
+// ç¥æ—¥ã‹ã©ã†ã‹ã‚’åˆ¤å®šï¼ˆå¤–éƒ¨ã‹ã‚‰å‘¼ã³å‡ºã—å¯èƒ½ï¼‰
 function isJapaneseHoliday(date) {
     return getJapaneseHoliday(date) !== null;
 }
 
 // ========================================
-// 給料日・年金支給日関連の関数
+// çµ¦æ–™æ—¥ãƒ»å¹´é‡‘æ”¯çµ¦æ—¥é–¢é€£ã®é–¢æ•°
 // ========================================
 
-// 給料日設定（デフォルト値）
+// çµ¦æ–™æ—¥è¨­å®šï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤ï¼‰
 const PAYDAY_SETTINGS = {
-    salaryDays: [25], // 給料日（複数設定可能）
-    pensionEnabled: true // 年金支給日を表示するか
+    salaryDays: [25], // çµ¦æ–™æ—¥ï¼ˆè¤‡æ•°è¨­å®šå¯èƒ½ï¼‰
+    pensionEnabled: true // å¹´é‡‘æ”¯çµ¦æ—¥ã‚’è¡¨ç¤ºã™ã‚‹ã‹
 };
 
-// 給料日・年金支給日の情報を取得
+// çµ¦æ–™æ—¥ãƒ»å¹´é‡‘æ”¯çµ¦æ—¥ã®æƒ…å ±ã‚’å–å¾—
 function getPayDayInfo(date) {
     const result = [];
     const d = new Date(date);
     const day = d.getDate();
     const month = d.getMonth() + 1; // 1-12
-    const dayOfWeek = d.getDay(); // 0=日, 6=土
+    const dayOfWeek = d.getDay(); // 0=æ—¥, 6=åœŸ
     
-    // 給料日チェック
+    // çµ¦æ–™æ—¥ãƒã‚§ãƒƒã‚¯
     PAYDAY_SETTINGS.salaryDays.forEach(salaryDay => {
         if (isPayDay(d, salaryDay)) {
             result.push({
                 type: 'salary',
-                icon: '💰',
-                label: '給料日',
-                shortLabel: '給料日'
+                icon: 'ðŸ’°',
+                label: 'çµ¦æ–™æ—¥',
+                shortLabel: 'çµ¦æ–™æ—¥'
             });
         }
     });
     
-    // 年金支給日チェック（偶数月の15日、土日祝の場合は直前の平日）
+    // å¹´é‡‘æ”¯çµ¦æ—¥ãƒã‚§ãƒƒã‚¯ï¼ˆå¶æ•°æœˆã®15æ—¥ã€åœŸæ—¥ç¥ã®å ´åˆã¯ç›´å‰ã®å¹³æ—¥ï¼‰
     if (PAYDAY_SETTINGS.pensionEnabled && isPensionDay(d)) {
         result.push({
             type: 'pension',
-            icon: '👴',
-            label: '年金支給日',
-            shortLabel: '年金'
+            icon: 'ðŸ‘´',
+            label: 'å¹´é‡‘æ”¯çµ¦æ—¥',
+            shortLabel: 'å¹´é‡‘'
         });
     }
     
     return result;
 }
 
-// 給料日かどうかを判定（土日の場合は直前の平日）
+// çµ¦æ–™æ—¥ã‹ã©ã†ã‹ã‚’åˆ¤å®šï¼ˆåœŸæ—¥ã®å ´åˆã¯ç›´å‰ã®å¹³æ—¥ï¼‰
 function isPayDay(date, salaryDay) {
     const d = new Date(date);
     const day = d.getDate();
     const year = d.getFullYear();
     const month = d.getMonth();
     
-    // その月の給料日を計算
+    // ãã®æœˆã®çµ¦æ–™æ—¥ã‚’è¨ˆç®—
     let payDate = new Date(year, month, salaryDay);
     
-    // 給料日が存在しない場合（例：2月30日）は月末に調整
+    // çµ¦æ–™æ—¥ãŒå­˜åœ¨ã—ãªã„å ´åˆï¼ˆä¾‹ï¼š2æœˆ30æ—¥ï¼‰ã¯æœˆæœ«ã«èª¿æ•´
     if (payDate.getMonth() !== month) {
-        payDate = new Date(year, month + 1, 0); // 月末日
+        payDate = new Date(year, month + 1, 0); // æœˆæœ«æ—¥
     }
     
-    // 土日の場合は直前の平日に調整
+    // åœŸæ—¥ã®å ´åˆã¯ç›´å‰ã®å¹³æ—¥ã«èª¿æ•´
     while (payDate.getDay() === 0 || payDate.getDay() === 6) {
         payDate.setDate(payDate.getDate() - 1);
     }
@@ -4854,20 +5143,20 @@ function isPayDay(date, salaryDay) {
            d.getFullYear() === payDate.getFullYear();
 }
 
-// 年金支給日かどうかを判定（偶数月の15日、土日の場合は直前の平日）
+// å¹´é‡‘æ”¯çµ¦æ—¥ã‹ã©ã†ã‹ã‚’åˆ¤å®šï¼ˆå¶æ•°æœˆã®15æ—¥ã€åœŸæ—¥ã®å ´åˆã¯ç›´å‰ã®å¹³æ—¥ï¼‰
 function isPensionDay(date) {
     const d = new Date(date);
     const month = d.getMonth() + 1; // 1-12
     
-    // 偶数月のみ
+    // å¶æ•°æœˆã®ã¿
     if (month % 2 !== 0) return false;
     
     const year = d.getFullYear();
     
-    // その月の15日を取得
+    // ãã®æœˆã®15æ—¥ã‚’å–å¾—
     let pensionDate = new Date(year, d.getMonth(), 15);
     
-    // 土日の場合は直前の平日に調整
+    // åœŸæ—¥ã®å ´åˆã¯ç›´å‰ã®å¹³æ—¥ã«èª¿æ•´
     while (pensionDate.getDay() === 0 || pensionDate.getDay() === 6) {
         pensionDate.setDate(pensionDate.getDate() - 1);
     }
@@ -4878,54 +5167,54 @@ function isPensionDay(date) {
 }
 
 // ========================================
-// 天気予報関連の関数
+// å¤©æ°—äºˆå ±é–¢é€£ã®é–¢æ•°
 // ========================================
 
-// 天気コードからアイコンと説明を取得
+// å¤©æ°—ã‚³ãƒ¼ãƒ‰ã‹ã‚‰ã‚¢ã‚¤ã‚³ãƒ³ã¨èª¬æ˜Žã‚’å–å¾—
 function getWeatherInfo(weatherCode) {
     const weatherMap = {
-        0: { icon: '☀️', desc: '快晴' },
-        1: { icon: '🌤️', desc: '晴れ' },
-        2: { icon: '⛅', desc: '曇りがち' },
-        3: { icon: '☁️', desc: '曇り' },
-        45: { icon: '🌫️', desc: '霧' },
-        48: { icon: '🌫️', desc: '着氷霧' },
-        51: { icon: '🌧️', desc: '弱い霧雨' },
-        53: { icon: '🌧️', desc: '霧雨' },
-        55: { icon: '🌧️', desc: '強い霧雨' },
-        56: { icon: '🌧️', desc: '着氷霧雨' },
-        57: { icon: '🌧️', desc: '強い着氷霧雨' },
-        61: { icon: '🌧️', desc: '弱い雨' },
-        63: { icon: '🌧️', desc: '雨' },
-        65: { icon: '🌧️', desc: '強い雨' },
-        66: { icon: '🌧️', desc: '着氷性の雨' },
-        67: { icon: '🌧️', desc: '強い着氷性の雨' },
-        71: { icon: '❄️', desc: '弱い雪' },
-        73: { icon: '❄️', desc: '雪' },
-        75: { icon: '❄️', desc: '強い雪' },
-        77: { icon: '🌨️', desc: '霧雪' },
-        80: { icon: '🌦️', desc: 'にわか雨' },
-        81: { icon: '🌧️', desc: '強いにわか雨' },
-        82: { icon: '⛈️', desc: '激しいにわか雨' },
-        85: { icon: '🌨️', desc: 'にわか雪' },
-        86: { icon: '❄️', desc: '強いにわか雪' },
-        95: { icon: '⛈️', desc: '雷雨' },
-        96: { icon: '⛈️', desc: '雷雨（雹）' },
-        99: { icon: '⛈️', desc: '激しい雷雨（雹）' }
+        0: { icon: 'â˜€ï¸', desc: 'å¿«æ™´' },
+        1: { icon: 'ðŸŒ¤ï¸', desc: 'æ™´ã‚Œ' },
+        2: { icon: 'â›…', desc: 'æ›‡ã‚ŠãŒã¡' },
+        3: { icon: 'â˜ï¸', desc: 'æ›‡ã‚Š' },
+        45: { icon: 'ðŸŒ«ï¸', desc: 'éœ§' },
+        48: { icon: 'ðŸŒ«ï¸', desc: 'ç€æ°·éœ§' },
+        51: { icon: 'ðŸŒ§ï¸', desc: 'å¼±ã„éœ§é›¨' },
+        53: { icon: 'ðŸŒ§ï¸', desc: 'éœ§é›¨' },
+        55: { icon: 'ðŸŒ§ï¸', desc: 'å¼·ã„éœ§é›¨' },
+        56: { icon: 'ðŸŒ§ï¸', desc: 'ç€æ°·éœ§é›¨' },
+        57: { icon: 'ðŸŒ§ï¸', desc: 'å¼·ã„ç€æ°·éœ§é›¨' },
+        61: { icon: 'ðŸŒ§ï¸', desc: 'å¼±ã„é›¨' },
+        63: { icon: 'ðŸŒ§ï¸', desc: 'é›¨' },
+        65: { icon: 'ðŸŒ§ï¸', desc: 'å¼·ã„é›¨' },
+        66: { icon: 'ðŸŒ§ï¸', desc: 'ç€æ°·æ€§ã®é›¨' },
+        67: { icon: 'ðŸŒ§ï¸', desc: 'å¼·ã„ç€æ°·æ€§ã®é›¨' },
+        71: { icon: 'â„ï¸', desc: 'å¼±ã„é›ª' },
+        73: { icon: 'â„ï¸', desc: 'é›ª' },
+        75: { icon: 'â„ï¸', desc: 'å¼·ã„é›ª' },
+        77: { icon: 'ðŸŒ¨ï¸', desc: 'éœ§é›ª' },
+        80: { icon: 'ðŸŒ¦ï¸', desc: 'ã«ã‚ã‹é›¨' },
+        81: { icon: 'ðŸŒ§ï¸', desc: 'å¼·ã„ã«ã‚ã‹é›¨' },
+        82: { icon: 'â›ˆï¸', desc: 'æ¿€ã—ã„ã«ã‚ã‹é›¨' },
+        85: { icon: 'ðŸŒ¨ï¸', desc: 'ã«ã‚ã‹é›ª' },
+        86: { icon: 'â„ï¸', desc: 'å¼·ã„ã«ã‚ã‹é›ª' },
+        95: { icon: 'â›ˆï¸', desc: 'é›·é›¨' },
+        96: { icon: 'â›ˆï¸', desc: 'é›·é›¨ï¼ˆé›¹ï¼‰' },
+        99: { icon: 'â›ˆï¸', desc: 'æ¿€ã—ã„é›·é›¨ï¼ˆé›¹ï¼‰' }
     };
-    return weatherMap[weatherCode] || { icon: '❓', desc: '不明' };
+    return weatherMap[weatherCode] || { icon: 'â“', desc: 'ä¸æ˜Ž' };
 }
 
-// 週間天気予報を取得（今年＋昨年比較）
+// é€±é–“å¤©æ°—äºˆå ±ã‚’å–å¾—ï¼ˆä»Šå¹´ï¼‹æ˜¨å¹´æ¯”è¼ƒï¼‰
 async function fetchWeatherData() {
     try {
-        // 表示している週の日付範囲を計算
+        // è¡¨ç¤ºã—ã¦ã„ã‚‹é€±ã®æ—¥ä»˜ç¯„å›²ã‚’è¨ˆç®—
         const startDate = formatDate(state.currentWeekStart);
         const endDate = new Date(state.currentWeekStart);
         endDate.setDate(endDate.getDate() + 6);
         const endDateStr = formatDate(endDate);
 
-        // 昨年の同じ期間を計算
+        // æ˜¨å¹´ã®åŒã˜æœŸé–“ã‚’è¨ˆç®—
         const lastYearStart = new Date(state.currentWeekStart);
         lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
         const lastYearEnd = new Date(endDate);
@@ -4933,23 +5222,23 @@ async function fetchWeatherData() {
         const lastYearStartStr = formatDate(lastYearStart);
         const lastYearEndStr = formatDate(lastYearEnd);
 
-        // 今年の天気予報を取得
+        // ä»Šå¹´ã®å¤©æ°—äºˆå ±ã‚’å–å¾—
         const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${STORE_LOCATION.latitude}&longitude=${STORE_LOCATION.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Tokyo&start_date=${startDate}&end_date=${endDateStr}`;
 
-        // 昨年の過去データを取得（Open-Meteo Archive API）
+        // æ˜¨å¹´ã®éŽåŽ»ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—ï¼ˆOpen-Meteo Archive APIï¼‰
         const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${STORE_LOCATION.latitude}&longitude=${STORE_LOCATION.longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=Asia/Tokyo&start_date=${lastYearStartStr}&end_date=${lastYearEndStr}`;
 
-        // 両方のAPIを並列で呼び出し
+        // ä¸¡æ–¹ã®APIã‚’ä¸¦åˆ—ã§å‘¼ã³å‡ºã—
         const [forecastRes, archiveRes] = await Promise.all([
             fetch(forecastUrl),
             fetch(archiveUrl)
         ]);
 
-        if (!forecastRes.ok) throw new Error('天気データの取得に失敗しました');
+        if (!forecastRes.ok) throw new Error('å¤©æ°—ãƒ‡ãƒ¼ã‚¿ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸ');
 
         const forecastData = await forecastRes.json();
 
-        // 昨年データを日付マップに整理
+        // æ˜¨å¹´ãƒ‡ãƒ¼ã‚¿ã‚’æ—¥ä»˜ãƒžãƒƒãƒ—ã«æ•´ç†
         const lastYearData = {};
         if (archiveRes.ok) {
             const archiveData = await archiveRes.json();
@@ -4963,11 +5252,11 @@ async function fetchWeatherData() {
             }
         }
 
-        // 日付別に天気データを整理
+        // æ—¥ä»˜åˆ¥ã«å¤©æ°—ãƒ‡ãƒ¼ã‚¿ã‚’æ•´ç†
         state.weatherData = {};
         if (forecastData.daily && forecastData.daily.time) {
             forecastData.daily.time.forEach((date, index) => {
-                // 今年の日付から昨年の対応日付を計算
+                // ä»Šå¹´ã®æ—¥ä»˜ã‹ã‚‰æ˜¨å¹´ã®å¯¾å¿œæ—¥ä»˜ã‚’è¨ˆç®—
                 const currentDate = new Date(date);
                 const lastYearDate = new Date(currentDate);
                 lastYearDate.setFullYear(lastYearDate.getFullYear() - 1);
@@ -4979,134 +5268,134 @@ async function fetchWeatherData() {
                     weatherCode: forecastData.daily.weather_code[index],
                     tempMax: Math.round(forecastData.daily.temperature_2m_max[index]),
                     tempMin: Math.round(forecastData.daily.temperature_2m_min[index]),
-                    // 昨年データ
+                    // æ˜¨å¹´ãƒ‡ãƒ¼ã‚¿
                     lastYearTempMax: lastYear ? lastYear.tempMax : null,
                     lastYearTempMin: lastYear ? lastYear.tempMin : null
                 };
             });
         }
 
-        // 天気データが更新されたら再描画
+        // å¤©æ°—ãƒ‡ãƒ¼ã‚¿ãŒæ›´æ–°ã•ã‚ŒãŸã‚‰å†æç”»
         render();
-        // 拡張版発注アドバイザーを更新
+        // æ‹¡å¼µç‰ˆç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã‚’æ›´æ–°
         renderOrderAdvisorExtended();
-        console.log('天気データを取得しました:', state.weatherData);
+        console.log('å¤©æ°—ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—ã—ã¾ã—ãŸ:', state.weatherData);
     } catch (error) {
-        console.error('天気データ取得エラー:', error);
+        console.error('å¤©æ°—ãƒ‡ãƒ¼ã‚¿å–å¾—ã‚¨ãƒ©ãƒ¼:', error);
     }
 }
 
 // ========================================
-// 発注アドバイザー機能（拡張版）
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼æ©Ÿèƒ½ï¼ˆæ‹¡å¼µç‰ˆï¼‰
 // ========================================
 
-// 8カテゴリの定義（サブカテゴリ付き）
+// 8ã‚«ãƒ†ã‚´ãƒªã®å®šç¾©ï¼ˆã‚µãƒ–ã‚«ãƒ†ã‚´ãƒªä»˜ãï¼‰
 const ORDER_CATEGORIES = [
     {
-        id: 'rice', name: '米飯', icon: '🍙', stable: true,
+        id: 'rice', name: 'ç±³é£¯', icon: 'ðŸ™', stable: true,
         subcategories: [
-            { id: 'bento', name: '弁当', tempEffect: 'slight_warm' },
-            { id: 'onigiri', name: 'おにぎり', tempEffect: 'neutral' },
-            { id: 'sushi', name: '寿司類', tempEffect: 'neutral' }
+            { id: 'bento', name: 'å¼å½“', tempEffect: 'slight_warm' },
+            { id: 'onigiri', name: 'ãŠã«ãŽã‚Š', tempEffect: 'neutral' },
+            { id: 'sushi', name: 'å¯¿å¸é¡ž', tempEffect: 'neutral' }
         ]
     },
     {
-        id: 'bread', name: '調理パン', icon: '🥐',
+        id: 'bread', name: 'èª¿ç†ãƒ‘ãƒ³', icon: 'ðŸ¥',
         subcategories: [
-            { id: 'savory_warm', name: '惣菜パン（温）', tempEffect: 'warm' },
-            { id: 'sandwich_cold', name: 'サンド類（冷）', tempEffect: 'cold' },
-            { id: 'sweet_bread', name: '菓子パン', tempEffect: 'neutral' }
+            { id: 'savory_warm', name: 'æƒ£èœãƒ‘ãƒ³ï¼ˆæ¸©ï¼‰', tempEffect: 'warm' },
+            { id: 'sandwich_cold', name: 'ã‚µãƒ³ãƒ‰é¡žï¼ˆå†·ï¼‰', tempEffect: 'cold' },
+            { id: 'sweet_bread', name: 'è“å­ãƒ‘ãƒ³', tempEffect: 'neutral' }
         ]
     },
     {
-        id: 'noodles', name: '麺類その他', icon: '🍜', highImpact: true,
+        id: 'noodles', name: 'éººé¡žãã®ä»–', icon: 'ðŸœ', highImpact: true,
         subcategories: [
-            { id: 'ramen', name: 'ラーメン（温）', tempEffect: 'hot_strong' },
-            { id: 'udon_soba', name: 'うどん・そば（温）', tempEffect: 'hot_strong' },
-            { id: 'cup_noodle', name: 'カップ麺', tempEffect: 'warm' },
-            { id: 'cold_noodle', name: '冷やし麺', tempEffect: 'cold_strong' }
+            { id: 'ramen', name: 'ãƒ©ãƒ¼ãƒ¡ãƒ³ï¼ˆæ¸©ï¼‰', tempEffect: 'hot_strong' },
+            { id: 'udon_soba', name: 'ã†ã©ã‚“ãƒ»ãã°ï¼ˆæ¸©ï¼‰', tempEffect: 'hot_strong' },
+            { id: 'cup_noodle', name: 'ã‚«ãƒƒãƒ—éºº', tempEffect: 'warm' },
+            { id: 'cold_noodle', name: 'å†·ã‚„ã—éºº', tempEffect: 'cold_strong' }
         ]
     },
     {
-        id: 'dessert', name: 'デザート', icon: '🍰',
+        id: 'dessert', name: 'ãƒ‡ã‚¶ãƒ¼ãƒˆ', icon: 'ðŸ°',
         subcategories: [
-            { id: 'ice', name: 'アイス', tempEffect: 'cold_strong' },
-            { id: 'jelly', name: 'ゼリー・プリン', tempEffect: 'cold' },
-            { id: 'cream_puff', name: 'シュークリーム系', tempEffect: 'slight_cold' }
+            { id: 'ice', name: 'ã‚¢ã‚¤ã‚¹', tempEffect: 'cold_strong' },
+            { id: 'jelly', name: 'ã‚¼ãƒªãƒ¼ãƒ»ãƒ—ãƒªãƒ³', tempEffect: 'cold' },
+            { id: 'cream_puff', name: 'ã‚·ãƒ¥ãƒ¼ã‚¯ãƒªãƒ¼ãƒ ç³»', tempEffect: 'slight_cold' }
         ]
     },
     {
-        id: 'pastry', name: 'ペストリー', icon: '🥧', stable: true,
+        id: 'pastry', name: 'ãƒšã‚¹ãƒˆãƒªãƒ¼', icon: 'ðŸ¥§', stable: true,
         subcategories: [
-            { id: 'baked', name: '焼き菓子', tempEffect: 'neutral' },
-            { id: 'donut', name: 'ドーナツ', tempEffect: 'neutral' },
-            { id: 'tart', name: 'タルト', tempEffect: 'neutral' }
+            { id: 'baked', name: 'ç„¼ãè“å­', tempEffect: 'neutral' },
+            { id: 'donut', name: 'ãƒ‰ãƒ¼ãƒŠãƒ„', tempEffect: 'neutral' },
+            { id: 'tart', name: 'ã‚¿ãƒ«ãƒˆ', tempEffect: 'neutral' }
         ]
     },
     {
-        id: 'salad', name: 'サラダ・惣菜', icon: '🥗',
+        id: 'salad', name: 'ã‚µãƒ©ãƒ€ãƒ»æƒ£èœ', icon: 'ðŸ¥—',
         subcategories: [
-            { id: 'salad', name: 'サラダ', tempEffect: 'cold' },
-            { id: 'hot_deli', name: '温惣菜（グラタン等）', tempEffect: 'hot_strong' },
-            { id: 'chilled_deli', name: 'チルド惣菜', tempEffect: 'slight_cold' }
+            { id: 'salad', name: 'ã‚µãƒ©ãƒ€', tempEffect: 'cold' },
+            { id: 'hot_deli', name: 'æ¸©æƒ£èœï¼ˆã‚°ãƒ©ã‚¿ãƒ³ç­‰ï¼‰', tempEffect: 'hot_strong' },
+            { id: 'chilled_deli', name: 'ãƒãƒ«ãƒ‰æƒ£èœ', tempEffect: 'slight_cold' }
         ]
     },
     {
-        id: 'delica', name: '7Pデリカ', icon: '🍱',
+        id: 'delica', name: '7Pãƒ‡ãƒªã‚«', icon: 'ðŸ±',
         subcategories: [
-            { id: 'oden', name: 'おでん', tempEffect: 'hot_max' },
-            { id: 'nikuman', name: '中華まん', tempEffect: 'hot_max' },
-            { id: 'fryer', name: 'フライヤー商品', tempEffect: 'warm' }
+            { id: 'oden', name: 'ãŠã§ã‚“', tempEffect: 'hot_max' },
+            { id: 'nikuman', name: 'ä¸­è¯ã¾ã‚“', tempEffect: 'hot_max' },
+            { id: 'fryer', name: 'ãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼å•†å“', tempEffect: 'warm' }
         ]
     },
     {
-        id: 'milk', name: '牛乳乳飲料', icon: '🥛', stable: true,
+        id: 'milk', name: 'ç‰›ä¹³ä¹³é£²æ–™', icon: 'ðŸ¥›', stable: true,
         subcategories: [
-            { id: 'milk', name: '牛乳', tempEffect: 'neutral' },
-            { id: 'yogurt', name: 'ヨーグルト', tempEffect: 'neutral' },
-            { id: 'coffee', name: 'コーヒー飲料', tempEffect: 'neutral' }
+            { id: 'milk', name: 'ç‰›ä¹³', tempEffect: 'neutral' },
+            { id: 'yogurt', name: 'ãƒ¨ãƒ¼ã‚°ãƒ«ãƒˆ', tempEffect: 'neutral' },
+            { id: 'coffee', name: 'ã‚³ãƒ¼ãƒ’ãƒ¼é£²æ–™', tempEffect: 'neutral' }
         ]
     }
 ];
 
-// 旧カテゴリ（互換性のため保持）
+// æ—§ã‚«ãƒ†ã‚´ãƒªï¼ˆäº’æ›æ€§ã®ãŸã‚ä¿æŒï¼‰
 const PRODUCT_CATEGORIES = [
-    { id: 'onigiri', name: 'おにぎり', icon: '🍙' },
-    { id: 'bento', name: '弁当', icon: '🍱' },
-    { id: 'sandwich', name: 'サンドイッチ', icon: '🥪' },
-    { id: 'cold_noodle', name: '調理麺(冷)', icon: '🍜' },
-    { id: 'hot_noodle', name: '調理麺(温)', icon: '🍲' },
-    { id: 'gratin', name: 'グラタン・ドリア', icon: '🧀' },
-    { id: 'spaghetti', name: 'スパゲティ', icon: '🍝' },
-    { id: 'salad', name: 'サラダ', icon: '🥗' },
-    { id: 'sozai', name: '惣菜', icon: '🍳' },
-    { id: 'pastry', name: 'ペストリー', icon: '🥐' },
-    { id: 'dessert', name: 'デザート', icon: '🍰' }
+    { id: 'onigiri', name: 'ãŠã«ãŽã‚Š', icon: 'ðŸ™' },
+    { id: 'bento', name: 'å¼å½“', icon: 'ðŸ±' },
+    { id: 'sandwich', name: 'ã‚µãƒ³ãƒ‰ã‚¤ãƒƒãƒ', icon: 'ðŸ¥ª' },
+    { id: 'cold_noodle', name: 'èª¿ç†éºº(å†·)', icon: 'ðŸœ' },
+    { id: 'hot_noodle', name: 'èª¿ç†éºº(æ¸©)', icon: 'ðŸ²' },
+    { id: 'gratin', name: 'ã‚°ãƒ©ã‚¿ãƒ³ãƒ»ãƒ‰ãƒªã‚¢', icon: 'ðŸ§€' },
+    { id: 'spaghetti', name: 'ã‚¹ãƒ‘ã‚²ãƒ†ã‚£', icon: 'ðŸ' },
+    { id: 'salad', name: 'ã‚µãƒ©ãƒ€', icon: 'ðŸ¥—' },
+    { id: 'sozai', name: 'æƒ£èœ', icon: 'ðŸ³' },
+    { id: 'pastry', name: 'ãƒšã‚¹ãƒˆãƒªãƒ¼', icon: 'ðŸ¥' },
+    { id: 'dessert', name: 'ãƒ‡ã‚¶ãƒ¼ãƒˆ', icon: 'ðŸ°' }
 ];
 
-// 気温帯の判定
+// æ°—æ¸©å¸¯ã®åˆ¤å®š
 function getTemperatureZone(temp) {
-    if (temp <= 0) return { zone: 'extreme_cold', label: '極寒', effect: 'hot_max', color: '#3b82f6' };
-    if (temp <= 5) return { zone: 'severe_cold', label: '厳寒', effect: 'hot_high', color: '#60a5fa' };
-    if (temp <= 10) return { zone: 'cold', label: '寒い', effect: 'hot_mid', color: '#93c5fd' };
-    if (temp <= 15) return { zone: 'cool', label: '涼しい', effect: 'slight_hot', color: '#a5b4fc' };
-    if (temp <= 20) return { zone: 'comfortable', label: '快適', effect: 'neutral', color: '#c4b5fd' };
-    if (temp <= 25) return { zone: 'warm', label: '暖かい', effect: 'slight_cold', color: '#fcd34d' };
-    if (temp <= 30) return { zone: 'hot', label: '暑い', effect: 'cold_mid', color: '#fb923c' };
-    return { zone: 'extreme_hot', label: '猛暑', effect: 'cold_max', color: '#ef4444' };
+    if (temp <= 0) return { zone: 'extreme_cold', label: 'æ¥µå¯’', effect: 'hot_max', color: '#3b82f6' };
+    if (temp <= 5) return { zone: 'severe_cold', label: 'åŽ³å¯’', effect: 'hot_high', color: '#60a5fa' };
+    if (temp <= 10) return { zone: 'cold', label: 'å¯’ã„', effect: 'hot_mid', color: '#93c5fd' };
+    if (temp <= 15) return { zone: 'cool', label: 'æ¶¼ã—ã„', effect: 'slight_hot', color: '#a5b4fc' };
+    if (temp <= 20) return { zone: 'comfortable', label: 'å¿«é©', effect: 'neutral', color: '#c4b5fd' };
+    if (temp <= 25) return { zone: 'warm', label: 'æš–ã‹ã„', effect: 'slight_cold', color: '#fcd34d' };
+    if (temp <= 30) return { zone: 'hot', label: 'æš‘ã„', effect: 'cold_mid', color: '#fb923c' };
+    return { zone: 'extreme_hot', label: 'çŒ›æš‘', effect: 'cold_max', color: '#ef4444' };
 }
 
-// tempEffectに基づいて推奨値（%）を計算
+// tempEffectã«åŸºã¥ã„ã¦æŽ¨å¥¨å€¤ï¼ˆ%ï¼‰ã‚’è¨ˆç®—
 function calculateTempEffectPercentage(tempEffect, tempZone) {
     const effectMatrix = {
-        // 温かい商品への影響
+        // æ¸©ã‹ã„å•†å“ã¸ã®å½±éŸ¿
         hot_max: { extreme_cold: 35, severe_cold: 30, cold: 25, cool: 15, comfortable: 0, warm: -10, hot: -20, extreme_hot: -30 },
         hot_strong: { extreme_cold: 30, severe_cold: 25, cold: 20, cool: 10, comfortable: 0, warm: -15, hot: -25, extreme_hot: -35 },
         warm: { extreme_cold: 15, severe_cold: 12, cold: 10, cool: 5, comfortable: 0, warm: -5, hot: -10, extreme_hot: -15 },
         slight_warm: { extreme_cold: 10, severe_cold: 8, cold: 5, cool: 3, comfortable: 0, warm: -3, hot: -5, extreme_hot: -8 },
-        // 中立
+        // ä¸­ç«‹
         neutral: { extreme_cold: 0, severe_cold: 0, cold: 0, cool: 0, comfortable: 0, warm: 0, hot: 0, extreme_hot: 0 },
-        // 冷たい商品への影響
+        // å†·ãŸã„å•†å“ã¸ã®å½±éŸ¿
         slight_cold: { extreme_cold: -8, severe_cold: -5, cold: -3, cool: 0, comfortable: 0, warm: 3, hot: 5, extreme_hot: 8 },
         cold: { extreme_cold: -15, severe_cold: -12, cold: -10, cool: -5, comfortable: 0, warm: 5, hot: 10, extreme_hot: 15 },
         cold_strong: { extreme_cold: -40, severe_cold: -35, cold: -25, cool: -15, comfortable: 0, warm: 10, hot: 20, extreme_hot: 30 }
@@ -5115,7 +5404,7 @@ function calculateTempEffectPercentage(tempEffect, tempZone) {
     return effectMatrix[tempEffect]?.[tempZone.zone] || 0;
 }
 
-// カテゴリ別アドバイス計算
+// ã‚«ãƒ†ã‚´ãƒªåˆ¥ã‚¢ãƒ‰ãƒã‚¤ã‚¹è¨ˆç®—
 function calculateCategoryAdvice(category, weatherData, dayOfWeek) {
     if (!weatherData) return null;
 
@@ -5123,14 +5412,14 @@ function calculateCategoryAdvice(category, weatherData, dayOfWeek) {
     const avgTemp = (tempMax + tempMin) / 2;
     const tempZone = getTemperatureZone(avgTemp);
 
-    // 昨年比を計算
+    // æ˜¨å¹´æ¯”ã‚’è¨ˆç®—
     const lastYearDiff = lastYearTempMax !== null ? tempMax - lastYearTempMax : null;
 
-    // サブカテゴリ別の推奨値を計算
+    // ã‚µãƒ–ã‚«ãƒ†ã‚´ãƒªåˆ¥ã®æŽ¨å¥¨å€¤ã‚’è¨ˆç®—
     const subcategoryAdvice = category.subcategories.map(sub => {
         let percentage = calculateTempEffectPercentage(sub.tempEffect, tempZone);
 
-        // 昨年比による調整（±5°C以上の差がある場合）
+        // æ˜¨å¹´æ¯”ã«ã‚ˆã‚‹èª¿æ•´ï¼ˆÂ±5Â°Cä»¥ä¸Šã®å·®ãŒã‚ã‚‹å ´åˆï¼‰
         if (lastYearDiff !== null && Math.abs(lastYearDiff) >= 5) {
             const isHotProduct = ['hot_max', 'hot_strong', 'warm', 'slight_warm'].includes(sub.tempEffect);
             const isColdProduct = ['cold_strong', 'cold', 'slight_cold'].includes(sub.tempEffect);
@@ -5148,7 +5437,7 @@ function calculateCategoryAdvice(category, weatherData, dayOfWeek) {
         };
     });
 
-    // カテゴリ全体の推奨値（サブカテゴリの平均）
+    // ã‚«ãƒ†ã‚´ãƒªå…¨ä½“ã®æŽ¨å¥¨å€¤ï¼ˆã‚µãƒ–ã‚«ãƒ†ã‚´ãƒªã®å¹³å‡ï¼‰
     const avgPercentage = Math.round(
         subcategoryAdvice.reduce((sum, sub) => sum + sub.percentage, 0) / subcategoryAdvice.length
     );
@@ -5161,13 +5450,13 @@ function calculateCategoryAdvice(category, weatherData, dayOfWeek) {
     };
 }
 
-// 全カテゴリのアドバイス生成
+// å…¨ã‚«ãƒ†ã‚´ãƒªã®ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç”Ÿæˆ
 function generateAllCategoryAdvice(weatherData) {
     if (!weatherData) return null;
 
     const today = new Date();
     const dayOfWeek = today.getDay();
-    const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+    const dayNames = ['æ—¥æ›œæ—¥', 'æœˆæ›œæ—¥', 'ç«æ›œæ—¥', 'æ°´æ›œæ—¥', 'æœ¨æ›œæ—¥', 'é‡‘æ›œæ—¥', 'åœŸæ›œæ—¥'];
 
     const { weatherCode, tempMax, tempMin, lastYearTempMax, lastYearTempMin } = weatherData;
     const avgTemp = (tempMax + tempMin) / 2;
@@ -5192,7 +5481,7 @@ function generateAllCategoryAdvice(weatherData) {
     };
 }
 
-// 日次チェックリスト保存
+// æ—¥æ¬¡ãƒã‚§ãƒƒã‚¯ãƒªã‚¹ãƒˆä¿å­˜
 function saveDailyChecklist(categoryId, date, data) {
     const key = `${date}-${categoryId}`;
     const checklistData = {
@@ -5207,7 +5496,7 @@ function saveDailyChecklist(categoryId, date, data) {
     state.dailyChecklist[key] = checklistData;
 }
 
-// カテゴリメモ保存
+// ã‚«ãƒ†ã‚´ãƒªãƒ¡ãƒ¢ä¿å­˜
 function saveCategoryMemo(categoryId, date, content, tags = []) {
     const id = Date.now().toString();
     const memoData = {
@@ -5223,7 +5512,7 @@ function saveCategoryMemo(categoryId, date, content, tags = []) {
     saveToFirebase('categoryMemos', state.categoryMemos);
 }
 
-// 蓄積データからの傾向計算
+// è“„ç©ãƒ‡ãƒ¼ã‚¿ã‹ã‚‰ã®å‚¾å‘è¨ˆç®—
 function calculateTrends(categoryId, days = 7) {
     const today = new Date();
     const trends = {
@@ -5257,7 +5546,7 @@ function calculateTrends(categoryId, days = 7) {
         }
     }
 
-    // メモとタグの集計
+    // ãƒ¡ãƒ¢ã¨ã‚¿ã‚°ã®é›†è¨ˆ
     state.categoryMemos
         .filter(m => m.categoryId === categoryId)
         .forEach(m => {
@@ -5273,7 +5562,7 @@ function calculateTrends(categoryId, days = 7) {
         trends.avgSales = salesScores.reduce((a, b) => a + b, 0) / salesScores.length;
     }
 
-    // よく使われるタグ上位3つ
+    // ã‚ˆãä½¿ã‚ã‚Œã‚‹ã‚¿ã‚°ä¸Šä½3ã¤
     trends.commonTags = Object.entries(tagCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
@@ -5282,7 +5571,7 @@ function calculateTrends(categoryId, days = 7) {
     return trends;
 }
 
-// 天気・気温に基づく発注アドバイスを生成
+// å¤©æ°—ãƒ»æ°—æ¸©ã«åŸºã¥ãç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’ç”Ÿæˆ
 function generateOrderAdvice(weatherData) {
     if (!weatherData) return null;
 
@@ -5290,202 +5579,202 @@ function generateOrderAdvice(weatherData) {
     const avgTemp = (tempMax + tempMin) / 2;
     const weatherInfo = getWeatherInfo(weatherCode);
 
-    // 天気の状態を判定
+    // å¤©æ°—ã®çŠ¶æ…‹ã‚’åˆ¤å®š
     const isRainy = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(weatherCode);
     const isSnowy = [71, 73, 75, 77, 85, 86].includes(weatherCode);
     const isSunny = [0, 1].includes(weatherCode);
     const isCloudy = [2, 3].includes(weatherCode);
 
-    // 昨年との気温差
+    // æ˜¨å¹´ã¨ã®æ°—æ¸©å·®
     const tempDiff = lastYearTempMax !== null ? tempMax - lastYearTempMax : null;
 
-    // 各カテゴリのアドバイスを生成
+    // å„ã‚«ãƒ†ã‚´ãƒªã®ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’ç”Ÿæˆ
     const advice = PRODUCT_CATEGORIES.map(category => {
-        let trend = 0; // -2〜+2 の範囲
+        let trend = 0; // -2ã€œ+2 ã®ç¯„å›²
         let reasons = [];
 
-        // 気温による影響
+        // æ°—æ¸©ã«ã‚ˆã‚‹å½±éŸ¿
         if (avgTemp >= 28) {
-            // 猛暑日
+            // çŒ›æš‘æ—¥
             switch (category.id) {
                 case 'cold_noodle':
                     trend += 2;
-                    reasons.push('猛暑で冷たい麺類の需要増');
+                    reasons.push('çŒ›æš‘ã§å†·ãŸã„éººé¡žã®éœ€è¦å¢—');
                     break;
                 case 'salad':
                     trend += 2;
-                    reasons.push('暑さでさっぱり需要増');
+                    reasons.push('æš‘ã•ã§ã•ã£ã±ã‚Šéœ€è¦å¢—');
                     break;
                 case 'dessert':
                     trend += 2;
-                    reasons.push('冷たいデザート需要増');
+                    reasons.push('å†·ãŸã„ãƒ‡ã‚¶ãƒ¼ãƒˆéœ€è¦å¢—');
                     break;
                 case 'hot_noodle':
                     trend -= 2;
-                    reasons.push('暑さで温かい麺類の需要減');
+                    reasons.push('æš‘ã•ã§æ¸©ã‹ã„éººé¡žã®éœ€è¦æ¸›');
                     break;
                 case 'gratin':
                     trend -= 2;
-                    reasons.push('暑さで温かい料理の需要減');
+                    reasons.push('æš‘ã•ã§æ¸©ã‹ã„æ–™ç†ã®éœ€è¦æ¸›');
                     break;
                 case 'spaghetti':
                     trend -= 1;
-                    reasons.push('暑さで温かい料理の需要やや減');
+                    reasons.push('æš‘ã•ã§æ¸©ã‹ã„æ–™ç†ã®éœ€è¦ã‚„ã‚„æ¸›');
                     break;
             }
         } else if (avgTemp >= 25) {
-            // 夏日
+            // å¤æ—¥
             switch (category.id) {
                 case 'cold_noodle':
                     trend += 1;
-                    reasons.push('暑さで冷たい麺類の需要増');
+                    reasons.push('æš‘ã•ã§å†·ãŸã„éººé¡žã®éœ€è¦å¢—');
                     break;
                 case 'salad':
                     trend += 1;
-                    reasons.push('暑さでさっぱり需要増');
+                    reasons.push('æš‘ã•ã§ã•ã£ã±ã‚Šéœ€è¦å¢—');
                     break;
                 case 'dessert':
                     trend += 1;
-                    reasons.push('冷たいデザート需要増');
+                    reasons.push('å†·ãŸã„ãƒ‡ã‚¶ãƒ¼ãƒˆéœ€è¦å¢—');
                     break;
                 case 'hot_noodle':
                     trend -= 1;
-                    reasons.push('暑さで温かい麺類の需要減');
+                    reasons.push('æš‘ã•ã§æ¸©ã‹ã„éººé¡žã®éœ€è¦æ¸›');
                     break;
                 case 'gratin':
                     trend -= 1;
-                    reasons.push('暑さで温かい料理の需要減');
+                    reasons.push('æš‘ã•ã§æ¸©ã‹ã„æ–™ç†ã®éœ€è¦æ¸›');
                     break;
             }
         } else if (avgTemp <= 5) {
-            // 厳冬
+            // åŽ³å†¬
             switch (category.id) {
                 case 'hot_noodle':
                     trend += 2;
-                    reasons.push('寒さで温かい麺類の需要増');
+                    reasons.push('å¯’ã•ã§æ¸©ã‹ã„éººé¡žã®éœ€è¦å¢—');
                     break;
                 case 'gratin':
                     trend += 2;
-                    reasons.push('寒さで温かい料理の需要増');
+                    reasons.push('å¯’ã•ã§æ¸©ã‹ã„æ–™ç†ã®éœ€è¦å¢—');
                     break;
                 case 'sozai':
                     trend += 1;
-                    reasons.push('温かい惣菜の需要増');
+                    reasons.push('æ¸©ã‹ã„æƒ£èœã®éœ€è¦å¢—');
                     break;
                 case 'cold_noodle':
                     trend -= 2;
-                    reasons.push('寒さで冷たい麺類の需要減');
+                    reasons.push('å¯’ã•ã§å†·ãŸã„éººé¡žã®éœ€è¦æ¸›');
                     break;
                 case 'salad':
                     trend -= 1;
-                    reasons.push('寒さで冷たい食品の需要減');
+                    reasons.push('å¯’ã•ã§å†·ãŸã„é£Ÿå“ã®éœ€è¦æ¸›');
                     break;
             }
         } else if (avgTemp <= 10) {
-            // 寒い日
+            // å¯’ã„æ—¥
             switch (category.id) {
                 case 'hot_noodle':
                     trend += 1;
-                    reasons.push('寒さで温かい麺類の需要増');
+                    reasons.push('å¯’ã•ã§æ¸©ã‹ã„éººé¡žã®éœ€è¦å¢—');
                     break;
                 case 'gratin':
                     trend += 1;
-                    reasons.push('寒さで温かい料理の需要増');
+                    reasons.push('å¯’ã•ã§æ¸©ã‹ã„æ–™ç†ã®éœ€è¦å¢—');
                     break;
                 case 'cold_noodle':
                     trend -= 1;
-                    reasons.push('寒さで冷たい麺類の需要減');
+                    reasons.push('å¯’ã•ã§å†·ãŸã„éººé¡žã®éœ€è¦æ¸›');
                     break;
             }
         }
 
-        // 天気による影響
+        // å¤©æ°—ã«ã‚ˆã‚‹å½±éŸ¿
         if (isRainy) {
             switch (category.id) {
                 case 'bento':
                     trend += 1;
-                    reasons.push('雨天で自宅需要増');
+                    reasons.push('é›¨å¤©ã§è‡ªå®…éœ€è¦å¢—');
                     break;
                 case 'sozai':
                     trend += 1;
-                    reasons.push('雨天で巣ごもり需要増');
+                    reasons.push('é›¨å¤©ã§å·£ã”ã‚‚ã‚Šéœ€è¦å¢—');
                     break;
                 case 'sandwich':
                     trend -= 1;
-                    reasons.push('雨天で外出減少');
+                    reasons.push('é›¨å¤©ã§å¤–å‡ºæ¸›å°‘');
                     break;
             }
         } else if (isSnowy) {
-            // 雪の日は全体的に来店減少
+            // é›ªã®æ—¥ã¯å…¨ä½“çš„ã«æ¥åº—æ¸›å°‘
             if (!['bento', 'sozai', 'hot_noodle', 'gratin'].includes(category.id)) {
                 trend -= 1;
-                reasons.push('雪天で来店減少');
+                reasons.push('é›ªå¤©ã§æ¥åº—æ¸›å°‘');
             }
         } else if (isSunny) {
             switch (category.id) {
                 case 'sandwich':
                     trend += 1;
-                    reasons.push('行楽需要増');
+                    reasons.push('è¡Œæ¥½éœ€è¦å¢—');
                     break;
                 case 'onigiri':
                     trend += 1;
-                    reasons.push('外出・行楽需要増');
+                    reasons.push('å¤–å‡ºãƒ»è¡Œæ¥½éœ€è¦å¢—');
                     break;
             }
         }
 
-        // 曜日による影響（週末は行楽需要）
+        // æ›œæ—¥ã«ã‚ˆã‚‹å½±éŸ¿ï¼ˆé€±æœ«ã¯è¡Œæ¥½éœ€è¦ï¼‰
         const today = new Date();
         const dayOfWeek = today.getDay();
         if (dayOfWeek === 0 || dayOfWeek === 6) {
             if (['onigiri', 'sandwich', 'bento'].includes(category.id) && isSunny) {
                 trend += 1;
-                if (!reasons.some(r => r.includes('行楽'))) {
-                    reasons.push('週末行楽需要');
+                if (!reasons.some(r => r.includes('è¡Œæ¥½'))) {
+                    reasons.push('é€±æœ«è¡Œæ¥½éœ€è¦');
                 }
             }
         }
 
-        // 昨年比較による調整
+        // æ˜¨å¹´æ¯”è¼ƒã«ã‚ˆã‚‹èª¿æ•´
         if (tempDiff !== null && Math.abs(tempDiff) >= 5) {
             if (tempDiff > 0) {
-                // 昨年より暑い
+                // æ˜¨å¹´ã‚ˆã‚Šæš‘ã„
                 if (['cold_noodle', 'salad', 'dessert'].includes(category.id)) {
                     trend += 1;
-                    reasons.push(`昨年より${tempDiff}°C高い`);
+                    reasons.push(`æ˜¨å¹´ã‚ˆã‚Š${tempDiff}Â°Cé«˜ã„`);
                 }
             } else {
-                // 昨年より寒い
+                // æ˜¨å¹´ã‚ˆã‚Šå¯’ã„
                 if (['hot_noodle', 'gratin', 'sozai'].includes(category.id)) {
                     trend += 1;
-                    reasons.push(`昨年より${Math.abs(tempDiff)}°C低い`);
+                    reasons.push(`æ˜¨å¹´ã‚ˆã‚Š${Math.abs(tempDiff)}Â°Cä½Žã„`);
                 }
             }
         }
 
-        // trendを-2〜+2に制限
+        // trendã‚’-2ã€œ+2ã«åˆ¶é™
         trend = Math.max(-2, Math.min(2, trend));
 
         return {
             ...category,
             trend,
-            reasons: reasons.length > 0 ? reasons : ['通常通り']
+            reasons: reasons.length > 0 ? reasons : ['é€šå¸¸é€šã‚Š']
         };
     });
 
-    // 注意事項を生成
+    // æ³¨æ„äº‹é …ã‚’ç”Ÿæˆ
     const notes = [];
     if (isSnowy) {
-        notes.push('雪天のため来店客数の大幅減少が予想されます。廃棄リスクを考慮し、発注量を控えめに。');
+        notes.push('é›ªå¤©ã®ãŸã‚æ¥åº—å®¢æ•°ã®å¤§å¹…æ¸›å°‘ãŒäºˆæƒ³ã•ã‚Œã¾ã™ã€‚å»ƒæ£„ãƒªã‚¹ã‚¯ã‚’è€ƒæ…®ã—ã€ç™ºæ³¨é‡ã‚’æŽ§ãˆã‚ã«ã€‚');
     }
     if (isRainy) {
-        notes.push('雨天のため来店客数がやや減少する可能性があります。');
+        notes.push('é›¨å¤©ã®ãŸã‚æ¥åº—å®¢æ•°ãŒã‚„ã‚„æ¸›å°‘ã™ã‚‹å¯èƒ½æ€§ãŒã‚ã‚Šã¾ã™ã€‚');
     }
     if (tempDiff !== null && tempDiff >= 5) {
-        notes.push(`昨年同期より${tempDiff}°C高いため、季節を先取りした商品構成を検討。`);
+        notes.push(`æ˜¨å¹´åŒæœŸã‚ˆã‚Š${tempDiff}Â°Cé«˜ã„ãŸã‚ã€å­£ç¯€ã‚’å…ˆå–ã‚Šã—ãŸå•†å“æ§‹æˆã‚’æ¤œè¨Žã€‚`);
     }
     if (tempDiff !== null && tempDiff <= -5) {
-        notes.push(`昨年同期より${Math.abs(tempDiff)}°C低いため、季節商品の切り替えを遅らせることを検討。`);
+        notes.push(`æ˜¨å¹´åŒæœŸã‚ˆã‚Š${Math.abs(tempDiff)}Â°Cä½Žã„ãŸã‚ã€å­£ç¯€å•†å“ã®åˆ‡ã‚Šæ›¿ãˆã‚’é…ã‚‰ã›ã‚‹ã“ã¨ã‚’æ¤œè¨Žã€‚`);
     }
 
     return {
@@ -5498,13 +5787,13 @@ function generateOrderAdvice(weatherData) {
     };
 }
 
-// 発注アドバイザーを描画
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã‚’æç”»
 function renderOrderAdvisor() {
     const container = document.getElementById('orderAdvisor');
     const content = document.getElementById('advisorContent');
     if (!container || !content) return;
 
-    // 今日の天気データを取得
+    // ä»Šæ—¥ã®å¤©æ°—ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
     const today = formatDate(new Date());
     const todayWeather = state.weatherData[today];
 
@@ -5521,40 +5810,40 @@ function renderOrderAdvisor() {
 
     container.style.display = 'block';
 
-    // 天気サマリー
+    // å¤©æ°—ã‚µãƒžãƒªãƒ¼
     let html = `
         <div class="advisor-weather-summary">
             <div class="weather-summary-item">
-                <span class="weather-summary-label">天気:</span>
+                <span class="weather-summary-label">å¤©æ°—:</span>
                 <span class="weather-summary-value">${advice.weather.icon} ${advice.weather.desc}</span>
             </div>
             <div class="weather-summary-item">
-                <span class="weather-summary-label">気温:</span>
+                <span class="weather-summary-label">æ°—æ¸©:</span>
                 <span class="weather-summary-value">
-                    <span style="color: #ef4444;">${advice.tempMax}°</span>/<span style="color: #60a5fa;">${advice.tempMin}°</span>
+                    <span style="color: #ef4444;">${advice.tempMax}Â°</span>/<span style="color: #60a5fa;">${advice.tempMin}Â°</span>
                 </span>
             </div>
             ${advice.tempDiff !== null ? `
             <div class="weather-summary-item">
-                <span class="weather-summary-label">昨年比:</span>
+                <span class="weather-summary-label">æ˜¨å¹´æ¯”:</span>
                 <span class="weather-summary-value ${advice.tempDiff > 0 ? 'temp-diff-plus' : 'temp-diff-minus'}">
-                    ${advice.tempDiff > 0 ? '+' : ''}${advice.tempDiff}°C
+                    ${advice.tempDiff > 0 ? '+' : ''}${advice.tempDiff}Â°C
                 </span>
             </div>
             ` : ''}
         </div>
     `;
 
-    // カテゴリカード
+    // ã‚«ãƒ†ã‚´ãƒªã‚«ãƒ¼ãƒ‰
     html += '<div class="advisor-grid">';
     advice.categories.forEach(cat => {
         const trendClass = cat.trend > 0 ? 'increase' : (cat.trend < 0 ? 'decrease' : '');
-        const trendArrow = cat.trend > 0 ? '↑' : (cat.trend < 0 ? '↓' : '→');
-        const trendText = cat.trend > 0 ? '増加' : (cat.trend < 0 ? '減少' : '通常');
+        const trendArrow = cat.trend > 0 ? 'â†‘' : (cat.trend < 0 ? 'â†“' : 'â†’');
+        const trendText = cat.trend > 0 ? 'å¢—åŠ ' : (cat.trend < 0 ? 'æ¸›å°‘' : 'é€šå¸¸');
         const trendColorClass = cat.trend > 0 ? 'up' : (cat.trend < 0 ? 'down' : 'neutral');
 
         html += `
-            <div class="advisor-card ${trendClass}" title="${cat.reasons.join('、')}">
+            <div class="advisor-card ${trendClass}" title="${cat.reasons.join('ã€')}">
                 <span class="advisor-card-icon">${cat.icon}</span>
                 <span class="advisor-card-name">${cat.name}</span>
                 <span class="advisor-card-trend ${trendColorClass}">
@@ -5566,13 +5855,13 @@ function renderOrderAdvisor() {
     });
     html += '</div>';
 
-    // 注意事項
+    // æ³¨æ„äº‹é …
     if (advice.notes.length > 0) {
         html += `
             <div class="advisor-notes">
                 <div class="advisor-notes-title">
-                    <span>⚠️</span>
-                    <span>注意事項</span>
+                    <span>âš ï¸</span>
+                    <span>æ³¨æ„äº‹é …</span>
                 </div>
                 <ul class="advisor-notes-list">
                     ${advice.notes.map(note => `<li>${note}</li>`).join('')}
@@ -5583,11 +5872,11 @@ function renderOrderAdvisor() {
 
     content.innerHTML = html;
 
-    // トグル機能の初期化
+    // ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã®åˆæœŸåŒ–
     initAdvisorToggle();
 }
 
-// アドバイザーのトグル機能を初期化
+// ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã®ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã‚’åˆæœŸåŒ–
 function initAdvisorToggle() {
     const header = document.querySelector('.advisor-header');
     const toggle = document.getElementById('advisorToggle');
@@ -5600,12 +5889,12 @@ function initAdvisorToggle() {
         };
     }
 
-    // グループトグルの初期化
+    // ã‚°ãƒ«ãƒ¼ãƒ—ãƒˆã‚°ãƒ«ã®åˆæœŸåŒ–
     initAdvisorGroupToggle();
     initReportsGroupToggle();
 }
 
-// 発注・スケジュール情報グループのトグル
+// ç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«æƒ…å ±ã‚°ãƒ«ãƒ¼ãƒ—ã®ãƒˆã‚°ãƒ«
 function initAdvisorGroupToggle() {
     const groupHeader = document.getElementById('advisorGroupHeader');
     const groupToggle = document.getElementById('advisorGroupToggle');
@@ -5618,11 +5907,11 @@ function initAdvisorGroupToggle() {
         };
     }
     
-    // 印刷画面グループのトグルも初期化
+    // å°åˆ·ç”»é¢ã‚°ãƒ«ãƒ¼ãƒ—ã®ãƒˆã‚°ãƒ«ã‚‚åˆæœŸåŒ–
     initPrintGroupToggle();
 }
 
-// 印刷画面グループのトグル
+// å°åˆ·ç”»é¢ã‚°ãƒ«ãƒ¼ãƒ—ã®ãƒˆã‚°ãƒ«
 function initPrintGroupToggle() {
     const groupHeader = document.getElementById('printGroupHeader');
     const groupToggle = document.getElementById('printGroupToggle');
@@ -5636,7 +5925,7 @@ function initPrintGroupToggle() {
     }
 }
 
-// レポートグループのトグル
+// ãƒ¬ãƒãƒ¼ãƒˆã‚°ãƒ«ãƒ¼ãƒ—ã®ãƒˆã‚°ãƒ«
 function initReportsGroupToggle() {
     const header = document.getElementById('reportsGroupHeader');
     const toggle = document.getElementById('reportsGroupToggle');
@@ -5645,11 +5934,11 @@ function initReportsGroupToggle() {
     console.log('initReportsGroupToggle called:', { header, toggle, content });
 
     if (header && toggle && content) {
-        // 既存のイベントリスナーを削除するためにcloneで置き換え
+        // æ—¢å­˜ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼ã‚’å‰Šé™¤ã™ã‚‹ãŸã‚ã«cloneã§ç½®ãæ›ãˆ
         const newHeader = header.cloneNode(true);
         header.parentNode.replaceChild(newHeader, header);
         
-        // 新しいヘッダーに対してイベントを設定
+        // æ–°ã—ã„ãƒ˜ãƒƒãƒ€ãƒ¼ã«å¯¾ã—ã¦ã‚¤ãƒ™ãƒ³ãƒˆã‚’è¨­å®š
         newHeader.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -5660,16 +5949,16 @@ function initReportsGroupToggle() {
             
             if (currentContent.classList.contains('collapsed')) {
                 currentContent.classList.remove('collapsed');
-                currentToggle.textContent = '▲';
+                currentToggle.textContent = 'â–²';
                 currentToggle.classList.remove('collapsed');
             } else {
                 currentContent.classList.add('collapsed');
-                currentToggle.textContent = '▼';
+                currentToggle.textContent = 'â–¼';
                 currentToggle.classList.add('collapsed');
             }
         });
         
-        // タッチイベントも追加
+        // ã‚¿ãƒƒãƒã‚¤ãƒ™ãƒ³ãƒˆã‚‚è¿½åŠ 
         newHeader.addEventListener('touchend', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -5679,24 +5968,24 @@ function initReportsGroupToggle() {
             
             if (currentContent.classList.contains('collapsed')) {
                 currentContent.classList.remove('collapsed');
-                currentToggle.textContent = '▲';
+                currentToggle.textContent = 'â–²';
                 currentToggle.classList.remove('collapsed');
             } else {
                 currentContent.classList.add('collapsed');
-                currentToggle.textContent = '▼';
+                currentToggle.textContent = 'â–¼';
                 currentToggle.classList.add('collapsed');
             }
         }, { passive: false });
     }
 }
 
-// 拡張版発注アドバイザーを描画
+// æ‹¡å¼µç‰ˆç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã‚’æç”»
 function renderOrderAdvisorExtended() {
     const container = document.getElementById('orderAdvisor');
     const content = document.getElementById('advisorContent');
     if (!container || !content) return;
 
-    // 今日の天気データを取得
+    // ä»Šæ—¥ã®å¤©æ°—ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—
     const today = formatDate(new Date());
     const todayWeather = state.weatherData[today];
 
@@ -5713,7 +6002,7 @@ function renderOrderAdvisorExtended() {
 
     container.style.display = 'block';
 
-    // 天気・購買行動パネル
+    // å¤©æ°—ãƒ»è³¼è²·è¡Œå‹•ãƒ‘ãƒãƒ«
     let html = `
         <div class="advisor-extended">
             <div class="advisor-top-panel">
@@ -5723,30 +6012,30 @@ function renderOrderAdvisorExtended() {
                         <div class="weather-details">
                             <span class="weather-desc">${advice.weather.desc}</span>
                             <span class="weather-temps">
-                                <span class="temp-high">${advice.tempMax}°</span> / 
-                                <span class="temp-low">${advice.tempMin}°</span>
+                                <span class="temp-high">${advice.tempMax}Â°</span> / 
+                                <span class="temp-low">${advice.tempMin}Â°</span>
                             </span>
                             ${advice.lastYearDiff !== null ? `
                             <span class="weather-diff ${advice.lastYearDiff >= 0 ? 'plus' : 'minus'}">
-                                昨年比${advice.lastYearDiff >= 0 ? '+' : ''}${advice.lastYearDiff}°C
+                                æ˜¨å¹´æ¯”${advice.lastYearDiff >= 0 ? '+' : ''}${advice.lastYearDiff}Â°C
                             </span>` : ''}
                         </div>
                     </div>
                 </div>
                 <div class="advisor-behavior-panel">
-                    <div class="behavior-title">🧠 購買行動への影響分析</div>
+                    <div class="behavior-title">ðŸ§  è³¼è²·è¡Œå‹•ã¸ã®å½±éŸ¿åˆ†æž</div>
                     <div class="behavior-items">
                         <div class="behavior-item">
-                            <span class="behavior-label">気温帯の影響:</span>
-                            <span class="behavior-value" style="color: ${advice.tempZone.color}">${advice.avgTemp.toFixed(0)}°C（${advice.tempZone.label}）</span>
+                            <span class="behavior-label">æ°—æ¸©å¸¯ã®å½±éŸ¿:</span>
+                            <span class="behavior-value" style="color: ${advice.tempZone.color}">${advice.avgTemp.toFixed(0)}Â°Cï¼ˆ${advice.tempZone.label}ï¼‰</span>
                         </div>
                         ${advice.lastYearDiff !== null ? `
                         <div class="behavior-item">
-                            <span class="behavior-label">昨年比の影響:</span>
-                            <span class="behavior-value ${advice.lastYearDiff >= 0 ? 'plus' : 'minus'}">${advice.lastYearDiff >= 0 ? '+' : ''}${advice.lastYearDiff}°C</span>
+                            <span class="behavior-label">æ˜¨å¹´æ¯”ã®å½±éŸ¿:</span>
+                            <span class="behavior-value ${advice.lastYearDiff >= 0 ? 'plus' : 'minus'}">${advice.lastYearDiff >= 0 ? '+' : ''}${advice.lastYearDiff}Â°C</span>
                         </div>` : ''}
                         <div class="behavior-item">
-                            <span class="behavior-label">曜日の影響:</span>
+                            <span class="behavior-label">æ›œæ—¥ã®å½±éŸ¿:</span>
                             <span class="behavior-value">${advice.dayName}</span>
                         </div>
                     </div>
@@ -5754,7 +6043,7 @@ function renderOrderAdvisorExtended() {
             </div>
     `;
 
-    // カテゴリチップ
+    // ã‚«ãƒ†ã‚´ãƒªãƒãƒƒãƒ—
     html += '<div class="category-chips">';
     advice.categories.forEach(cat => {
         const percentClass = cat.percentage > 0 ? 'positive' : (cat.percentage < 0 ? 'negative' : 'neutral');
@@ -5773,7 +6062,7 @@ function renderOrderAdvisorExtended() {
     });
     html += '</div>';
 
-    // 選択中カテゴリの詳細パネル
+    // é¸æŠžä¸­ã‚«ãƒ†ã‚´ãƒªã®è©³ç´°ãƒ‘ãƒãƒ«
     const selectedCat = advice.categories.find(c => c.id === state.selectedAdvisorCategory);
     if (selectedCat) {
         const percentSign = selectedCat.percentage > 0 ? '+' : '';
@@ -5787,7 +6076,7 @@ function renderOrderAdvisorExtended() {
                     <span class="detail-percent ${percentClass}">${percentSign}${selectedCat.percentage}%</span>
                 </div>
                 <div class="detail-subcategories">
-                    <div class="subcategory-title">サブカテゴリ:</div>
+                    <div class="subcategory-title">ã‚µãƒ–ã‚«ãƒ†ã‚´ãƒª:</div>
                     <div class="subcategory-list">
         `;
 
@@ -5796,7 +6085,7 @@ function renderOrderAdvisorExtended() {
             const subPercentClass = sub.percentage > 0 ? 'positive' : (sub.percentage < 0 ? 'negative' : 'neutral');
             html += `
                 <div class="subcategory-item">
-                    <span class="subcategory-name">・${sub.name}</span>
+                    <span class="subcategory-name">ãƒ»${sub.name}</span>
                     <span class="subcategory-percent ${subPercentClass}">${subPercentSign}${sub.percentage}%</span>
                 </div>
             `;
@@ -5807,63 +6096,63 @@ function renderOrderAdvisorExtended() {
                 </div>
         `;
 
-        // 日次チェック
+        // æ—¥æ¬¡ãƒã‚§ãƒƒã‚¯
         const checklistKey = `${today}-${selectedCat.id}`;
         const existingChecklist = state.dailyChecklist[checklistKey] || {};
 
         html += `
                 <div class="daily-checklist">
-                    <div class="checklist-title">✅ 今日の振り返りチェック</div>
+                    <div class="checklist-title">âœ… ä»Šæ—¥ã®æŒ¯ã‚Šè¿”ã‚Šãƒã‚§ãƒƒã‚¯</div>
                     <div class="checklist-row">
-                        <span class="checklist-label">廃棄量:</span>
+                        <span class="checklist-label">å»ƒæ£„é‡:</span>
                         <div class="checklist-options">
                             <button class="checklist-btn ${existingChecklist.waste === 'high' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'high')">多い</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'high')">å¤šã„</button>
                             <button class="checklist-btn ${existingChecklist.waste === 'normal' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'normal')">普通</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'normal')">æ™®é€š</button>
                             <button class="checklist-btn ${existingChecklist.waste === 'low' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'low')">少ない</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'waste', 'low')">å°‘ãªã„</button>
                         </div>
                     </div>
                     <div class="checklist-row">
-                        <span class="checklist-label">欠品:</span>
+                        <span class="checklist-label">æ¬ å“:</span>
                         <div class="checklist-options">
                             <button class="checklist-btn ${existingChecklist.shortage === 'yes' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'yes')">あった</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'yes')">ã‚ã£ãŸ</button>
                             <button class="checklist-btn ${existingChecklist.shortage === 'few' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'few')">少し</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'few')">å°‘ã—</button>
                             <button class="checklist-btn ${existingChecklist.shortage === 'none' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'none')">なし</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'shortage', 'none')">ãªã—</button>
                         </div>
                     </div>
                     <div class="checklist-row">
-                        <span class="checklist-label">売れ行き:</span>
+                        <span class="checklist-label">å£²ã‚Œè¡Œã:</span>
                         <div class="checklist-options">
                             <button class="checklist-btn ${existingChecklist.sales === 'good' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'good')">好調</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'good')">å¥½èª¿</button>
                             <button class="checklist-btn ${existingChecklist.sales === 'normal' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'normal')">普通</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'normal')">æ™®é€š</button>
                             <button class="checklist-btn ${existingChecklist.sales === 'poor' ? 'selected' : ''}" 
-                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'poor')">不調</button>
+                                    onclick="updateChecklist('${selectedCat.id}', 'sales', 'poor')">ä¸èª¿</button>
                         </div>
                     </div>
                 </div>
         `;
 
-        // メモ入力
+        // ãƒ¡ãƒ¢å…¥åŠ›
         html += `
                 <div class="category-memo">
-                    <div class="memo-title">📝 メモ</div>
+                    <div class="memo-title">ðŸ“ ãƒ¡ãƒ¢</div>
                     <div class="memo-input-row">
                         <input type="text" id="categoryMemoInput" class="memo-input" 
-                               placeholder="気づいたことをメモ..." />
-                        <button class="memo-save-btn" onclick="saveCurrentMemo('${selectedCat.id}')">保存</button>
+                               placeholder="æ°—ã¥ã„ãŸã“ã¨ã‚’ãƒ¡ãƒ¢..." />
+                        <button class="memo-save-btn" onclick="saveCurrentMemo('${selectedCat.id}')">ä¿å­˜</button>
                     </div>
                     <div class="quick-tags">
-                        <span class="quick-tag-label">クイックタグ:</span>
+                        <span class="quick-tag-label">ã‚¯ã‚¤ãƒƒã‚¯ã‚¿ã‚°:</span>
         `;
 
-        // カテゴリに応じたクイックタグ
+        // ã‚«ãƒ†ã‚´ãƒªã«å¿œã˜ãŸã‚¯ã‚¤ãƒƒã‚¯ã‚¿ã‚°
         const quickTags = getQuickTagsForCategory(selectedCat.id);
         quickTags.forEach(tag => {
             html += `<button class="quick-tag" onclick="addQuickTag('${selectedCat.id}', '${tag}')">${tag}</button>`;
@@ -5879,17 +6168,17 @@ function renderOrderAdvisorExtended() {
     html += '</div>';
     content.innerHTML = html;
 
-    // トグル機能の初期化
+    // ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã®åˆæœŸåŒ–
     initAdvisorToggle();
 }
 
-// カテゴリ選択
+// ã‚«ãƒ†ã‚´ãƒªé¸æŠž
 function selectAdvisorCategory(categoryId) {
     state.selectedAdvisorCategory = state.selectedAdvisorCategory === categoryId ? null : categoryId;
     renderOrderAdvisorExtended();
 }
 
-// チェックリスト更新
+// ãƒã‚§ãƒƒã‚¯ãƒªã‚¹ãƒˆæ›´æ–°
 function updateChecklist(categoryId, field, value) {
     const today = formatDate(new Date());
     const key = `${today}-${categoryId}`;
@@ -5903,7 +6192,7 @@ function updateChecklist(categoryId, field, value) {
     renderOrderAdvisorExtended();
 }
 
-// 現在のメモを保存
+// ç¾åœ¨ã®ãƒ¡ãƒ¢ã‚’ä¿å­˜
 function saveCurrentMemo(categoryId) {
     const input = document.getElementById('categoryMemoInput');
     if (!input || !input.value.trim()) return;
@@ -5912,52 +6201,52 @@ function saveCurrentMemo(categoryId) {
     saveCategoryMemo(categoryId, today, input.value.trim());
     input.value = '';
 
-    alert('メモを保存しました');
+    alert('ãƒ¡ãƒ¢ã‚’ä¿å­˜ã—ã¾ã—ãŸ');
 }
 
-// クイックタグを追加
+// ã‚¯ã‚¤ãƒƒã‚¯ã‚¿ã‚°ã‚’è¿½åŠ 
 function addQuickTag(categoryId, tag) {
     const today = formatDate(new Date());
     saveCategoryMemo(categoryId, today, tag, [tag]);
-    alert(`"${tag}" を保存しました`);
+    alert(`"${tag}" ã‚’ä¿å­˜ã—ã¾ã—ãŸ`);
 }
 
-// カテゴリ別クイックタグ取得
+// ã‚«ãƒ†ã‚´ãƒªåˆ¥ã‚¯ã‚¤ãƒƒã‚¯ã‚¿ã‚°å–å¾—
 function getQuickTagsForCategory(categoryId) {
     const tagMap = {
-        rice: ['弁当好調', '弁当廃棄多', 'おにぎり欠品'],
-        bread: ['サンド好調', '惣菜パン人気', 'パン全体廃棄'],
-        noodles: ['ラーメン絶好調', '冷やし麺廃棄', 'カップ麺欠品'],
-        dessert: ['アイス好調', 'デザート廃棄', 'プリン欠品'],
-        pastry: ['ドーナツ人気', '焼き菓子廃棄', 'タルト好調'],
-        salad: ['サラダ好調', 'グラタン人気', '惣菜廃棄'],
-        delica: ['おでん絶好調', '中華まん人気', 'フライヤー欠品'],
-        milk: ['牛乳安定', 'コーヒー人気', 'ヨーグルト廃棄']
+        rice: ['å¼å½“å¥½èª¿', 'å¼å½“å»ƒæ£„å¤š', 'ãŠã«ãŽã‚Šæ¬ å“'],
+        bread: ['ã‚µãƒ³ãƒ‰å¥½èª¿', 'æƒ£èœãƒ‘ãƒ³äººæ°—', 'ãƒ‘ãƒ³å…¨ä½“å»ƒæ£„'],
+        noodles: ['ãƒ©ãƒ¼ãƒ¡ãƒ³çµ¶å¥½èª¿', 'å†·ã‚„ã—éººå»ƒæ£„', 'ã‚«ãƒƒãƒ—éººæ¬ å“'],
+        dessert: ['ã‚¢ã‚¤ã‚¹å¥½èª¿', 'ãƒ‡ã‚¶ãƒ¼ãƒˆå»ƒæ£„', 'ãƒ—ãƒªãƒ³æ¬ å“'],
+        pastry: ['ãƒ‰ãƒ¼ãƒŠãƒ„äººæ°—', 'ç„¼ãè“å­å»ƒæ£„', 'ã‚¿ãƒ«ãƒˆå¥½èª¿'],
+        salad: ['ã‚µãƒ©ãƒ€å¥½èª¿', 'ã‚°ãƒ©ã‚¿ãƒ³äººæ°—', 'æƒ£èœå»ƒæ£„'],
+        delica: ['ãŠã§ã‚“çµ¶å¥½èª¿', 'ä¸­è¯ã¾ã‚“äººæ°—', 'ãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼æ¬ å“'],
+        milk: ['ç‰›ä¹³å®‰å®š', 'ã‚³ãƒ¼ãƒ’ãƒ¼äººæ°—', 'ãƒ¨ãƒ¼ã‚°ãƒ«ãƒˆå»ƒæ£„']
     };
-    return tagMap[categoryId] || ['好調', '廃棄', '欠品'];
+    return tagMap[categoryId] || ['å¥½èª¿', 'å»ƒæ£„', 'æ¬ å“'];
 }
 
 // ========================================
-// 非デイリー発注アドバイザー機能
+// éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼æ©Ÿèƒ½
 // ========================================
 
-// 非デイリー商品カテゴリ
+// éžãƒ‡ã‚¤ãƒªãƒ¼å•†å“ã‚«ãƒ†ã‚´ãƒª
 const NON_DAILY_CATEGORIES = {
-    snacks: { name: 'お菓子', icon: '🍪' },
-    drinks: { name: 'ドリンク', icon: '🥤' },
-    ice: { name: 'アイス', icon: '🍦' },
-    misc: { name: '雑貨', icon: '🧴' },
-    processed: { name: '加工食品', icon: '🥫' },
-    character: { name: '流行しているキャラクター', icon: '⭐' }
+    snacks: { name: 'ãŠè“å­', icon: 'ðŸª' },
+    drinks: { name: 'ãƒ‰ãƒªãƒ³ã‚¯', icon: 'ðŸ¥¤' },
+    ice: { name: 'ã‚¢ã‚¤ã‚¹', icon: 'ðŸ¦' },
+    misc: { name: 'é›‘è²¨', icon: 'ðŸ§´' },
+    processed: { name: 'åŠ å·¥é£Ÿå“', icon: 'ðŸ¥«' },
+    character: { name: 'æµè¡Œã—ã¦ã„ã‚‹ã‚­ãƒ£ãƒ©ã‚¯ã‚¿ãƒ¼', icon: 'â­' }
 };
 
-// 非デイリーアドバイザーを描画
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã‚’æç”»
 function renderNonDailyAdvisor() {
     const container = document.getElementById('nonDailyAdvisor');
     const content = document.getElementById('nonDailyContent');
     if (!container || !content) return;
 
-    // 管理者の場合はデータがなくても表示（追加できるように）
+    // ç®¡ç†è€…ã®å ´åˆã¯ãƒ‡ãƒ¼ã‚¿ãŒãªãã¦ã‚‚è¡¨ç¤ºï¼ˆè¿½åŠ ã§ãã‚‹ã‚ˆã†ã«ï¼‰
     if (state.nonDailyAdvice.length === 0 && !state.isAdmin) {
         container.style.display = 'none';
         return;
@@ -5965,36 +6254,36 @@ function renderNonDailyAdvisor() {
 
     container.style.display = 'block';
 
-    // 現在のフィルター状態を取得
+    // ç¾åœ¨ã®ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼çŠ¶æ…‹ã‚’å–å¾—
     const currentFilter = state.nonDailyFilter || 'all';
 
-    // フィルタリング
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
     let filteredAdvice = [...state.nonDailyAdvice];
     if (currentFilter !== 'all') {
         filteredAdvice = filteredAdvice.filter(a => a.category === currentFilter);
     }
 
-    // 更新日時順にソート
+    // æ›´æ–°æ—¥æ™‚é †ã«ã‚½ãƒ¼ãƒˆ
     const sortedAdvice = filteredAdvice.sort((a, b) =>
         new Date(b.updatedAt) - new Date(a.updatedAt)
     );
 
-    // フィルタータブを構築
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ã‚¿ãƒ–ã‚’æ§‹ç¯‰
     let html = `
         <div class="filter-tabs non-daily-filter-tabs">
-            <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="filterNonDailyByCategory('all')">すべて</button>
+            <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" onclick="filterNonDailyByCategory('all')">ã™ã¹ã¦</button>
             ${Object.entries(NON_DAILY_CATEGORIES).map(([key, cat]) =>
         `<button class="filter-tab ${currentFilter === key ? 'active' : ''}" onclick="filterNonDailyByCategory('${key}')">${cat.icon} ${cat.name}</button>`
     ).join('')}
         </div>
     `;
 
-    // 管理者向けに追加ボタンを表示
+    // ç®¡ç†è€…å‘ã‘ã«è¿½åŠ ãƒœã‚¿ãƒ³ã‚’è¡¨ç¤º
     if (state.isAdmin) {
         const selectedCategory = currentFilter !== 'all' ? currentFilter : '';
         html += `
             <div class="non-daily-admin-actions">
-                <button class="btn btn-primary btn-sm" onclick="openNonDailyAdviceFormWithCategory('${selectedCategory}')">+ 新規追加</button>
+                <button class="btn btn-primary btn-sm" onclick="openNonDailyAdviceFormWithCategory('${selectedCategory}')">+ æ–°è¦è¿½åŠ </button>
             </div>
         `;
     }
@@ -6002,7 +6291,7 @@ function renderNonDailyAdvisor() {
     html += '<div class="non-daily-advice-grid">';
 
     if (sortedAdvice.length === 0) {
-        html += '<p class="no-advice-message">該当するアドバイスはありません</p>';
+        html += '<p class="no-advice-message">è©²å½“ã™ã‚‹ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
     } else {
         sortedAdvice.forEach(advice => {
             const category = NON_DAILY_CATEGORIES[advice.category] || NON_DAILY_CATEGORIES.character;
@@ -6017,13 +6306,13 @@ function renderNonDailyAdvisor() {
                         <div class="advice-card-content">${advice.content.replace(/\n/g, '<br>')}</div>
                         <div class="advice-card-meta">
                             <span class="advice-card-category">${category.name}</span>
-                            ${advice.source ? `<span class="advice-card-source">📱 ${advice.source}</span>` : ''}
-                            <span class="advice-card-date">🕐 ${dateStr}</span>
+                            ${advice.source ? `<span class="advice-card-source">ðŸ“± ${advice.source}</span>` : ''}
+                            <span class="advice-card-date">ðŸ• ${dateStr}</span>
                         </div>
                         ${state.isAdmin ? `
                         <div class="advice-card-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="openNonDailyAdviceForm('${advice.id}')">✏️ 編集</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">🗑️ 削除</button>
+                            <button class="btn btn-sm btn-secondary" onclick="openNonDailyAdviceForm('${advice.id}')">âœï¸ ç·¨é›†</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                         </div>
                         ` : ''}
                     </div>
@@ -6035,11 +6324,11 @@ function renderNonDailyAdvisor() {
     html += '</div>';
     content.innerHTML = html;
 
-    // トグル機能の初期化
+    // ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã®åˆæœŸåŒ–
     initNonDailyToggle();
 }
 
-// 非デイリーアドバイザーのトグル機能を初期化
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¶ãƒ¼ã®ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã‚’åˆæœŸåŒ–
 function initNonDailyToggle() {
     const container = document.getElementById('nonDailyAdvisor');
     if (!container) return;
@@ -6057,15 +6346,15 @@ function initNonDailyToggle() {
 }
 
 // ========================================
-// 週次インテリジェンス（マクロ環境）
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰
 // ========================================
 
-// 管理者用 週次インテリジェンス（マクロ環境）管理画面
-// コンビニ3社 新商品ヒット予測レポート管理画面
+// ç®¡ç†è€…ç”¨ é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ç®¡ç†ç”»é¢
+// ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆç®¡ç†ç”»é¢
 function renderTrendReportsAdmin(container) {
     const reports = state.trendReports || [];
     
-    // 更新日時順にソート（新しい順）
+    // æ›´æ–°æ—¥æ™‚é †ã«ã‚½ãƒ¼ãƒˆï¼ˆæ–°ã—ã„é †ï¼‰
     const sortedReports = [...reports].sort((a, b) => 
         new Date(b.updatedAt || b.createdAt || b.uploadedAt) - new Date(a.updatedAt || a.createdAt || a.uploadedAt)
     );
@@ -6073,16 +6362,16 @@ function renderTrendReportsAdmin(container) {
     let html = `
         <div class="new-product-admin-container">
             <div class="new-product-admin-header">
-                <h3>📊 コンビニ3社 新商品ヒット予測レポート管理</h3>
-                <p class="header-description">コンビニ3社 新商品ヒット予測レポートを登録・管理します。登録した内容は「発注・スケジュール情報」→「レポート」に表示されます。</p>
-                <button class="btn btn-primary" onclick="openAddTrendReportModal()">+ コンビニ3社 新商品ヒット予測レポート追加</button>
+                <h3>ðŸ“Š ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆç®¡ç†</h3>
+                <p class="header-description">ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆã‚’ç™»éŒ²ãƒ»ç®¡ç†ã—ã¾ã™ã€‚ç™»éŒ²ã—ãŸå†…å®¹ã¯ã€Œç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«æƒ…å ±ã€â†’ã€Œãƒ¬ãƒãƒ¼ãƒˆã€ã«è¡¨ç¤ºã•ã‚Œã¾ã™ã€‚</p>
+                <button class="btn btn-primary" onclick="openAddTrendReportModal()">+ ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆè¿½åŠ </button>
             </div>
             
             <div class="new-product-admin-list">
     `;
 
     if (sortedReports.length === 0) {
-        html += '<p class="no-data-message">コンビニ3社 新商品ヒット予測レポートがまだ登録されていません。<br>「+ コンビニ3社 新商品ヒット予測レポート追加」ボタンから追加してください。</p>';
+        html += '<p class="no-data-message">ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆãŒã¾ã ç™»éŒ²ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚<br>ã€Œ+ ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆè¿½åŠ ã€ãƒœã‚¿ãƒ³ã‹ã‚‰è¿½åŠ ã—ã¦ãã ã•ã„ã€‚</p>';
     } else {
         sortedReports.forEach(report => {
             const createdDate = new Date(report.createdAt || report.uploadedAt);
@@ -6090,7 +6379,7 @@ function renderTrendReportsAdmin(container) {
             const updatedDate = report.updatedAt ? new Date(report.updatedAt) : null;
             const updatedStr = updatedDate ? `${updatedDate.getFullYear()}/${updatedDate.getMonth() + 1}/${updatedDate.getDate()}` : null;
             
-            // 古い形式（ファイルアップロード）か新しい形式（記述式）かを判定
+            // å¤ã„å½¢å¼ï¼ˆãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ï¼‰ã‹æ–°ã—ã„å½¢å¼ï¼ˆè¨˜è¿°å¼ï¼‰ã‹ã‚’åˆ¤å®š
             const isOldFormat = report.fileData && !report.content;
             
             html += `
@@ -6098,20 +6387,20 @@ function renderTrendReportsAdmin(container) {
                     <div class="admin-card-header">
                         <div class="admin-card-title">${report.title}</div>
                         <div class="admin-card-meta">
-                            <span>📅 作成: ${dateStr}</span>
-                            ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
-                            ${isOldFormat ? '<span style="color:#f59e0b;">⚠️ 旧形式</span>' : ''}
+                            <span>ðŸ“… ä½œæˆ: ${dateStr}</span>
+                            ${updatedStr && updatedStr !== dateStr ? `<span>âœï¸ æ›´æ–°: ${updatedStr}</span>` : ''}
+                            ${isOldFormat ? '<span style="color:#f59e0b;">âš ï¸ æ—§å½¢å¼</span>' : ''}
                         </div>
                     </div>
                     <div class="admin-card-content">
                         ${isOldFormat 
-                            ? `<p style="color:var(--text-muted);">このレポートはファイル形式です。記述式に変更するには削除して新規作成してください。<br>ファイル: ${report.fileName || '不明'} (${formatFileSize(report.fileSize) || '不明'})</p>`
+                            ? `<p style="color:var(--text-muted);">ã“ã®ãƒ¬ãƒãƒ¼ãƒˆã¯ãƒ•ã‚¡ã‚¤ãƒ«å½¢å¼ã§ã™ã€‚è¨˜è¿°å¼ã«å¤‰æ›´ã™ã‚‹ã«ã¯å‰Šé™¤ã—ã¦æ–°è¦ä½œæˆã—ã¦ãã ã•ã„ã€‚<br>ãƒ•ã‚¡ã‚¤ãƒ«: ${report.fileName || 'ä¸æ˜Ž'} (${formatFileSize(report.fileSize) || 'ä¸æ˜Ž'})</p>`
                             : (report.content || '').replace(/\n/g, '<br>')
                         }
                     </div>
                     <div class="admin-card-actions">
-                        ${!isOldFormat ? `<button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>` : ''}
-                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">🗑️ 削除</button>
+                        ${!isOldFormat ? `<button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">âœï¸ ç·¨é›†</button>` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                     </div>
                 </div>
             `;
@@ -6129,7 +6418,7 @@ function renderTrendReportsAdmin(container) {
 function renderNewProductReportAdmin(container) {
     const reports = state.newProductReports || [];
     
-    // 更新日時順にソート（新しい順）
+    // æ›´æ–°æ—¥æ™‚é †ã«ã‚½ãƒ¼ãƒˆï¼ˆæ–°ã—ã„é †ï¼‰
     const sortedReports = [...reports].sort((a, b) => 
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
@@ -6137,16 +6426,16 @@ function renderNewProductReportAdmin(container) {
     let html = `
         <div class="new-product-admin-container">
             <div class="new-product-admin-header">
-                <h3>🆕 週次インテリジェンス（マクロ環境）管理</h3>
-                <p class="header-description">新商品の情報を登録・管理します。登録した内容は「発注・スケジュール情報」に表示されます。</p>
-                <button class="btn btn-primary" onclick="openAddNewProductReportModal()">+ 週次インテリジェンス（マクロ環境）追加</button>
+                <h3>ðŸ†• é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ç®¡ç†</h3>
+                <p class="header-description">æ–°å•†å“ã®æƒ…å ±ã‚’ç™»éŒ²ãƒ»ç®¡ç†ã—ã¾ã™ã€‚ç™»éŒ²ã—ãŸå†…å®¹ã¯ã€Œç™ºæ³¨ãƒ»ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«æƒ…å ±ã€ã«è¡¨ç¤ºã•ã‚Œã¾ã™ã€‚</p>
+                <button class="btn btn-primary" onclick="openAddNewProductReportModal()">+ é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰è¿½åŠ </button>
             </div>
             
             <div class="new-product-admin-list">
     `;
 
     if (sortedReports.length === 0) {
-        html += '<p class="no-data-message">週次インテリジェンス（マクロ環境）がまだ登録されていません。<br>「+ 週次インテリジェンス（マクロ環境）追加」ボタンから追加してください。</p>';
+        html += '<p class="no-data-message">é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ãŒã¾ã ç™»éŒ²ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚<br>ã€Œ+ é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰è¿½åŠ ã€ãƒœã‚¿ãƒ³ã‹ã‚‰è¿½åŠ ã—ã¦ãã ã•ã„ã€‚</p>';
     } else {
         sortedReports.forEach(report => {
             const createdDate = new Date(report.createdAt);
@@ -6159,14 +6448,14 @@ function renderNewProductReportAdmin(container) {
                     <div class="admin-card-header">
                         <div class="admin-card-title">${report.title}</div>
                         <div class="admin-card-meta">
-                            <span>📅 作成: ${dateStr}</span>
-                            ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
+                            <span>ðŸ“… ä½œæˆ: ${dateStr}</span>
+                            ${updatedStr && updatedStr !== dateStr ? `<span>âœï¸ æ›´æ–°: ${updatedStr}</span>` : ''}
                         </div>
                     </div>
                     <div class="admin-card-content">${report.content.replace(/\n/g, '<br>')}</div>
                     <div class="admin-card-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">✏️ 編集</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">🗑️ 削除</button>
+                        <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">âœï¸ ç·¨é›†</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                     </div>
                 </div>
             `;
@@ -6181,7 +6470,7 @@ function renderNewProductReportAdmin(container) {
     container.innerHTML = html;
 }
 
-// 週次インテリジェンス（マクロ環境）を描画（フロント表示用）
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ã‚’æç”»ï¼ˆãƒ•ãƒ­ãƒ³ãƒˆè¡¨ç¤ºç”¨ï¼‰
 function renderNewProductReport() {
     const container = document.getElementById('newProductReportSection');
     const content = document.getElementById('newProductContent');
@@ -6189,7 +6478,7 @@ function renderNewProductReport() {
 
     const reports = state.newProductReports || [];
     
-    // 更新日時順にソート（新しい順）
+    // æ›´æ–°æ—¥æ™‚é †ã«ã‚½ãƒ¼ãƒˆï¼ˆæ–°ã—ã„é †ï¼‰
     const sortedReports = [...reports].sort((a, b) => 
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
@@ -6197,7 +6486,7 @@ function renderNewProductReport() {
     let html = '';
 
     if (sortedReports.length === 0) {
-        html += '<p class="no-report-message">週次インテリジェンス（マクロ環境）はまだありません。</p>';
+        html += '<p class="no-report-message">é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ã¯ã¾ã ã‚ã‚Šã¾ã›ã‚“ã€‚</p>';
     } else {
         html += '<div class="new-product-reports-list">';
         sortedReports.forEach(report => {
@@ -6208,13 +6497,13 @@ function renderNewProductReport() {
                 <div class="new-product-report-card">
                     <div class="report-header">
                         <span class="report-title">${report.title}</span>
-                        <span class="report-date">📅 ${dateStr}</span>
+                        <span class="report-date">ðŸ“… ${dateStr}</span>
                     </div>
                     <div class="report-content">${report.content.replace(/\n/g, '<br>')}</div>
                     ${state.isAdmin ? `
                         <div class="report-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">✏️ 編集</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">🗑️ 削除</button>
+                            <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">âœï¸ ç·¨é›†</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                         </div>
                     ` : ''}
                 </div>
@@ -6225,11 +6514,11 @@ function renderNewProductReport() {
 
     content.innerHTML = html;
 
-    // トグル機能の初期化
+    // ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã®åˆæœŸåŒ–
     initNewProductToggle();
 }
 
-// 週次インテリジェンス（マクロ環境）のトグル機能を初期化
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ã®ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã‚’åˆæœŸåŒ–
 function initNewProductToggle() {
     const container = document.getElementById('newProductReportSection');
     if (!container) return;
@@ -6243,33 +6532,33 @@ function initNewProductToggle() {
             e.stopPropagation();
             toggle.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
-            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+            toggle.textContent = content.classList.contains('collapsed') ? 'â–¼' : 'â–²';
         };
     }
 }
 
-// 週次インテリジェンス（マクロ環境）追加モーダルを開く
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰è¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openAddNewProductReportModal() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">🆕 週次インテリジェンス（マクロ環境）追加</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                <h2 class="modal-title">ðŸ†• é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰è¿½åŠ </h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">Ã—</button>
             </div>
             <form class="modal-body" onsubmit="submitNewProductReport(event, this)">
                 <div class="form-group">
-                    <label>タイトル <span class="required">*</span></label>
-                    <input type="text" name="title" placeholder="例: 2026年1月 新商品情報" required>
+                    <label>ã‚¿ã‚¤ãƒˆãƒ« <span class="required">*</span></label>
+                    <input type="text" name="title" placeholder="ä¾‹: 2026å¹´1æœˆ æ–°å•†å“æƒ…å ±" required>
                 </div>
                 <div class="form-group">
-                    <label>内容 <span class="required">*</span></label>
-                    <textarea name="content" rows="10" placeholder="新商品の情報を入力してください..." required></textarea>
+                    <label>å†…å®¹ <span class="required">*</span></label>
+                    <textarea name="content" rows="10" placeholder="æ–°å•†å“ã®æƒ…å ±ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„..." required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ä¿å­˜</button>
                 </div>
             </form>
         </div>
@@ -6282,7 +6571,7 @@ function openAddNewProductReportModal() {
     document.body.appendChild(modal);
 }
 
-// 週次インテリジェンス（マクロ環境）編集モーダルを開く
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditNewProductReportModal(reportId) {
     const report = state.newProductReports.find(r => r.id === reportId);
     if (!report) return;
@@ -6292,21 +6581,21 @@ function openEditNewProductReportModal(reportId) {
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">🆕 週次インテリジェンス（マクロ環境）編集</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                <h2 class="modal-title">ðŸ†• é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰ç·¨é›†</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">Ã—</button>
             </div>
             <form class="modal-body" onsubmit="submitNewProductReport(event, this, '${reportId}')">
                 <div class="form-group">
-                    <label>タイトル <span class="required">*</span></label>
+                    <label>ã‚¿ã‚¤ãƒˆãƒ« <span class="required">*</span></label>
                     <input type="text" name="title" value="${report.title}" required>
                 </div>
                 <div class="form-group">
-                    <label>内容 <span class="required">*</span></label>
+                    <label>å†…å®¹ <span class="required">*</span></label>
                     <textarea name="content" rows="10" required>${report.content}</textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ä¿å­˜</button>
                 </div>
             </form>
         </div>
@@ -6319,7 +6608,7 @@ function openEditNewProductReportModal(reportId) {
     document.body.appendChild(modal);
 }
 
-// 週次インテリジェンス（マクロ環境）送信
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰é€ä¿¡
 function submitNewProductReport(event, form, reportId = null) {
     event.preventDefault();
     const formData = new FormData(form);
@@ -6327,16 +6616,16 @@ function submitNewProductReport(event, form, reportId = null) {
     const content = formData.get('content');
     
     if (reportId) {
-        // 編集
+        // ç·¨é›†
         const report = state.newProductReports.find(r => r.id === reportId);
         if (report) {
             report.title = title;
             report.content = content;
             report.updatedAt = new Date().toISOString();
         }
-        trackUsage('edit_new_product', '管理者');
+        trackUsage('edit_new_product', 'ç®¡ç†è€…');
     } else {
-        // 新規追加
+        // æ–°è¦è¿½åŠ 
         const newReport = {
             id: 'report-' + Date.now(),
             title,
@@ -6345,7 +6634,7 @@ function submitNewProductReport(event, form, reportId = null) {
             updatedAt: new Date().toISOString()
         };
         state.newProductReports.push(newReport);
-        trackUsage('add_new_product', '管理者');
+        trackUsage('add_new_product', 'ç®¡ç†è€…');
     }
     
     saveToFirebase('newProductReports', state.newProductReports);
@@ -6353,41 +6642,41 @@ function submitNewProductReport(event, form, reportId = null) {
     renderNewProductReport();
 }
 
-// 週次インテリジェンス（マクロ環境）削除
+// é€±æ¬¡ã‚¤ãƒ³ãƒ†ãƒªã‚¸ã‚§ãƒ³ã‚¹ï¼ˆãƒžã‚¯ãƒ­ç’°å¢ƒï¼‰å‰Šé™¤
 function deleteNewProductReport(reportId) {
-    if (!confirm('このレポートを削除しますか？')) return;
+    if (!confirm('ã“ã®ãƒ¬ãƒãƒ¼ãƒˆã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) return;
     
     state.newProductReports = state.newProductReports.filter(r => r.id !== reportId);
     saveToFirebase('newProductReports', state.newProductReports);
-    trackUsage('delete_new_product', '管理者');
+    trackUsage('delete_new_product', 'ç®¡ç†è€…');
     renderNewProductReport();
 }
 
 // ========================================
-// 店舗スケジュール一覧
+// åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ä¸€è¦§
 // ========================================
 
-// 店舗スケジュール一覧を描画
+// åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ä¸€è¦§ã‚’æç”»
 function renderScheduleList() {
     const container = document.getElementById('scheduleListSection');
     const content = document.getElementById('scheduleListContent');
     if (!container || !content) return;
 
-    // 現在表示中の週の日付範囲を取得
+    // ç¾åœ¨è¡¨ç¤ºä¸­ã®é€±ã®æ—¥ä»˜ç¯„å›²ã‚’å–å¾—
     const startDate = formatDate(state.currentWeekStart);
     const endDate = new Date(state.currentWeekStart);
     endDate.setDate(endDate.getDate() + 6);
     const endDateStr = formatDate(endDate);
 
-    // 今週のイベントをフィルタリング
+    // ä»Šé€±ã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
     const weekEvents = state.dailyEvents.filter(event => {
         const eventStart = event.startDate || event.date;
         const eventEnd = event.endDate || event.date;
-        // イベント期間が今週の範囲と重なるかをチェック
+        // ã‚¤ãƒ™ãƒ³ãƒˆæœŸé–“ãŒä»Šé€±ã®ç¯„å›²ã¨é‡ãªã‚‹ã‹ã‚’ãƒã‚§ãƒƒã‚¯
         return eventEnd >= startDate && eventStart <= endDateStr;
     });
 
-    // イベントがなければ非表示
+    // ã‚¤ãƒ™ãƒ³ãƒˆãŒãªã‘ã‚Œã°éžè¡¨ç¤º
     if (weekEvents.length === 0) {
         container.style.display = 'none';
         return;
@@ -6395,7 +6684,7 @@ function renderScheduleList() {
 
     container.style.display = 'block';
 
-    // イベントを開始日でソート
+    // ã‚¤ãƒ™ãƒ³ãƒˆã‚’é–‹å§‹æ—¥ã§ã‚½ãƒ¼ãƒˆ
     weekEvents.sort((a, b) => {
         const dateA = a.startDate || a.date;
         const dateB = b.startDate || b.date;
@@ -6403,7 +6692,7 @@ function renderScheduleList() {
     });
 
     const icons = getEventTypeIcons();
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
 
     let html = '<div class="schedule-list-grid">';
 
@@ -6411,17 +6700,17 @@ function renderScheduleList() {
         const icon = icons[event.type] || icons.other;
         const typeName = getEventTypeName(event.type);
 
-        // 日付表示を作成
+        // æ—¥ä»˜è¡¨ç¤ºã‚’ä½œæˆ
         const startDateObj = new Date(event.startDate || event.date);
         const endDateObj = new Date(event.endDate || event.date);
 
         let dateDisplay;
         if ((event.startDate || event.date) === (event.endDate || event.date)) {
-            // 1日のみ
-            dateDisplay = `${startDateObj.getMonth() + 1}/${startDateObj.getDate()}（${dayNames[startDateObj.getDay()]}）`;
+            // 1æ—¥ã®ã¿
+            dateDisplay = `${startDateObj.getMonth() + 1}/${startDateObj.getDate()}ï¼ˆ${dayNames[startDateObj.getDay()]}ï¼‰`;
         } else {
-            // 期間
-            dateDisplay = `${startDateObj.getMonth() + 1}/${startDateObj.getDate()}（${dayNames[startDateObj.getDay()]}）〜 ${endDateObj.getMonth() + 1}/${endDateObj.getDate()}（${dayNames[endDateObj.getDay()]}）`;
+            // æœŸé–“
+            dateDisplay = `${startDateObj.getMonth() + 1}/${startDateObj.getDate()}ï¼ˆ${dayNames[startDateObj.getDay()]}ï¼‰ã€œ ${endDateObj.getMonth() + 1}/${endDateObj.getDate()}ï¼ˆ${dayNames[endDateObj.getDay()]}ï¼‰`;
         }
 
         html += `
@@ -6442,11 +6731,11 @@ function renderScheduleList() {
     html += '</div>';
     content.innerHTML = html;
 
-    // トグル機能の初期化
+    // ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã®åˆæœŸåŒ–
     initScheduleToggle();
 }
 
-// 店舗スケジュール一覧のトグル機能を初期化
+// åº—èˆ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ä¸€è¦§ã®ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã‚’åˆæœŸåŒ–
 function initScheduleToggle() {
     const container = document.getElementById('scheduleListSection');
     if (!container) return;
@@ -6463,7 +6752,7 @@ function initScheduleToggle() {
     }
 }
 
-// 非デイリーアドバイスを追加
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’è¿½åŠ 
 function addNonDailyAdvice(data) {
     const advice = {
         id: Date.now().toString(),
@@ -6473,10 +6762,10 @@ function addNonDailyAdvice(data) {
     };
     state.nonDailyAdvice.push(advice);
     saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
-    trackUsage('add_non_daily', '管理者');
+    trackUsage('add_non_daily', 'ç®¡ç†è€…');
 }
 
-// 非デイリーアドバイスを更新
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’æ›´æ–°
 function updateNonDailyAdvice(id, data) {
     const index = state.nonDailyAdvice.findIndex(a => a.id === id);
     if (index >= 0) {
@@ -6486,28 +6775,28 @@ function updateNonDailyAdvice(id, data) {
             updatedAt: new Date().toISOString()
         };
         saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
-        trackUsage('edit_non_daily', '管理者');
+        trackUsage('edit_non_daily', 'ç®¡ç†è€…');
     }
 }
 
-// 非デイリーアドバイスを削除
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’å‰Šé™¤
 function deleteNonDailyAdvice(id) {
-    if (confirm('このアドバイスを削除しますか？')) {
+    if (confirm('ã“ã®ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) {
         state.nonDailyAdvice = state.nonDailyAdvice.filter(a => a.id !== id);
         
-        // Firebaseに保存（空の場合はnullで明示的にクリア）
+        // Firebaseã«ä¿å­˜ï¼ˆç©ºã®å ´åˆã¯nullã§æ˜Žç¤ºçš„ã«ã‚¯ãƒªã‚¢ï¼‰
         if (state.nonDailyAdvice.length === 0) {
             database.ref('nonDailyAdvice').set(null);
         } else {
             saveToFirebase('nonDailyAdvice', state.nonDailyAdvice);
         }
         
-        trackUsage('delete_non_daily', '管理者');
+        trackUsage('delete_non_daily', 'ç®¡ç†è€…');
         
-        // 一般ユーザー向け画面を更新
+        // ä¸€èˆ¬ãƒ¦ãƒ¼ã‚¶ãƒ¼å‘ã‘ç”»é¢ã‚’æ›´æ–°
         renderNonDailyAdvisor();
         
-        // 管理者パネルを確実に更新
+        // ç®¡ç†è€…ãƒ‘ãƒãƒ«ã‚’ç¢ºå®Ÿã«æ›´æ–°
         if (state.isAdmin && state.activeAdminTab === 'nonDailyAdvice') {
             const container = document.getElementById('adminContent');
             if (container) {
@@ -6517,15 +6806,15 @@ function deleteNonDailyAdvice(id) {
     }
 }
 
-// 非デイリーアドバイス編集（プロンプト使用）
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç·¨é›†ï¼ˆãƒ—ãƒ­ãƒ³ãƒ—ãƒˆä½¿ç”¨ï¼‰
 function editNonDailyAdvice(id) {
     const advice = state.nonDailyAdvice.find(a => a.id === id);
     if (!advice) return;
 
-    const newTitle = prompt('タイトルを入力:', advice.title);
+    const newTitle = prompt('ã‚¿ã‚¤ãƒˆãƒ«ã‚’å…¥åŠ›:', advice.title);
     if (newTitle === null) return;
 
-    const newContent = prompt('内容を入力:', advice.content);
+    const newContent = prompt('å†…å®¹ã‚’å…¥åŠ›:', advice.content);
     if (newContent === null) return;
 
     updateNonDailyAdvice(id, { title: newTitle, content: newContent });
@@ -6533,17 +6822,17 @@ function editNonDailyAdvice(id) {
     if (state.isAdmin) renderAdminPanel();
 }
 
-// 管理者パネル用: 非デイリーアドバイス一覧を表示
+// ç®¡ç†è€…ãƒ‘ãƒãƒ«ç”¨: éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ä¸€è¦§ã‚’è¡¨ç¤º
 function renderNonDailyAdminPanel(container) {
     let html = `
         <div class="daily-events-header">
-            <h3>📈 非デイリー発注参考情報管理</h3>
-            <button class="btn btn-primary btn-sm" onclick="openNonDailyAdviceForm()">+ 参考情報追加</button>
+            <h3>ðŸ“ˆ éžãƒ‡ã‚¤ãƒªãƒ¼ç™ºæ³¨å‚è€ƒæƒ…å ±ç®¡ç†</h3>
+            <button class="btn btn-primary btn-sm" onclick="openNonDailyAdviceForm()">+ å‚è€ƒæƒ…å ±è¿½åŠ </button>
         </div>
     `;
 
     if (state.nonDailyAdvice.length === 0) {
-        html += '<p class="no-events-message">アドバイスはありません</p>';
+        html += '<p class="no-events-message">ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
     } else {
         html += '<div class="daily-events-list">';
         const sorted = [...state.nonDailyAdvice].sort((a, b) =>
@@ -6562,11 +6851,11 @@ function renderNonDailyAdminPanel(container) {
                             <span class="event-date">${dateStr}</span>
                         </div>
                         <div class="event-description">${advice.content.substring(0, 100)}${advice.content.length > 100 ? '...' : ''}</div>
-                        ${advice.source ? `<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">情報源: ${advice.source}</p>` : ''}
+                        ${advice.source ? `<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">æƒ…å ±æº: ${advice.source}</p>` : ''}
                     </div>
                     <div class="event-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="openNonDailyAdviceForm('${advice.id}')">編集</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">削除</button>
+                        <button class="btn btn-sm btn-secondary" onclick="openNonDailyAdviceForm('${advice.id}')">ç·¨é›†</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNonDailyAdvice('${advice.id}')">å‰Šé™¤</button>
                     </div>
                 </div>
             `;
@@ -6577,7 +6866,7 @@ function renderNonDailyAdminPanel(container) {
     container.innerHTML = html;
 }
 
-// 非デイリーアドバイス入力フォームを開く
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹å…¥åŠ›ãƒ•ã‚©ãƒ¼ãƒ ã‚’é–‹ã
 function openNonDailyAdviceForm(editId = null, defaultCategory = '') {
     const advice = editId ? state.nonDailyAdvice.find(a => a.id === editId) : null;
     const isEdit = !!advice;
@@ -6590,54 +6879,54 @@ function openNonDailyAdviceForm(editId = null, defaultCategory = '') {
         <div class="modal-overlay active" id="nonDailyFormOverlay" onclick="if(event.target===this)closeNonDailyAdviceForm()">
             <div class="modal modal-lg">
                 <div class="modal-header">
-                    <h2 class="modal-title">📈 ${isEdit ? '参考情報編集' : '参考情報追加'}</h2>
-                    <button class="modal-close" onclick="closeNonDailyAdviceForm()">×</button>
+                    <h2 class="modal-title">ðŸ“ˆ ${isEdit ? 'å‚è€ƒæƒ…å ±ç·¨é›†' : 'å‚è€ƒæƒ…å ±è¿½åŠ '}</h2>
+                    <button class="modal-close" onclick="closeNonDailyAdviceForm()">Ã—</button>
                 </div>
                 <form id="nonDailyAdviceForm" class="modal-body" onsubmit="submitNonDailyAdviceForm(event, '${editId || ''}')">
                     <div class="form-group">
-                        <label for="ndCategory">カテゴリ</label>
+                        <label for="ndCategory">ã‚«ãƒ†ã‚´ãƒª</label>
                         <select id="ndCategory" required>${categoryOptions}</select>
                     </div>
                     <div class="form-group">
-                        <label for="ndTitle">タイトル</label>
-                        <input type="text" id="ndTitle" placeholder="例：話題のポテトチップス新商品" value="${advice?.title || ''}" required>
+                        <label for="ndTitle">ã‚¿ã‚¤ãƒˆãƒ«</label>
+                        <input type="text" id="ndTitle" placeholder="ä¾‹ï¼šè©±é¡Œã®ãƒãƒ†ãƒˆãƒãƒƒãƒ—ã‚¹æ–°å•†å“" value="${advice?.title || ''}" required>
                     </div>
                     <div class="form-group">
-                        <label for="ndContent">内容</label>
-                        <textarea id="ndContent" class="non-daily-content-textarea" placeholder="例：SNSで話題のXX味が人気。売り場での目立つ陳列を推奨。" rows="10" required>${advice?.content || ''}</textarea>
+                        <label for="ndContent">å†…å®¹</label>
+                        <textarea id="ndContent" class="non-daily-content-textarea" placeholder="ä¾‹ï¼šSNSã§è©±é¡Œã®XXå‘³ãŒäººæ°—ã€‚å£²ã‚Šå ´ã§ã®ç›®ç«‹ã¤é™³åˆ—ã‚’æŽ¨å¥¨ã€‚" rows="10" required>${advice?.content || ''}</textarea>
                     </div>
                     <div class="form-group">
-                        <label for="ndSource">情報源（任意）</label>
-                        <input type="text" id="ndSource" placeholder="例：ChatGPT / X / Instagram" value="${advice?.source || ''}">
+                        <label for="ndSource">æƒ…å ±æºï¼ˆä»»æ„ï¼‰</label>
+                        <input type="text" id="ndSource" placeholder="ä¾‹ï¼šChatGPT / X / Instagram" value="${advice?.source || ''}">
                     </div>
                     <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeNonDailyAdviceForm()">キャンセル</button>
-                        <button type="submit" class="btn btn-primary">${isEdit ? '保存' : '追加'}</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeNonDailyAdviceForm()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                        <button type="submit" class="btn btn-primary">${isEdit ? 'ä¿å­˜' : 'è¿½åŠ '}</button>
                     </div>
                 </form>
             </div>
         </div>
     `;
 
-    // フォームを追加
+    // ãƒ•ã‚©ãƒ¼ãƒ ã‚’è¿½åŠ 
     const div = document.createElement('div');
     div.id = 'nonDailyFormContainer';
     div.innerHTML = formHtml;
     document.body.appendChild(div);
 }
 
-// カテゴリを指定して非デイリーアドバイスフォームを開く
+// ã‚«ãƒ†ã‚´ãƒªã‚’æŒ‡å®šã—ã¦éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒ•ã‚©ãƒ¼ãƒ ã‚’é–‹ã
 function openNonDailyAdviceFormWithCategory(category) {
     openNonDailyAdviceForm(null, category);
 }
 
-// 非デイリーアドバイスフォームを閉じる
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒ•ã‚©ãƒ¼ãƒ ã‚’é–‰ã˜ã‚‹
 function closeNonDailyAdviceForm() {
     const container = document.getElementById('nonDailyFormContainer');
     if (container) container.remove();
 }
 
-// 非デイリーアドバイスフォームを送信
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒ•ã‚©ãƒ¼ãƒ ã‚’é€ä¿¡
 function submitNonDailyAdviceForm(event, editId) {
     event.preventDefault();
 
@@ -6659,34 +6948,34 @@ function submitNonDailyAdviceForm(event, editId) {
     if (state.isAdmin) renderAdminPanel();
 }
 
-// イベントタイプでフィルタリング
+// ã‚¤ãƒ™ãƒ³ãƒˆã‚¿ã‚¤ãƒ—ã§ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
 function filterEventsByType(type) {
     state.eventTypeFilter = type;
     renderAdminPanel();
 }
 
-// 非デイリーアドバイスをカテゴリでフィルタリング
+// éžãƒ‡ã‚¤ãƒªãƒ¼ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’ã‚«ãƒ†ã‚´ãƒªã§ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
 function filterNonDailyByCategory(category) {
     state.nonDailyFilter = category;
     renderNonDailyAdvisor();
 }
 
 // ========================================
-// コンビニ3社 新商品ヒット予測レポート機能
+// ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆæ©Ÿèƒ½
 // ========================================
 
-// コンビニ3社 新商品ヒット予測レポートを描画
+// ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆã‚’æç”»
 function renderTrendReports() {
     const section = document.getElementById('trendReportSection');
     const content = document.getElementById('trendReportContent');
     if (!section || !content) return;
 
-    // 常にセクションを表示
+    // å¸¸ã«ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã‚’è¡¨ç¤º
     section.style.display = 'block';
 
     const reports = state.trendReports || [];
     
-    // 更新日時順にソート（新しい順）
+    // æ›´æ–°æ—¥æ™‚é †ã«ã‚½ãƒ¼ãƒˆï¼ˆæ–°ã—ã„é †ï¼‰
     const sortedReports = [...reports].sort((a, b) => 
         new Date(b.updatedAt || b.createdAt || b.uploadedAt) - new Date(a.updatedAt || a.createdAt || a.uploadedAt)
     );
@@ -6694,7 +6983,7 @@ function renderTrendReports() {
     let html = '';
 
     if (sortedReports.length === 0) {
-        html = '<div class="no-reports-message"><p>📭 現在、コンビニ3社 新商品ヒット予測レポートはありません</p></div>';
+        html = '<div class="no-reports-message"><p>ðŸ“­ ç¾åœ¨ã€ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆã¯ã‚ã‚Šã¾ã›ã‚“</p></div>';
     } else {
         html = '<div class="trend-reports-list">';
         
@@ -6703,49 +6992,49 @@ function renderTrendReports() {
             const dateStr = `${reportDate.getFullYear()}/${reportDate.getMonth() + 1}/${reportDate.getDate()}`;
             const isNew = (new Date() - reportDate) < 7 * 24 * 60 * 60 * 1000;
             
-            // 旧形式（ファイルアップロード）か新形式（記述式）かを判定
+            // æ—§å½¢å¼ï¼ˆãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ï¼‰ã‹æ–°å½¢å¼ï¼ˆè¨˜è¿°å¼ï¼‰ã‹ã‚’åˆ¤å®š
             const isOldFormat = report.fileData && !report.content;
             
             if (isOldFormat) {
-                // 旧形式：ダウンロードボタン表示
+                // æ—§å½¢å¼ï¼šãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ãƒœã‚¿ãƒ³è¡¨ç¤º
                 html += `
                     <div class="trend-report-item">
                         <div class="trend-report-info">
                             <div class="trend-report-title">
                                 ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-                                📄 ${report.title}
+                                ðŸ“„ ${report.title}
                             </div>
                             <div class="trend-report-meta">
-                                <span class="report-date">📅 ${dateStr}</span>
+                                <span class="report-date">ðŸ“… ${dateStr}</span>
                                 <span class="report-size">${formatFileSize(report.fileSize)}</span>
                             </div>
                         </div>
                         <div class="trend-report-actions">
                             <button class="btn btn-sm btn-primary" onclick="downloadTrendReport('${report.id}')">
-                                📥 ダウンロード
+                                ðŸ“¥ ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰
                             </button>
                             ${state.isAdmin ? `
                             <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">
-                                🗑️
+                                ðŸ—‘ï¸
                             </button>
                             ` : ''}
                         </div>
                     </div>
                 `;
             } else {
-                // 新形式：記述式表示
+                // æ–°å½¢å¼ï¼šè¨˜è¿°å¼è¡¨ç¤º
                 html += `
                     <div class="trend-report-card">
                         <div class="report-header">
                             ${isNew ? '<span class="new-badge">NEW</span>' : ''}
                             <span class="report-title">${report.title}</span>
-                            <span class="report-date">📅 ${dateStr}</span>
+                            <span class="report-date">ðŸ“… ${dateStr}</span>
                         </div>
                         <div class="report-content">${(report.content || '').replace(/\n/g, '<br>')}</div>
                         ${state.isAdmin ? `
                             <div class="report-actions">
-                                <button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">🗑️ 削除</button>
+                                <button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">âœï¸ ç·¨é›†</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTrendReport('${report.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
                             </div>
                         ` : ''}
                     </div>
@@ -6756,12 +7045,12 @@ function renderTrendReports() {
         html += '</div>';
     }
 
-    // 管理者のみ追加ボタンを表示
+    // ç®¡ç†è€…ã®ã¿è¿½åŠ ãƒœã‚¿ãƒ³ã‚’è¡¨ç¤º
     if (state.isAdmin) {
         html += `
             <div class="trend-report-upload-section">
                 <button class="btn btn-primary" onclick="openAddTrendReportModal()">
-                    + コンビニ3社 新商品ヒット予測レポート追加
+                    + ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆè¿½åŠ 
                 </button>
             </div>
         `;
@@ -6771,7 +7060,7 @@ function renderTrendReports() {
     initTrendReportToggle();
 }
 
-// トレンドレポートのトグル機能を初期化
+// ãƒˆãƒ¬ãƒ³ãƒ‰ãƒ¬ãƒãƒ¼ãƒˆã®ãƒˆã‚°ãƒ«æ©Ÿèƒ½ã‚’åˆæœŸåŒ–
 function initTrendReportToggle() {
     const section = document.getElementById('trendReportSection');
     if (!section) return;
@@ -6785,12 +7074,12 @@ function initTrendReportToggle() {
             e.stopPropagation();
             content.classList.toggle('collapsed');
             toggle.classList.toggle('collapsed');
-            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+            toggle.textContent = content.classList.contains('collapsed') ? 'â–¼' : 'â–²';
         };
     }
 }
 
-// ファイルサイズをフォーマット
+// ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºã‚’ãƒ•ã‚©ãƒ¼ãƒžãƒƒãƒˆ
 function formatFileSize(bytes) {
     if (!bytes) return '';
     if (bytes < 1024) return bytes + ' B';
@@ -6798,7 +7087,7 @@ function formatFileSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// レポートアップロードモーダルを開く
+// ãƒ¬ãƒãƒ¼ãƒˆã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openTrendReportUploadModal() {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay category-modal-overlay active';
@@ -6807,31 +7096,31 @@ function openTrendReportUploadModal() {
     overlay.innerHTML = `
         <div class="modal category-modal" style="max-width: 450px;">
             <div class="modal-header">
-                <h2 class="modal-title">📤 コンビニ3社 新商品ヒット予測レポートをアップロード</h2>
-                <button class="modal-close" onclick="closeTrendReportUploadModal()">×</button>
+                <h2 class="modal-title">ðŸ“¤ ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆã‚’ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰</h2>
+                <button class="modal-close" onclick="closeTrendReportUploadModal()">Ã—</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>レポートタイトル</label>
+                    <label>ãƒ¬ãƒãƒ¼ãƒˆã‚¿ã‚¤ãƒˆãƒ«</label>
                     <input type="text" id="trendReportTitle" class="form-control" 
-                           placeholder="例: コンビニ3社 新商品ヒット予測レポート 2026年1月27日号" required>
+                           placeholder="ä¾‹: ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ 2026å¹´1æœˆ27æ—¥å·" required>
                 </div>
                 
                 <div class="form-group">
-                    <label>ファイルを選択</label>
+                    <label>ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠž</label>
                     <div class="file-upload-area" id="fileUploadArea">
                         <input type="file" id="trendReportFile" accept=".docx,.doc,.pdf,.xlsx,.xls" 
                                style="display: none;" onchange="handleTrendReportFileSelect(event)">
                         <div class="file-upload-placeholder" onclick="document.getElementById('trendReportFile').click()">
-                            <span class="upload-icon">📁</span>
-                            <span class="upload-text">クリックしてファイルを選択</span>
-                            <span class="upload-hint">対応形式: Word (.docx), PDF, Excel (.xlsx)</span>
+                            <span class="upload-icon">ðŸ“</span>
+                            <span class="upload-text">ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠž</span>
+                            <span class="upload-hint">å¯¾å¿œå½¢å¼: Word (.docx), PDF, Excel (.xlsx)</span>
                         </div>
                         <div class="file-selected-info" id="fileSelectedInfo" style="display: none;">
-                            <span class="file-icon">📄</span>
+                            <span class="file-icon">ðŸ“„</span>
                             <span class="file-name" id="selectedFileName"></span>
                             <span class="file-size" id="selectedFileSize"></span>
-                            <button type="button" class="btn btn-xs btn-secondary" onclick="clearSelectedFile()">✕</button>
+                            <button type="button" class="btn btn-xs btn-secondary" onclick="clearSelectedFile()">âœ•</button>
                         </div>
                     </div>
                 </div>
@@ -6840,13 +7129,13 @@ function openTrendReportUploadModal() {
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
-                    <span class="progress-text" id="progressText">アップロード中...</span>
+                    <span class="progress-text" id="progressText">ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ä¸­...</span>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeTrendReportUploadModal()">キャンセル</button>
+                <button type="button" class="btn btn-secondary" onclick="closeTrendReportUploadModal()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
                 <button type="button" class="btn btn-primary" id="uploadTrendReportBtn" onclick="uploadTrendReport()" disabled>
-                    📤 アップロード
+                    ðŸ“¤ ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰
                 </button>
             </div>
         </div>
@@ -6855,42 +7144,42 @@ function openTrendReportUploadModal() {
     document.body.appendChild(overlay);
 }
 
-// アップロードモーダルを閉じる
+// ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
 function closeTrendReportUploadModal() {
     const overlay = document.getElementById('trendReportUploadOverlay');
     if (overlay) overlay.remove();
     state.selectedTrendReportFile = null;
 }
 
-// ファイル選択時の処理
+// ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠžæ™‚ã®å‡¦ç†
 function handleTrendReportFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // ファイルサイズチェック (5MB制限)
+    // ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºãƒã‚§ãƒƒã‚¯ (5MBåˆ¶é™)
     if (file.size > 5 * 1024 * 1024) {
-        alert('ファイルサイズは5MB以下にしてください。');
+        alert('ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºã¯5MBä»¥ä¸‹ã«ã—ã¦ãã ã•ã„ã€‚');
         return;
     }
     
     state.selectedTrendReportFile = file;
     
-    // UI更新
+    // UIæ›´æ–°
     document.getElementById('fileUploadArea').querySelector('.file-upload-placeholder').style.display = 'none';
     document.getElementById('fileSelectedInfo').style.display = 'flex';
     document.getElementById('selectedFileName').textContent = file.name;
     document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
     document.getElementById('uploadTrendReportBtn').disabled = false;
     
-    // タイトルが空なら自動設定
+    // ã‚¿ã‚¤ãƒˆãƒ«ãŒç©ºãªã‚‰è‡ªå‹•è¨­å®š
     const titleInput = document.getElementById('trendReportTitle');
     if (!titleInput.value) {
         const today = new Date();
-        titleInput.value = `コンビニ3社 新商品ヒット予測レポート ${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日号`;
+        titleInput.value = `ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ ${today.getFullYear()}å¹´${today.getMonth() + 1}æœˆ${today.getDate()}æ—¥å·`;
     }
 }
 
-// 選択したファイルをクリア
+// é¸æŠžã—ãŸãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚¯ãƒªã‚¢
 function clearSelectedFile() {
     state.selectedTrendReportFile = null;
     document.getElementById('trendReportFile').value = '';
@@ -6899,22 +7188,22 @@ function clearSelectedFile() {
     document.getElementById('uploadTrendReportBtn').disabled = true;
 }
 
-// レポートをアップロード
+// ãƒ¬ãƒãƒ¼ãƒˆã‚’ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰
 async function uploadTrendReport() {
     const title = document.getElementById('trendReportTitle').value.trim();
     const file = state.selectedTrendReportFile;
     
     if (!title || !file) {
-        alert('タイトルとファイルを入力してください。');
+        alert('ã‚¿ã‚¤ãƒˆãƒ«ã¨ãƒ•ã‚¡ã‚¤ãƒ«ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„ã€‚');
         return;
     }
     
-    // プログレス表示
+    // ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹è¡¨ç¤º
     document.getElementById('uploadProgress').style.display = 'block';
     document.getElementById('uploadTrendReportBtn').disabled = true;
     
     try {
-        // ファイルをBase64に変換
+        // ãƒ•ã‚¡ã‚¤ãƒ«ã‚’Base64ã«å¤‰æ›
         const base64Data = await fileToBase64(file);
         
         const report = {
@@ -6925,12 +7214,12 @@ async function uploadTrendReport() {
             fileSize: file.size,
             fileData: base64Data,
             uploadedAt: new Date().toISOString(),
-            uploadedBy: '管理者'
+            uploadedBy: 'ç®¡ç†è€…'
         };
         
         state.trendReports.push(report);
         
-        // 1ヶ月より古いレポートを削除
+        // 1ãƒ¶æœˆã‚ˆã‚Šå¤ã„ãƒ¬ãƒãƒ¼ãƒˆã‚’å‰Šé™¤
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         state.trendReports = state.trendReports.filter(r => new Date(r.uploadedAt) >= oneMonthAgo);
@@ -6938,23 +7227,23 @@ async function uploadTrendReport() {
         saveToFirebase('trendReports', state.trendReports);
         
         document.getElementById('progressFill').style.width = '100%';
-        document.getElementById('progressText').textContent = 'アップロード完了！';
+        document.getElementById('progressText').textContent = 'ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰å®Œäº†ï¼';
         
         setTimeout(() => {
             closeTrendReportUploadModal();
             renderTrendReports();
-            alert('レポートをアップロードしました。');
+            alert('ãƒ¬ãƒãƒ¼ãƒˆã‚’ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã—ã¾ã—ãŸã€‚');
         }, 500);
         
     } catch (error) {
         console.error('Upload error:', error);
-        alert('アップロードに失敗しました。ファイルサイズを確認してください。');
+        alert('ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã«å¤±æ•—ã—ã¾ã—ãŸã€‚ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚');
         document.getElementById('uploadProgress').style.display = 'none';
         document.getElementById('uploadTrendReportBtn').disabled = false;
     }
 }
 
-// ファイルをBase64に変換
+// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’Base64ã«å¤‰æ›
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -6964,7 +7253,7 @@ function fileToBase64(file) {
     });
 }
 
-// ファイル名から拡張子でタイプを取得
+// ãƒ•ã‚¡ã‚¤ãƒ«åã‹ã‚‰æ‹¡å¼µå­ã§ã‚¿ã‚¤ãƒ—ã‚’å–å¾—
 function getFileTypeFromName(fileName) {
     const ext = fileName.split('.').pop().toLowerCase();
     const types = {
@@ -6977,16 +7266,16 @@ function getFileTypeFromName(fileName) {
     return types[ext] || 'application/octet-stream';
 }
 
-// レポートをダウンロード
+// ãƒ¬ãƒãƒ¼ãƒˆã‚’ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰
 function downloadTrendReport(reportId) {
     const report = state.trendReports.find(r => r.id === reportId);
     if (!report) {
-        alert('レポートが見つかりません。');
+        alert('ãƒ¬ãƒãƒ¼ãƒˆãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚');
         return;
     }
     
     try {
-        // Base64データからBlobを作成
+        // Base64ãƒ‡ãƒ¼ã‚¿ã‹ã‚‰Blobã‚’ä½œæˆ
         const byteCharacters = atob(report.fileData.split(',')[1]);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -6995,7 +7284,7 @@ function downloadTrendReport(reportId) {
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: report.fileType });
         
-        // ダウンロードリンクを作成
+        // ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ãƒªãƒ³ã‚¯ã‚’ä½œæˆ
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -7006,42 +7295,42 @@ function downloadTrendReport(reportId) {
         URL.revokeObjectURL(url);
     } catch (error) {
         console.error('Download error:', error);
-        alert('ダウンロードに失敗しました。');
+        alert('ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ã«å¤±æ•—ã—ã¾ã—ãŸã€‚');
     }
 }
 
-// レポートを削除
+// ãƒ¬ãƒãƒ¼ãƒˆã‚’å‰Šé™¤
 function deleteTrendReport(reportId) {
-    if (!confirm('このレポートを削除しますか？')) return;
+    if (!confirm('ã“ã®ãƒ¬ãƒãƒ¼ãƒˆã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) return;
     
     state.trendReports = state.trendReports.filter(r => r.id !== reportId);
     saveToFirebase('trendReports', state.trendReports);
-    trackUsage('delete_trend_report', '管理者');
+    trackUsage('delete_trend_report', 'ç®¡ç†è€…');
     renderTrendReports();
 }
 
-// コンビニ3社 新商品ヒット予測レポート追加モーダル（記述式）
+// ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ï¼ˆè¨˜è¿°å¼ï¼‰
 function openAddTrendReportModal() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">📊 コンビニ3社 新商品ヒット予測レポート追加</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                <h2 class="modal-title">ðŸ“Š ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆè¿½åŠ </h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">Ã—</button>
             </div>
             <form class="modal-body" onsubmit="submitTrendReport(event, this)">
                 <div class="form-group">
-                    <label>タイトル <span class="required">*</span></label>
-                    <input type="text" name="title" placeholder="例: コンビニ3社 新商品ヒット予測レポート 2026年1月27日号" required>
+                    <label>ã‚¿ã‚¤ãƒˆãƒ« <span class="required">*</span></label>
+                    <input type="text" name="title" placeholder="ä¾‹: ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆ 2026å¹´1æœˆ27æ—¥å·" required>
                 </div>
                 <div class="form-group">
-                    <label>内容 <span class="required">*</span></label>
-                    <textarea name="content" rows="15" placeholder="トレンド情報を入力してください..." required></textarea>
+                    <label>å†…å®¹ <span class="required">*</span></label>
+                    <textarea name="content" rows="15" placeholder="ãƒˆãƒ¬ãƒ³ãƒ‰æƒ…å ±ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„..." required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ä¿å­˜</button>
                 </div>
             </form>
         </div>
@@ -7054,12 +7343,12 @@ function openAddTrendReportModal() {
     document.body.appendChild(modal);
 }
 
-// コンビニ3社 新商品ヒット予測レポート編集モーダル（記述式）
+// ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ï¼ˆè¨˜è¿°å¼ï¼‰
 function openEditTrendReportModal(reportId) {
     const report = state.trendReports.find(r => r.id === reportId);
     if (!report) return;
 
-    // HTMLエスケープ関数
+    // HTMLã‚¨ã‚¹ã‚±ãƒ¼ãƒ—é–¢æ•°
     const escapeHtml = (text) => {
         const div = document.createElement('div');
         div.textContent = text;
@@ -7071,21 +7360,21 @@ function openEditTrendReportModal(reportId) {
     modal.innerHTML = `
         <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">📊 コンビニ3社 新商品ヒット予測レポート編集</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                <h2 class="modal-title">ðŸ“Š ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆç·¨é›†</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">Ã—</button>
             </div>
             <form class="modal-body" onsubmit="submitTrendReport(event, this, '${reportId}')">
                 <div class="form-group">
-                    <label>タイトル <span class="required">*</span></label>
+                    <label>ã‚¿ã‚¤ãƒˆãƒ« <span class="required">*</span></label>
                     <input type="text" name="title" value="${escapeHtml(report.title)}" required>
                 </div>
                 <div class="form-group">
-                    <label>内容 <span class="required">*</span></label>
+                    <label>å†…å®¹ <span class="required">*</span></label>
                     <textarea name="content" rows="15" required>${escapeHtml(report.content || '')}</textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ä¿å­˜</button>
                 </div>
             </form>
         </div>
@@ -7098,7 +7387,7 @@ function openEditTrendReportModal(reportId) {
     document.body.appendChild(modal);
 }
 
-// コンビニ3社 新商品ヒット予測レポート送信（記述式）
+// ã‚³ãƒ³ãƒ“ãƒ‹3ç¤¾ æ–°å•†å“ãƒ’ãƒƒãƒˆäºˆæ¸¬ãƒ¬ãƒãƒ¼ãƒˆé€ä¿¡ï¼ˆè¨˜è¿°å¼ï¼‰
 function submitTrendReport(event, form, reportId = null) {
     event.preventDefault();
     
@@ -7106,12 +7395,12 @@ function submitTrendReport(event, form, reportId = null) {
     const content = form.content.value.trim();
     
     if (!title || !content) {
-        alert('タイトルと内容を入力してください。');
+        alert('ã‚¿ã‚¤ãƒˆãƒ«ã¨å†…å®¹ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„ã€‚');
         return;
     }
     
     if (reportId) {
-        // 編集
+        // ç·¨é›†
         const index = state.trendReports.findIndex(r => r.id === reportId);
         if (index !== -1) {
             state.trendReports[index] = {
@@ -7121,9 +7410,9 @@ function submitTrendReport(event, form, reportId = null) {
                 updatedAt: new Date().toISOString()
             };
         }
-        trackUsage('edit_trend_report', '管理者');
+        trackUsage('edit_trend_report', 'ç®¡ç†è€…');
     } else {
-        // 新規追加
+        // æ–°è¦è¿½åŠ 
         const report = {
             id: Date.now().toString(),
             title,
@@ -7132,64 +7421,64 @@ function submitTrendReport(event, form, reportId = null) {
             updatedAt: new Date().toISOString()
         };
         state.trendReports.push(report);
-        trackUsage('add_trend_report', '管理者');
+        trackUsage('add_trend_report', 'ç®¡ç†è€…');
     }
     
     saveToFirebase('trendReports', state.trendReports);
     form.closest('.modal-overlay').remove();
     renderTrendReports();
-    alert(reportId ? 'レポートを更新しました。' : 'レポートを追加しました。');
+    alert(reportId ? 'ãƒ¬ãƒãƒ¼ãƒˆã‚’æ›´æ–°ã—ã¾ã—ãŸã€‚' : 'ãƒ¬ãƒãƒ¼ãƒˆã‚’è¿½åŠ ã—ã¾ã—ãŸã€‚');
 }
 
 // ========================================
-// 発注アドバイス機能
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹æ©Ÿèƒ½
 // ========================================
 
-// 発注担当者データ
+// ç™ºæ³¨æ‹…å½“è€…ãƒ‡ãƒ¼ã‚¿
 const ORDER_STAFF = [
-    { id: 1, name: '市原', role: 'マネージャー/日勤', categories: ['tobacco'] },
-    { id: 2, name: '篠原', role: '社員/夕勤', categories: ['deli', 'ff', 'drink', 'pastry', 'frozenIce'] },
-    { id: 3, name: '橋本', role: '社員/日勤', categories: ['supply', 'noodle', 'goods', 'frozen'] },
-    { id: 4, name: '森下', role: 'スタッフ/日勤', categories: ['rice', 'sevenPDeli', 'deliOther', 'milk', 'frozen'] },
-    { id: 5, name: '高橋', role: 'スタッフ/日勤', categories: ['bread'] },
-    { id: 6, name: '萩', role: 'スタッフ/日勤', categories: ['processed'] },
-    { id: 7, name: '小宮山', role: 'スタッフ/夕勤', categories: ['sweetsChoco'] },
-    { id: 8, name: '加藤', role: 'スタッフ/日勤', categories: ['dessert', 'sweetsGummy'] },
-    { id: 9, name: '中瀬', role: 'スタッフ/夕勤', categories: ['sweetsSnack'] },
+    { id: 1, name: 'å¸‚åŽŸ', role: 'ãƒžãƒãƒ¼ã‚¸ãƒ£ãƒ¼/æ—¥å‹¤', categories: ['tobacco'] },
+    { id: 2, name: 'ç¯ åŽŸ', role: 'ç¤¾å“¡/å¤•å‹¤', categories: ['deli', 'ff', 'drink', 'pastry', 'frozenIce'] },
+    { id: 3, name: 'æ©‹æœ¬', role: 'ç¤¾å“¡/æ—¥å‹¤', categories: ['supply', 'noodle', 'goods', 'frozen'] },
+    { id: 4, name: 'æ£®ä¸‹', role: 'ã‚¹ã‚¿ãƒƒãƒ•/æ—¥å‹¤', categories: ['rice', 'sevenPDeli', 'deliOther', 'milk', 'frozen'] },
+    { id: 5, name: 'é«˜æ©‹', role: 'ã‚¹ã‚¿ãƒƒãƒ•/æ—¥å‹¤', categories: ['bread'] },
+    { id: 6, name: 'è©', role: 'ã‚¹ã‚¿ãƒƒãƒ•/æ—¥å‹¤', categories: ['processed'] },
+    { id: 7, name: 'å°å®®å±±', role: 'ã‚¹ã‚¿ãƒƒãƒ•/å¤•å‹¤', categories: ['sweetsChoco'] },
+    { id: 8, name: 'åŠ è—¤', role: 'ã‚¹ã‚¿ãƒƒãƒ•/æ—¥å‹¤', categories: ['dessert', 'sweetsGummy'] },
+    { id: 9, name: 'ä¸­ç€¬', role: 'ã‚¹ã‚¿ãƒƒãƒ•/å¤•å‹¤', categories: ['sweetsSnack'] },
 ];
 
-// 発注カテゴリデータ
+// ç™ºæ³¨ã‚«ãƒ†ã‚´ãƒªãƒ‡ãƒ¼ã‚¿
 const ORDER_ADVICE_CATEGORIES = [
-    { id: 'tobacco', name: 'タバコ', icon: '🚬', items: ['タバコ'], color: '#6B7280' },
-    { id: 'noodle', name: '麺類その他', icon: '🍜', items: ['カップ麺(温)', '調理麺(冷)', 'スパゲティ', 'グラタンドリア', '焼きそば類'], color: '#EF4444' },
-    { id: 'deli', name: 'デリカテッセン（サラダ、惣菜）', icon: '🥗', items: ['サラダ', '惣菜類'], color: '#22C55E' },
-    { id: 'ff', name: 'FF（おでん、中華まん）', icon: '🍢', items: ['おでん', '中華まん', 'フランク'], color: '#F97316' },
-    { id: 'drink', name: 'ドリンク類', icon: '🥤', items: ['ソフトドリンク', 'お茶', 'コーヒー'], color: '#3B82F6' },
-    { id: 'milk', name: '牛乳乳飲料', icon: '🥛', items: ['牛乳', '乳飲料', 'コーヒー牛乳'], color: '#60A5FA' },
-    { id: 'supply', name: '消耗品', icon: '🧻', items: ['消耗品'], color: '#9CA3AF' },
-    { id: 'rice', name: '米飯', icon: '🍙', items: ['おにぎり', '寿司', '弁当', 'チルド弁当'], color: '#F59E0B' },
-    { id: 'sevenPDeli', name: '7Pデリカ', icon: '🍱', items: ['7Pデリカ商品'], color: '#FBBF24' },
-    { id: 'deliOther', name: 'デリテッセン（その他）', icon: '🥡', items: ['その他デリカ'], color: '#34D399' },
-    { id: 'goods', name: '雑貨類', icon: '🛒', items: ['雑貨'], color: '#8B5CF6' },
-    { id: 'frozen', name: 'フローズン（フライヤー、焼成パン）', icon: '🧊', items: ['フライヤー', '焼成パン'], color: '#06B6D4' },
-    { id: 'frozenIce', name: 'フローズン（アイス、冷凍食品）', icon: '🍦', items: ['アイス', '冷凍食品'], color: '#0EA5E9' },
-    { id: 'pastry', name: 'ペストリー', icon: '🥐', items: ['ドーナツ', 'パイ', 'デニッシュ'], color: '#D97706' },
-    { id: 'bread', name: '調理パン', icon: '🥪', items: ['サンドイッチ', 'ロール類', 'ブリトー'], color: '#EAB308' },
-    { id: 'processed', name: '加工食品（調味料類、珍味）', icon: '🫙', items: ['調味料', '珍味'], color: '#A855F7' },
-    { id: 'sweetsChoco', name: 'お菓子（チョコレート、和菓子類）', icon: '🍫', items: ['チョコレート', '和菓子'], color: '#EC4899' },
-    { id: 'dessert', name: 'デザート', icon: '🍰', items: ['チルド用生菓子', 'ヨーグルト', 'ゼリー類'], color: '#F472B6' },
-    { id: 'sweetsGummy', name: 'お菓子（グミ、駄菓子、飴類）', icon: '🍬', items: ['グミ', '駄菓子', '飴類'], color: '#FB7185' },
-    { id: 'sweetsSnack', name: 'お菓子（ポテトチップス、箱スナック、米菓）', icon: '🍿', items: ['ポテトチップス', '箱スナック', '米菓'], color: '#FDBA74' },
+    { id: 'tobacco', name: 'ã‚¿ãƒã‚³', icon: 'ðŸš¬', items: ['ã‚¿ãƒã‚³'], color: '#6B7280' },
+    { id: 'noodle', name: 'éººé¡žãã®ä»–', icon: 'ðŸœ', items: ['ã‚«ãƒƒãƒ—éºº(æ¸©)', 'èª¿ç†éºº(å†·)', 'ã‚¹ãƒ‘ã‚²ãƒ†ã‚£', 'ã‚°ãƒ©ã‚¿ãƒ³ãƒ‰ãƒªã‚¢', 'ç„¼ããã°é¡ž'], color: '#EF4444' },
+    { id: 'deli', name: 'ãƒ‡ãƒªã‚«ãƒ†ãƒƒã‚»ãƒ³ï¼ˆã‚µãƒ©ãƒ€ã€æƒ£èœï¼‰', icon: 'ðŸ¥—', items: ['ã‚µãƒ©ãƒ€', 'æƒ£èœé¡ž'], color: '#22C55E' },
+    { id: 'ff', name: 'FFï¼ˆãŠã§ã‚“ã€ä¸­è¯ã¾ã‚“ï¼‰', icon: 'ðŸ¢', items: ['ãŠã§ã‚“', 'ä¸­è¯ã¾ã‚“', 'ãƒ•ãƒ©ãƒ³ã‚¯'], color: '#F97316' },
+    { id: 'drink', name: 'ãƒ‰ãƒªãƒ³ã‚¯é¡ž', icon: 'ðŸ¥¤', items: ['ã‚½ãƒ•ãƒˆãƒ‰ãƒªãƒ³ã‚¯', 'ãŠèŒ¶', 'ã‚³ãƒ¼ãƒ’ãƒ¼'], color: '#3B82F6' },
+    { id: 'milk', name: 'ç‰›ä¹³ä¹³é£²æ–™', icon: 'ðŸ¥›', items: ['ç‰›ä¹³', 'ä¹³é£²æ–™', 'ã‚³ãƒ¼ãƒ’ãƒ¼ç‰›ä¹³'], color: '#60A5FA' },
+    { id: 'supply', name: 'æ¶ˆè€—å“', icon: 'ðŸ§»', items: ['æ¶ˆè€—å“'], color: '#9CA3AF' },
+    { id: 'rice', name: 'ç±³é£¯', icon: 'ðŸ™', items: ['ãŠã«ãŽã‚Š', 'å¯¿å¸', 'å¼å½“', 'ãƒãƒ«ãƒ‰å¼å½“'], color: '#F59E0B' },
+    { id: 'sevenPDeli', name: '7Pãƒ‡ãƒªã‚«', icon: 'ðŸ±', items: ['7Pãƒ‡ãƒªã‚«å•†å“'], color: '#FBBF24' },
+    { id: 'deliOther', name: 'ãƒ‡ãƒªãƒ†ãƒƒã‚»ãƒ³ï¼ˆãã®ä»–ï¼‰', icon: 'ðŸ¥¡', items: ['ãã®ä»–ãƒ‡ãƒªã‚«'], color: '#34D399' },
+    { id: 'goods', name: 'é›‘è²¨é¡ž', icon: 'ðŸ›’', items: ['é›‘è²¨'], color: '#8B5CF6' },
+    { id: 'frozen', name: 'ãƒ•ãƒ­ãƒ¼ã‚ºãƒ³ï¼ˆãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼ã€ç„¼æˆãƒ‘ãƒ³ï¼‰', icon: 'ðŸ§Š', items: ['ãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼', 'ç„¼æˆãƒ‘ãƒ³'], color: '#06B6D4' },
+    { id: 'frozenIce', name: 'ãƒ•ãƒ­ãƒ¼ã‚ºãƒ³ï¼ˆã‚¢ã‚¤ã‚¹ã€å†·å‡é£Ÿå“ï¼‰', icon: 'ðŸ¦', items: ['ã‚¢ã‚¤ã‚¹', 'å†·å‡é£Ÿå“'], color: '#0EA5E9' },
+    { id: 'pastry', name: 'ãƒšã‚¹ãƒˆãƒªãƒ¼', icon: 'ðŸ¥', items: ['ãƒ‰ãƒ¼ãƒŠãƒ„', 'ãƒ‘ã‚¤', 'ãƒ‡ãƒ‹ãƒƒã‚·ãƒ¥'], color: '#D97706' },
+    { id: 'bread', name: 'èª¿ç†ãƒ‘ãƒ³', icon: 'ðŸ¥ª', items: ['ã‚µãƒ³ãƒ‰ã‚¤ãƒƒãƒ', 'ãƒ­ãƒ¼ãƒ«é¡ž', 'ãƒ–ãƒªãƒˆãƒ¼'], color: '#EAB308' },
+    { id: 'processed', name: 'åŠ å·¥é£Ÿå“ï¼ˆèª¿å‘³æ–™é¡žã€çå‘³ï¼‰', icon: 'ðŸ«™', items: ['èª¿å‘³æ–™', 'çå‘³'], color: '#A855F7' },
+    { id: 'sweetsChoco', name: 'ãŠè“å­ï¼ˆãƒãƒ§ã‚³ãƒ¬ãƒ¼ãƒˆã€å’Œè“å­é¡žï¼‰', icon: 'ðŸ«', items: ['ãƒãƒ§ã‚³ãƒ¬ãƒ¼ãƒˆ', 'å’Œè“å­'], color: '#EC4899' },
+    { id: 'dessert', name: 'ãƒ‡ã‚¶ãƒ¼ãƒˆ', icon: 'ðŸ°', items: ['ãƒãƒ«ãƒ‰ç”¨ç”Ÿè“å­', 'ãƒ¨ãƒ¼ã‚°ãƒ«ãƒˆ', 'ã‚¼ãƒªãƒ¼é¡ž'], color: '#F472B6' },
+    { id: 'sweetsGummy', name: 'ãŠè“å­ï¼ˆã‚°ãƒŸã€é§„è“å­ã€é£´é¡žï¼‰', icon: 'ðŸ¬', items: ['ã‚°ãƒŸ', 'é§„è“å­', 'é£´é¡ž'], color: '#FB7185' },
+    { id: 'sweetsSnack', name: 'ãŠè“å­ï¼ˆãƒãƒ†ãƒˆãƒãƒƒãƒ—ã‚¹ã€ç®±ã‚¹ãƒŠãƒƒã‚¯ã€ç±³è“ï¼‰', icon: 'ðŸ¿', items: ['ãƒãƒ†ãƒˆãƒãƒƒãƒ—ã‚¹', 'ç®±ã‚¹ãƒŠãƒƒã‚¯', 'ç±³è“'], color: '#FDBA74' },
 ];
 
-// 発注アドバイス用の状態管理を拡張
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç”¨ã®çŠ¶æ…‹ç®¡ç†ã‚’æ‹¡å¼µ
 state.orderAdvice = {
     selectedStaffId: null,
     activeTab: 'advice',
     feedbackData: {},
 };
 
-// 発注対象日と締切を計算
+// ç™ºæ³¨å¯¾è±¡æ—¥ã¨ç· åˆ‡ã‚’è¨ˆç®—
 function getOrderTargetInfo() {
     const now = new Date();
     const hour = now.getHours();
@@ -7225,7 +7514,7 @@ function getOrderTargetInfo() {
     };
 }
 
-// カテゴリ別アドバイス生成
+// ã‚«ãƒ†ã‚´ãƒªåˆ¥ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç”Ÿæˆ
 function generateOrderAdvice(categoryId, weather, targetDate) {
     const temp = weather ? (weather.tempMax + weather.tempMin) / 2 : 15;
     const weatherType = weather ? getWeatherInfo(weather.weatherCode).type : 'sunny';
@@ -7243,29 +7532,29 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'rice':
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒さで温かいご飯需要↑',
-                    items: ['幕の内弁当', 'のり弁', '炊き込みご飯おにぎり'],
-                    psychology: '体を温めたい欲求',
+                    text: 'å¯’ã•ã§æ¸©ã‹ã„ã”é£¯éœ€è¦â†‘',
+                    items: ['å¹•ã®å†…å¼å½“', 'ã®ã‚Šå¼', 'ç‚Šãè¾¼ã¿ã”é£¯ãŠã«ãŽã‚Š'],
+                    psychology: 'ä½“ã‚’æ¸©ã‚ãŸã„æ¬²æ±‚',
                 });
             }
             if (temp >= 25) {
                 advice.recommendations.push({
-                    text: '暑さで塩分・さっぱり需要↑',
-                    items: ['梅おにぎり', '塩むすび', '冷やし寿司'],
-                    psychology: '汗で失った塩分を補いたい',
+                    text: 'æš‘ã•ã§å¡©åˆ†ãƒ»ã•ã£ã±ã‚Šéœ€è¦â†‘',
+                    items: ['æ¢…ãŠã«ãŽã‚Š', 'å¡©ã‚€ã™ã³', 'å†·ã‚„ã—å¯¿å¸'],
+                    psychology: 'æ±—ã§å¤±ã£ãŸå¡©åˆ†ã‚’è£œã„ãŸã„',
                 });
             }
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 advice.recommendations.push({
-                    text: '週末は行楽需要↑',
-                    items: ['おにぎりセット', '助六寿司', 'ファミリー弁当'],
-                    psychology: 'お出かけ・ピクニック気分',
+                    text: 'é€±æœ«ã¯è¡Œæ¥½éœ€è¦â†‘',
+                    items: ['ãŠã«ãŽã‚Šã‚»ãƒƒãƒˆ', 'åŠ©å…­å¯¿å¸', 'ãƒ•ã‚¡ãƒŸãƒªãƒ¼å¼å½“'],
+                    psychology: 'ãŠå‡ºã‹ã‘ãƒ»ãƒ”ã‚¯ãƒ‹ãƒƒã‚¯æ°—åˆ†',
                 });
             }
             if (weatherType === 'rainy') {
                 advice.warnings.push({
-                    text: '雨天で来客減少見込み',
-                    suggestion: '発注控えめに（-15%目安）',
+                    text: 'é›¨å¤©ã§æ¥å®¢æ¸›å°‘è¦‹è¾¼ã¿',
+                    suggestion: 'ç™ºæ³¨æŽ§ãˆã‚ã«ï¼ˆ-15%ç›®å®‰ï¼‰',
                 });
             }
             advice.confidence = 78;
@@ -7274,21 +7563,21 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'noodle':
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒さで温かい麺↑↑',
-                    items: ['カップうどん', 'カップラーメン', 'グラタン', 'ドリア'],
-                    psychology: '体の芯から温まりたい',
+                    text: 'å¯’ã•ã§æ¸©ã‹ã„éººâ†‘â†‘',
+                    items: ['ã‚«ãƒƒãƒ—ã†ã©ã‚“', 'ã‚«ãƒƒãƒ—ãƒ©ãƒ¼ãƒ¡ãƒ³', 'ã‚°ãƒ©ã‚¿ãƒ³', 'ãƒ‰ãƒªã‚¢'],
+                    psychology: 'ä½“ã®èŠ¯ã‹ã‚‰æ¸©ã¾ã‚ŠãŸã„',
                 });
                 advice.confidence = 85;
             }
             if (temp >= 25) {
                 advice.recommendations.push({
-                    text: '暑さで冷たい麺↑',
-                    items: ['冷やし中華', '冷製パスタ', 'ざるそば'],
-                    psychology: 'さっぱり・ひんやり食べたい',
+                    text: 'æš‘ã•ã§å†·ãŸã„éººâ†‘',
+                    items: ['å†·ã‚„ã—ä¸­è¯', 'å†·è£½ãƒ‘ã‚¹ã‚¿', 'ã–ã‚‹ãã°'],
+                    psychology: 'ã•ã£ã±ã‚Šãƒ»ã²ã‚“ã‚„ã‚Šé£Ÿã¹ãŸã„',
                 });
                 advice.warnings.push({
-                    text: 'カップ麺(温)は需要減',
-                    suggestion: '通常より控えめに（-20%目安）',
+                    text: 'ã‚«ãƒƒãƒ—éºº(æ¸©)ã¯éœ€è¦æ¸›',
+                    suggestion: 'é€šå¸¸ã‚ˆã‚ŠæŽ§ãˆã‚ã«ï¼ˆ-20%ç›®å®‰ï¼‰',
                 });
             }
             break;
@@ -7296,16 +7585,16 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'ff':
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒さでホットスナック需要↑↑',
-                    items: ['肉まん', 'あんまん', 'おでん各種', 'フランク'],
-                    psychology: '温かいものを手軽に食べたい',
+                    text: 'å¯’ã•ã§ãƒ›ãƒƒãƒˆã‚¹ãƒŠãƒƒã‚¯éœ€è¦â†‘â†‘',
+                    items: ['è‚‰ã¾ã‚“', 'ã‚ã‚“ã¾ã‚“', 'ãŠã§ã‚“å„ç¨®', 'ãƒ•ãƒ©ãƒ³ã‚¯'],
+                    psychology: 'æ¸©ã‹ã„ã‚‚ã®ã‚’æ‰‹è»½ã«é£Ÿã¹ãŸã„',
                 });
                 advice.confidence = 88;
             }
             if (temp >= 25) {
                 advice.warnings.push({
-                    text: '暑さでホットスナック需要↓',
-                    suggestion: '肉まん・おでん控えめに',
+                    text: 'æš‘ã•ã§ãƒ›ãƒƒãƒˆã‚¹ãƒŠãƒƒã‚¯éœ€è¦â†“',
+                    suggestion: 'è‚‰ã¾ã‚“ãƒ»ãŠã§ã‚“æŽ§ãˆã‚ã«',
                 });
                 advice.confidence = 60;
             }
@@ -7314,16 +7603,16 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'deli':
             if (dayOfWeek === 5) {
                 advice.recommendations.push({
-                    text: '金曜は惣菜需要↑',
-                    items: ['唐揚げ', 'ポテトサラダ', 'おつまみ系'],
-                    psychology: '仕事帰りに買って帰りたい',
+                    text: 'é‡‘æ›œã¯æƒ£èœéœ€è¦â†‘',
+                    items: ['å”æšã’', 'ãƒãƒ†ãƒˆã‚µãƒ©ãƒ€', 'ãŠã¤ã¾ã¿ç³»'],
+                    psychology: 'ä»•äº‹å¸°ã‚Šã«è²·ã£ã¦å¸°ã‚ŠãŸã„',
                 });
             }
             if (temp >= 25) {
                 advice.recommendations.push({
-                    text: '暑さでサラダ需要↑',
-                    items: ['グリーンサラダ', '春雨サラダ', '冷しゃぶサラダ'],
-                    psychology: 'さっぱりしたものが食べたい',
+                    text: 'æš‘ã•ã§ã‚µãƒ©ãƒ€éœ€è¦â†‘',
+                    items: ['ã‚°ãƒªãƒ¼ãƒ³ã‚µãƒ©ãƒ€', 'æ˜¥é›¨ã‚µãƒ©ãƒ€', 'å†·ã—ã‚ƒã¶ã‚µãƒ©ãƒ€'],
+                    psychology: 'ã•ã£ã±ã‚Šã—ãŸã‚‚ã®ãŒé£Ÿã¹ãŸã„',
                 });
             }
             break;
@@ -7331,17 +7620,17 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'dessert':
             if (temp >= 25) {
                 advice.recommendations.push({
-                    text: '暑さで冷たいデザート↑↑',
-                    items: ['ゼリー類', 'プリン', '杏仁豆腐', 'フルーツヨーグルト'],
-                    psychology: 'ひんやり甘いもので癒されたい',
+                    text: 'æš‘ã•ã§å†·ãŸã„ãƒ‡ã‚¶ãƒ¼ãƒˆâ†‘â†‘',
+                    items: ['ã‚¼ãƒªãƒ¼é¡ž', 'ãƒ—ãƒªãƒ³', 'æä»è±†è…', 'ãƒ•ãƒ«ãƒ¼ãƒ„ãƒ¨ãƒ¼ã‚°ãƒ«ãƒˆ'],
+                    psychology: 'ã²ã‚“ã‚„ã‚Šç”˜ã„ã‚‚ã®ã§ç™’ã•ã‚ŒãŸã„',
                 });
                 advice.confidence = 88;
             }
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 advice.recommendations.push({
-                    text: '週末ご褒美需要↑',
-                    items: ['プレミアムスイーツ', '生菓子'],
-                    psychology: '頑張った自分へのご褒美',
+                    text: 'é€±æœ«ã”è¤’ç¾Žéœ€è¦â†‘',
+                    items: ['ãƒ—ãƒ¬ãƒŸã‚¢ãƒ ã‚¹ã‚¤ãƒ¼ãƒ„', 'ç”Ÿè“å­'],
+                    psychology: 'é ‘å¼µã£ãŸè‡ªåˆ†ã¸ã®ã”è¤’ç¾Ž',
                 });
             }
             break;
@@ -7349,16 +7638,16 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'bread':
             if (dayOfWeek >= 1 && dayOfWeek <= 5) {
                 advice.recommendations.push({
-                    text: '平日朝の需要',
-                    items: ['たまごサンド', 'ハムサンド', 'ツナロール'],
-                    psychology: '手軽に朝食を済ませたい',
+                    text: 'å¹³æ—¥æœã®éœ€è¦',
+                    items: ['ãŸã¾ã”ã‚µãƒ³ãƒ‰', 'ãƒãƒ ã‚µãƒ³ãƒ‰', 'ãƒ„ãƒŠãƒ­ãƒ¼ãƒ«'],
+                    psychology: 'æ‰‹è»½ã«æœé£Ÿã‚’æ¸ˆã¾ã›ãŸã„',
                 });
             }
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒い日はボリューム系↑',
-                    items: ['カツサンド', 'ブリトー（ミート系）'],
-                    psychology: 'しっかり食べて温まりたい',
+                    text: 'å¯’ã„æ—¥ã¯ãƒœãƒªãƒ¥ãƒ¼ãƒ ç³»â†‘',
+                    items: ['ã‚«ãƒ„ã‚µãƒ³ãƒ‰', 'ãƒ–ãƒªãƒˆãƒ¼ï¼ˆãƒŸãƒ¼ãƒˆç³»ï¼‰'],
+                    psychology: 'ã—ã£ã‹ã‚Šé£Ÿã¹ã¦æ¸©ã¾ã‚ŠãŸã„',
                 });
             }
             break;
@@ -7366,16 +7655,16 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'milk':
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒い日はホット需要↑',
-                    items: ['ホットミルク用牛乳', 'ココア原料'],
-                    psychology: '温かい飲み物で温まりたい',
+                    text: 'å¯’ã„æ—¥ã¯ãƒ›ãƒƒãƒˆéœ€è¦â†‘',
+                    items: ['ãƒ›ãƒƒãƒˆãƒŸãƒ«ã‚¯ç”¨ç‰›ä¹³', 'ã‚³ã‚³ã‚¢åŽŸæ–™'],
+                    psychology: 'æ¸©ã‹ã„é£²ã¿ç‰©ã§æ¸©ã¾ã‚ŠãŸã„',
                 });
             }
             if (dayOfWeek === 0 || dayOfWeek === 6) {
                 advice.recommendations.push({
-                    text: '週末は家族需要↑',
-                    items: ['大容量牛乳', 'ファミリーパック'],
-                    psychology: '家族で消費、まとめ買い',
+                    text: 'é€±æœ«ã¯å®¶æ—éœ€è¦â†‘',
+                    items: ['å¤§å®¹é‡ç‰›ä¹³', 'ãƒ•ã‚¡ãƒŸãƒªãƒ¼ãƒ‘ãƒƒã‚¯'],
+                    psychology: 'å®¶æ—ã§æ¶ˆè²»ã€ã¾ã¨ã‚è²·ã„',
                 });
             }
             break;
@@ -7383,17 +7672,17 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'drink':
             if (temp >= 25) {
                 advice.recommendations.push({
-                    text: '暑さで冷たい飲料↑↑',
-                    items: ['スポーツドリンク', 'お茶', '炭酸飲料'],
-                    psychology: '水分補給・クールダウン',
+                    text: 'æš‘ã•ã§å†·ãŸã„é£²æ–™â†‘â†‘',
+                    items: ['ã‚¹ãƒãƒ¼ãƒ„ãƒ‰ãƒªãƒ³ã‚¯', 'ãŠèŒ¶', 'ç‚­é…¸é£²æ–™'],
+                    psychology: 'æ°´åˆ†è£œçµ¦ãƒ»ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³',
                 });
                 advice.confidence = 90;
             }
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒さでホット飲料↑',
-                    items: ['ホットコーヒー', 'ホットお茶', 'スープ'],
-                    psychology: '温かい飲み物で温まりたい',
+                    text: 'å¯’ã•ã§ãƒ›ãƒƒãƒˆé£²æ–™â†‘',
+                    items: ['ãƒ›ãƒƒãƒˆã‚³ãƒ¼ãƒ’ãƒ¼', 'ãƒ›ãƒƒãƒˆãŠèŒ¶', 'ã‚¹ãƒ¼ãƒ—'],
+                    psychology: 'æ¸©ã‹ã„é£²ã¿ç‰©ã§æ¸©ã¾ã‚ŠãŸã„',
                 });
             }
             break;
@@ -7401,45 +7690,45 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'sweetsChoco':
             if (temp <= 15) {
                 advice.recommendations.push({
-                    text: 'チョコレート需要↑',
-                    items: ['板チョコ', 'チョコ菓子'],
-                    psychology: '寒い時期はチョコが美味しい',
+                    text: 'ãƒãƒ§ã‚³ãƒ¬ãƒ¼ãƒˆéœ€è¦â†‘',
+                    items: ['æ¿ãƒãƒ§ã‚³', 'ãƒãƒ§ã‚³è“å­'],
+                    psychology: 'å¯’ã„æ™‚æœŸã¯ãƒãƒ§ã‚³ãŒç¾Žå‘³ã—ã„',
                 });
             }
             if (temp >= 25) {
                 advice.warnings.push({
-                    text: '暑さでチョコ溶け注意',
-                    suggestion: '在庫管理・陳列場所注意',
+                    text: 'æš‘ã•ã§ãƒãƒ§ã‚³æº¶ã‘æ³¨æ„',
+                    suggestion: 'åœ¨åº«ç®¡ç†ãƒ»é™³åˆ—å ´æ‰€æ³¨æ„',
                 });
             }
             break;
 
         case 'sweetsGummy':
             advice.recommendations.push({
-                text: '通年安定需要',
-                items: ['人気グミ', '定番駄菓子'],
-                psychology: '手軽なおやつ需要',
+                text: 'é€šå¹´å®‰å®šéœ€è¦',
+                items: ['äººæ°—ã‚°ãƒŸ', 'å®šç•ªé§„è“å­'],
+                psychology: 'æ‰‹è»½ãªãŠã‚„ã¤éœ€è¦',
             });
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 advice.recommendations.push({
-                    text: '週末はファミリー需要↑',
-                    items: ['大袋グミ', 'バラエティパック'],
-                    psychology: '子供のおやつ、まとめ買い',
+                    text: 'é€±æœ«ã¯ãƒ•ã‚¡ãƒŸãƒªãƒ¼éœ€è¦â†‘',
+                    items: ['å¤§è¢‹ã‚°ãƒŸ', 'ãƒãƒ©ã‚¨ãƒ†ã‚£ãƒ‘ãƒƒã‚¯'],
+                    psychology: 'å­ä¾›ã®ãŠã‚„ã¤ã€ã¾ã¨ã‚è²·ã„',
                 });
             }
             break;
 
         case 'sweetsSnack':
             advice.recommendations.push({
-                text: '通年安定需要',
-                items: ['定番ポテチ', '人気スナック'],
-                psychology: '定番のおやつ需要',
+                text: 'é€šå¹´å®‰å®šéœ€è¦',
+                items: ['å®šç•ªãƒãƒ†ãƒ', 'äººæ°—ã‚¹ãƒŠãƒƒã‚¯'],
+                psychology: 'å®šç•ªã®ãŠã‚„ã¤éœ€è¦',
             });
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 advice.recommendations.push({
-                    text: '週末パーティー需要↑',
-                    items: ['大袋ポテチ', 'パーティーサイズ'],
-                    psychology: '集まり・宴会用',
+                    text: 'é€±æœ«ãƒ‘ãƒ¼ãƒ†ã‚£ãƒ¼éœ€è¦â†‘',
+                    items: ['å¤§è¢‹ãƒãƒ†ãƒ', 'ãƒ‘ãƒ¼ãƒ†ã‚£ãƒ¼ã‚µã‚¤ã‚º'],
+                    psychology: 'é›†ã¾ã‚Šãƒ»å®´ä¼šç”¨',
                 });
             }
             break;
@@ -7447,24 +7736,24 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'frozen':
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒さでフライヤー商品↑',
-                    items: ['コロッケ', 'から揚げ', 'ポテト'],
-                    psychology: '温かい揚げ物で温まりたい',
+                    text: 'å¯’ã•ã§ãƒ•ãƒ©ã‚¤ãƒ¤ãƒ¼å•†å“â†‘',
+                    items: ['ã‚³ãƒ­ãƒƒã‚±', 'ã‹ã‚‰æšã’', 'ãƒãƒ†ãƒˆ'],
+                    psychology: 'æ¸©ã‹ã„æšã’ç‰©ã§æ¸©ã¾ã‚ŠãŸã„',
                 });
             }
             advice.recommendations.push({
-                text: '焼成パン朝需要',
-                items: ['クロワッサン', 'メロンパン'],
-                psychology: '焼きたての香りで購買意欲↑',
+                text: 'ç„¼æˆãƒ‘ãƒ³æœéœ€è¦',
+                items: ['ã‚¯ãƒ­ãƒ¯ãƒƒã‚µãƒ³', 'ãƒ¡ãƒ­ãƒ³ãƒ‘ãƒ³'],
+                psychology: 'ç„¼ããŸã¦ã®é¦™ã‚Šã§è³¼è²·æ„æ¬²â†‘',
             });
             break;
 
         case 'sevenPDeli':
             if (temp <= 10) {
                 advice.recommendations.push({
-                    text: '寒さでおでん・中華まん↑↑',
-                    items: ['おでんセット', '肉まん', 'あんまん'],
-                    psychology: '温かいものですぐ温まりたい',
+                    text: 'å¯’ã•ã§ãŠã§ã‚“ãƒ»ä¸­è¯ã¾ã‚“â†‘â†‘',
+                    items: ['ãŠã§ã‚“ã‚»ãƒƒãƒˆ', 'è‚‰ã¾ã‚“', 'ã‚ã‚“ã¾ã‚“'],
+                    psychology: 'æ¸©ã‹ã„ã‚‚ã®ã§ã™ãæ¸©ã¾ã‚ŠãŸã„',
                 });
                 advice.confidence = 90;
             }
@@ -7472,9 +7761,9 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
 
         case 'tobacco':
             advice.recommendations.push({
-                text: '定番銘柄を切らさない',
-                items: ['人気銘柄TOP10', '新商品'],
-                psychology: '指名買いが多い',
+                text: 'å®šç•ªéŠ˜æŸ„ã‚’åˆ‡ã‚‰ã•ãªã„',
+                items: ['äººæ°—éŠ˜æŸ„TOP10', 'æ–°å•†å“'],
+                psychology: 'æŒ‡åè²·ã„ãŒå¤šã„',
             });
             advice.confidence = 85;
             break;
@@ -7483,7 +7772,7 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'goods':
         case 'processed':
             advice.recommendations.push({
-                text: '通常発注でOK',
+                text: 'é€šå¸¸ç™ºæ³¨ã§OK',
                 items: [],
                 psychology: '',
             });
@@ -7492,16 +7781,16 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
         case 'deliOther':
             if (dayOfWeek === 5) {
                 advice.recommendations.push({
-                    text: '金曜はお惣菜需要↑',
-                    items: ['おつまみ系惣菜'],
-                    psychology: '週末前の買い足し',
+                    text: 'é‡‘æ›œã¯ãŠæƒ£èœéœ€è¦â†‘',
+                    items: ['ãŠã¤ã¾ã¿ç³»æƒ£èœ'],
+                    psychology: 'é€±æœ«å‰ã®è²·ã„è¶³ã—',
                 });
             }
             break;
 
         default:
             advice.recommendations.push({
-                text: '通常発注でOK',
+                text: 'é€šå¸¸ç™ºæ³¨ã§OK',
                 items: [],
                 psychology: '',
             });
@@ -7510,26 +7799,26 @@ function generateOrderAdvice(categoryId, weather, targetDate) {
 
     if (dayOfMonth >= 23 && dayOfMonth <= 27) {
         advice.recommendations.push({
-            text: '💰 給料日前後で消費意欲↑',
-            items: ['プレミアム商品', '高単価商品'],
-            psychology: '財布の紐が緩む',
+            text: 'ðŸ’° çµ¦æ–™æ—¥å‰å¾Œã§æ¶ˆè²»æ„æ¬²â†‘',
+            items: ['ãƒ—ãƒ¬ãƒŸã‚¢ãƒ å•†å“', 'é«˜å˜ä¾¡å•†å“'],
+            psychology: 'è²¡å¸ƒã®ç´ãŒç·©ã‚€',
         });
     }
     if (dayOfMonth >= 26 && dayOfMonth <= 31) {
         advice.warnings.push({
-            text: '月末で節約志向',
-            suggestion: '高単価商品控えめ、PB商品強化',
+            text: 'æœˆæœ«ã§ç¯€ç´„å¿—å‘',
+            suggestion: 'é«˜å˜ä¾¡å•†å“æŽ§ãˆã‚ã€PBå•†å“å¼·åŒ–',
         });
     }
 
     return advice;
 }
 
-// 発注アドバイス画面を表示
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç”»é¢ã‚’è¡¨ç¤º
 function showOrderAdviceScreen() {
-    // 利用追跡
+    // åˆ©ç”¨è¿½è·¡
     const staffName = state.orderAdvice.selectedStaffId ? 
-        (state.employees.find(e => e.id === state.orderAdvice.selectedStaffId)?.name || '匿名') : '匿名';
+        (state.employees.find(e => e.id === state.orderAdvice.selectedStaffId)?.name || 'åŒ¿å') : 'åŒ¿å';
     trackUsage('view_order_advice', staffName);
     
     const mainContent = document.querySelector('.app-container');
@@ -7552,15 +7841,15 @@ function showOrderAdviceScreen() {
     startDeadlineTimer();
 }
 
-// 担当者選択画面をレンダリング
+// æ‹…å½“è€…é¸æŠžç”»é¢ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderStaffSelection() {
     let html = `
         <div class="order-advice-header">
-            <h2>📦 発注アドバイス</h2>
-            <button class="btn btn-secondary" onclick="closeOrderAdviceScreen()">✕ 閉じる</button>
+            <h2>ðŸ“¦ ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹</h2>
+            <button class="btn btn-secondary" onclick="closeOrderAdviceScreen()">âœ• é–‰ã˜ã‚‹</button>
         </div>
         <div class="staff-selection">
-            <h3>担当者を選択してください</h3>
+            <h3>æ‹…å½“è€…ã‚’é¸æŠžã—ã¦ãã ã•ã„</h3>
             <div class="staff-grid">
     `;
     
@@ -7591,13 +7880,13 @@ function renderStaffSelection() {
     return html;
 }
 
-// 担当者を選択
+// æ‹…å½“è€…ã‚’é¸æŠž
 function selectOrderStaff(staffId) {
     state.orderAdvice.selectedStaffId = staffId;
     showOrderAdviceScreen();
 }
 
-// アドバイス画面をレンダリング
+// ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç”»é¢ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderAdviceScreen() {
     const staff = ORDER_STAFF.find(s => s.id === state.orderAdvice.selectedStaffId);
     if (!staff) return '';
@@ -7606,29 +7895,29 @@ function renderAdviceScreen() {
     const targetDateStr = orderInfo.targetDateStr;
     const weather = state.weatherData[targetDateStr];
     const targetDate = orderInfo.targetDate;
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
     
     let html = `
         <div class="order-advice-header">
             <div class="header-left">
-                <h2>📦 発注アドバイス</h2>
-                <span class="current-staff">担当: ${staff.name}</span>
+                <h2>ðŸ“¦ ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹</h2>
+                <span class="current-staff">æ‹…å½“: ${staff.name}</span>
             </div>
             <div class="header-right">
-                <button class="btn btn-secondary btn-sm" onclick="changeOrderStaff()">👤 担当者切替</button>
-                <button class="btn btn-secondary" onclick="closeOrderAdviceScreen()">✕ 閉じる</button>
+                <button class="btn btn-secondary btn-sm" onclick="changeOrderStaff()">ðŸ‘¤ æ‹…å½“è€…åˆ‡æ›¿</button>
+                <button class="btn btn-secondary" onclick="closeOrderAdviceScreen()">âœ• é–‰ã˜ã‚‹</button>
             </div>
         </div>
         
         <div class="order-info-bar">
             <div class="target-date">
-                <span class="label">発注対象日:</span>
-                <span class="date">${targetDate.getMonth() + 1}/${targetDate.getDate()}（${dayNames[targetDate.getDay()]}）</span>
-                <span class="note">${orderInfo.isBeforeDeadline ? '翌日分' : '翌々日分'}</span>
+                <span class="label">ç™ºæ³¨å¯¾è±¡æ—¥:</span>
+                <span class="date">${targetDate.getMonth() + 1}/${targetDate.getDate()}ï¼ˆ${dayNames[targetDate.getDay()]}ï¼‰</span>
+                <span class="note">${orderInfo.isBeforeDeadline ? 'ç¿Œæ—¥åˆ†' : 'ç¿Œã€…æ—¥åˆ†'}</span>
             </div>
             <div class="deadline ${orderInfo.isUrgent ? 'urgent' : ''}">
-                <span class="label">締切まで:</span>
-                <span class="time" id="deadlineTimer">${orderInfo.hoursUntil}時間${orderInfo.minutesUntil}分</span>
+                <span class="label">ç· åˆ‡ã¾ã§:</span>
+                <span class="time" id="deadlineTimer">${orderInfo.hoursUntil}æ™‚é–“${orderInfo.minutesUntil}åˆ†</span>
             </div>
         </div>
     `;
@@ -7642,8 +7931,8 @@ function renderAdviceScreen() {
                     <div class="weather-details">
                         <span class="weather-desc">${weatherInfo.desc}</span>
                         <span class="weather-temp">
-                            <span class="temp-high">${weather.tempMax}°</span> / 
-                            <span class="temp-low">${weather.tempMin}°</span>
+                            <span class="temp-high">${weather.tempMax}Â°</span> / 
+                            <span class="temp-low">${weather.tempMin}Â°</span>
                         </span>
                     </div>
                 </div>
@@ -7657,9 +7946,9 @@ function renderAdviceScreen() {
     html += `
         <div class="advice-tabs">
             <button class="advice-tab ${state.orderAdvice.activeTab === 'advice' ? 'active' : ''}" 
-                    onclick="switchAdviceTab('advice')">📋 アドバイス</button>
+                    onclick="switchAdviceTab('advice')">ðŸ“‹ ã‚¢ãƒ‰ãƒã‚¤ã‚¹</button>
             <button class="advice-tab ${state.orderAdvice.activeTab === 'feedback' ? 'active' : ''}" 
-                    onclick="switchAdviceTab('feedback')">📝 フィードバック</button>
+                    onclick="switchAdviceTab('feedback')">ðŸ“ ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯</button>
         </div>
     `;
     
@@ -7672,22 +7961,22 @@ function renderAdviceScreen() {
     return html;
 }
 
-// 特別日バッジをレンダリング
+// ç‰¹åˆ¥æ—¥ãƒãƒƒã‚¸ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderSpecialDayBadges(date) {
     const badges = [];
     const dayOfWeek = date.getDay();
     const dayOfMonth = date.getDate();
     
-    if (dayOfWeek === 5) badges.push('<span class="special-badge friday">🎉 金曜日</span>');
-    if (dayOfWeek === 6) badges.push('<span class="special-badge weekend">🌟 土曜日</span>');
-    if (dayOfWeek === 0) badges.push('<span class="special-badge weekend">🌟 日曜日</span>');
-    if (dayOfMonth >= 23 && dayOfMonth <= 27) badges.push('<span class="special-badge payday">💰 給料日前後</span>');
-    if (dayOfMonth >= 26) badges.push('<span class="special-badge monthend">📅 月末</span>');
+    if (dayOfWeek === 5) badges.push('<span class="special-badge friday">ðŸŽ‰ é‡‘æ›œæ—¥</span>');
+    if (dayOfWeek === 6) badges.push('<span class="special-badge weekend">ðŸŒŸ åœŸæ›œæ—¥</span>');
+    if (dayOfWeek === 0) badges.push('<span class="special-badge weekend">ðŸŒŸ æ—¥æ›œæ—¥</span>');
+    if (dayOfMonth >= 23 && dayOfMonth <= 27) badges.push('<span class="special-badge payday">ðŸ’° çµ¦æ–™æ—¥å‰å¾Œ</span>');
+    if (dayOfMonth >= 26) badges.push('<span class="special-badge monthend">ðŸ“… æœˆæœ«</span>');
     
-    return badges.length > 0 ? badges.join('') : '<span class="no-special">特別な日ではありません</span>';
+    return badges.length > 0 ? badges.join('') : '<span class="no-special">ç‰¹åˆ¥ãªæ—¥ã§ã¯ã‚ã‚Šã¾ã›ã‚“</span>';
 }
 
-// カテゴリ別アドバイスをレンダリング
+// ã‚«ãƒ†ã‚´ãƒªåˆ¥ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderCategoryAdvice(staff, weather, targetDate) {
     let html = '<div class="category-advice-list">';
     
@@ -7702,7 +7991,7 @@ function renderCategoryAdvice(staff, weather, targetDate) {
                 <div class="card-header">
                     <span class="category-icon" style="background: ${category.color}">${category.icon}</span>
                     <span class="category-name">${category.name}</span>
-                    <span class="confidence">信頼度: ${advice.confidence}%</span>
+                    <span class="confidence">ä¿¡é ¼åº¦: ${advice.confidence}%</span>
                 </div>
         `;
         
@@ -7711,11 +8000,11 @@ function renderCategoryAdvice(staff, weather, targetDate) {
             advice.recommendations.forEach(rec => {
                 html += `
                     <div class="recommendation-item">
-                        <div class="rec-text">📈 ${rec.text}</div>
-                        ${rec.psychology ? `<div class="rec-psychology">🧠 ${rec.psychology}</div>` : ''}
+                        <div class="rec-text">ðŸ“ˆ ${rec.text}</div>
+                        ${rec.psychology ? `<div class="rec-psychology">ðŸ§  ${rec.psychology}</div>` : ''}
                         ${rec.items.length > 0 ? `
                             <div class="rec-items">
-                                推奨: ${rec.items.map(item => `<span class="item-tag">${item}</span>`).join('')}
+                                æŽ¨å¥¨: ${rec.items.map(item => `<span class="item-tag">${item}</span>`).join('')}
                             </div>
                         ` : ''}
                     </div>
@@ -7729,8 +8018,8 @@ function renderCategoryAdvice(staff, weather, targetDate) {
             advice.warnings.forEach(warn => {
                 html += `
                     <div class="warning-item">
-                        <div class="warn-text">⚠️ ${warn.text}</div>
-                        ${warn.suggestion ? `<div class="warn-suggestion">💡 ${warn.suggestion}</div>` : ''}
+                        <div class="warn-text">âš ï¸ ${warn.text}</div>
+                        ${warn.suggestion ? `<div class="warn-suggestion">ðŸ’¡ ${warn.suggestion}</div>` : ''}
                     </div>
                 `;
             });
@@ -7744,7 +8033,7 @@ function renderCategoryAdvice(staff, weather, targetDate) {
     return html;
 }
 
-// フィードバックフォームをレンダリング
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderFeedbackForm(staff, targetDateStr) {
     let html = '<div class="feedback-form-container">';
     
@@ -7764,45 +8053,45 @@ function renderFeedbackForm(staff, targetDateStr) {
                 
                 <div class="feedback-fields">
                     <div class="field-group">
-                        <label>的中度評価</label>
+                        <label>çš„ä¸­åº¦è©•ä¾¡</label>
                         <div class="rating-buttons">
                             <button type="button" class="rating-btn ${existingFeedback.rating === 'excellent' ? 'selected' : ''}" 
-                                    onclick="setFeedbackRating('${feedbackKey}', 'excellent')">◎ 的中</button>
+                                    onclick="setFeedbackRating('${feedbackKey}', 'excellent')">â—Ž çš„ä¸­</button>
                             <button type="button" class="rating-btn ${existingFeedback.rating === 'good' ? 'selected' : ''}" 
-                                    onclick="setFeedbackRating('${feedbackKey}', 'good')">○ まあまあ</button>
+                                    onclick="setFeedbackRating('${feedbackKey}', 'good')">â—‹ ã¾ã‚ã¾ã‚</button>
                             <button type="button" class="rating-btn ${existingFeedback.rating === 'fair' ? 'selected' : ''}" 
-                                    onclick="setFeedbackRating('${feedbackKey}', 'fair')">△ 普通</button>
+                                    onclick="setFeedbackRating('${feedbackKey}', 'fair')">â–³ æ™®é€š</button>
                             <button type="button" class="rating-btn ${existingFeedback.rating === 'poor' ? 'selected' : ''}" 
-                                    onclick="setFeedbackRating('${feedbackKey}', 'poor')">× 外れ</button>
+                                    onclick="setFeedbackRating('${feedbackKey}', 'poor')">Ã— å¤–ã‚Œ</button>
                         </div>
                     </div>
                     
                     <div class="field-group">
-                        <label>予想以上に売れたもの</label>
+                        <label>äºˆæƒ³ä»¥ä¸Šã«å£²ã‚ŒãŸã‚‚ã®</label>
                         <input type="text" class="feedback-input" 
                                id="oversold-${feedbackKey}" 
                                value="${existingFeedback.oversold || ''}"
-                               placeholder="例：おにぎり、サンドイッチ">
+                               placeholder="ä¾‹ï¼šãŠã«ãŽã‚Šã€ã‚µãƒ³ãƒ‰ã‚¤ãƒƒãƒ">
                     </div>
                     
                     <div class="field-group">
-                        <label>予想より売れなかったもの</label>
+                        <label>äºˆæƒ³ã‚ˆã‚Šå£²ã‚Œãªã‹ã£ãŸã‚‚ã®</label>
                         <input type="text" class="feedback-input" 
                                id="undersold-${feedbackKey}" 
                                value="${existingFeedback.undersold || ''}"
-                               placeholder="例：弁当類、デザート">
+                               placeholder="ä¾‹ï¼šå¼å½“é¡žã€ãƒ‡ã‚¶ãƒ¼ãƒˆ">
                     </div>
                     
                     <div class="field-group">
-                        <label>気づいたこと・特記事項</label>
+                        <label>æ°—ã¥ã„ãŸã“ã¨ãƒ»ç‰¹è¨˜äº‹é …</label>
                         <textarea class="feedback-textarea" 
                                   id="notes-${feedbackKey}" 
                                   rows="2"
-                                  placeholder="例：雨が予報より早く降り始めた">${existingFeedback.notes || ''}</textarea>
+                                  placeholder="ä¾‹ï¼šé›¨ãŒäºˆå ±ã‚ˆã‚Šæ—©ãé™ã‚Šå§‹ã‚ãŸ">${existingFeedback.notes || ''}</textarea>
                     </div>
                     
                     <button class="btn btn-primary btn-sm" onclick="submitFeedback('${feedbackKey}', '${catId}', '${targetDateStr}')">
-                        💾 保存
+                        ðŸ’¾ ä¿å­˜
                     </button>
                 </div>
             </div>
@@ -7813,19 +8102,19 @@ function renderFeedbackForm(staff, targetDateStr) {
     return html;
 }
 
-// タブ切り替え
+// ã‚¿ãƒ–åˆ‡ã‚Šæ›¿ãˆ
 function switchAdviceTab(tab) {
     state.orderAdvice.activeTab = tab;
     showOrderAdviceScreen();
 }
 
-// 担当者切替
+// æ‹…å½“è€…åˆ‡æ›¿
 function changeOrderStaff() {
     state.orderAdvice.selectedStaffId = null;
     showOrderAdviceScreen();
 }
 
-// 発注アドバイス画面を閉じる
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ç”»é¢ã‚’é–‰ã˜ã‚‹
 function closeOrderAdviceScreen() {
     const screen = document.getElementById('orderAdviceScreen');
     if (screen) {
@@ -7834,7 +8123,7 @@ function closeOrderAdviceScreen() {
     stopDeadlineTimer();
 }
 
-// フィードバック評価を設定
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯è©•ä¾¡ã‚’è¨­å®š
 function setFeedbackRating(feedbackKey, rating) {
     if (!state.orderAdvice.feedbackData[feedbackKey]) {
         state.orderAdvice.feedbackData[feedbackKey] = {};
@@ -7846,7 +8135,7 @@ function setFeedbackRating(feedbackKey, rating) {
     document.querySelector(`[onclick="setFeedbackRating('${feedbackKey}', '${rating}')"]`).classList.add('selected');
 }
 
-// フィードバック送信
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é€ä¿¡
 function submitFeedback(feedbackKey, categoryId, date) {
     const feedback = {
         id: feedbackKey,
@@ -7857,13 +8146,13 @@ function submitFeedback(feedbackKey, categoryId, date) {
         undersold: document.getElementById(`undersold-${feedbackKey}`)?.value || '',
         notes: document.getElementById(`notes-${feedbackKey}`)?.value || '',
         submittedAt: new Date().toISOString(),
-        submittedBy: ORDER_STAFF.find(s => s.id === state.orderAdvice.selectedStaffId)?.name || '不明'
+        submittedBy: ORDER_STAFF.find(s => s.id === state.orderAdvice.selectedStaffId)?.name || 'ä¸æ˜Ž'
     };
     
     database.ref(`orderFeedback/${feedbackKey}`).set(feedback);
     state.orderAdvice.feedbackData[feedbackKey] = feedback;
     
-    // 入力欄をクリア
+    // å…¥åŠ›æ¬„ã‚’ã‚¯ãƒªã‚¢
     const oversoldInput = document.getElementById(`oversold-${feedbackKey}`);
     const undersoldInput = document.getElementById(`undersold-${feedbackKey}`);
     const notesInput = document.getElementById(`notes-${feedbackKey}`);
@@ -7871,19 +8160,19 @@ function submitFeedback(feedbackKey, categoryId, date) {
     if (undersoldInput) undersoldInput.value = '';
     if (notesInput) notesInput.value = '';
     
-    // 評価ボタンの選択状態もリセット
+    // è©•ä¾¡ãƒœã‚¿ãƒ³ã®é¸æŠžçŠ¶æ…‹ã‚‚ãƒªã‚»ãƒƒãƒˆ
     const card = document.querySelector(`#oversold-${feedbackKey}`)?.closest('.feedback-card');
     if (card) {
         card.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
     }
     
-    // 状態もリセット
+    // çŠ¶æ…‹ã‚‚ãƒªã‚»ãƒƒãƒˆ
     delete state.orderAdvice.feedbackData[feedbackKey].rating;
     
-    alert('フィードバックを保存しました');
+    alert('ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯ã‚’ä¿å­˜ã—ã¾ã—ãŸ');
 }
 
-// 締切タイマー
+// ç· åˆ‡ã‚¿ã‚¤ãƒžãƒ¼
 let deadlineTimerInterval = null;
 
 function startDeadlineTimer() {
@@ -7904,7 +8193,7 @@ function updateDeadlineTimer() {
     if (!timerEl) return;
     
     const orderInfo = getOrderTargetInfo();
-    timerEl.textContent = `${orderInfo.hoursUntil}時間${orderInfo.minutesUntil}分`;
+    timerEl.textContent = `${orderInfo.hoursUntil}æ™‚é–“${orderInfo.minutesUntil}åˆ†`;
     
     const deadlineEl = timerEl.closest('.deadline');
     if (deadlineEl) {
@@ -7917,10 +8206,10 @@ function updateDeadlineTimer() {
 }
 
 // ========================================
-// 商品分類管理機能
+// å•†å“åˆ†é¡žç®¡ç†æ©Ÿèƒ½
 // ========================================
 
-// 商品分類管理パネルをレンダリング
+// å•†å“åˆ†é¡žç®¡ç†ãƒ‘ãƒãƒ«ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderProductCategoriesPanel(container) {
     const categories = state.productCategories || [];
     const selectedPmaId = state.selectedPmaId || null;
@@ -7929,24 +8218,24 @@ function renderProductCategoriesPanel(container) {
     container.innerHTML = `
         <div class="product-categories-container">
             <div class="product-categories-header">
-                <h3>📂 商品分類管理</h3>
-                <p class="header-description">PMA（大分類）と情報分類を管理します。ここで設定した内容が発注アドバイスに反映されます。</p>
+                <h3>ðŸ“‚ å•†å“åˆ†é¡žç®¡ç†</h3>
+                <p class="header-description">PMAï¼ˆå¤§åˆ†é¡žï¼‰ã¨æƒ…å ±åˆ†é¡žã‚’ç®¡ç†ã—ã¾ã™ã€‚ã“ã“ã§è¨­å®šã—ãŸå†…å®¹ãŒç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ã«åæ˜ ã•ã‚Œã¾ã™ã€‚</p>
             </div>
             
             <div class="product-categories-layout">
-                <!-- 左側: PMA一覧 -->
+                <!-- å·¦å´: PMAä¸€è¦§ -->
                 <div class="pma-sidebar">
                     <div class="pma-sidebar-header">
-                        <span class="sidebar-title">PMA一覧</span>
-                        <button class="btn btn-sm btn-primary" onclick="openAddPMAModal()">+ 追加</button>
+                        <span class="sidebar-title">PMAä¸€è¦§</span>
+                        <button class="btn btn-sm btn-primary" onclick="openAddPMAModal()">+ è¿½åŠ </button>
                     </div>
                     <div class="pma-sidebar-list">
                         ${categories.length === 0 ? 
-                            '<p class="no-data-message-small">PMAがありません</p>' : 
+                            '<p class="no-data-message-small">PMAãŒã‚ã‚Šã¾ã›ã‚“</p>' : 
                             categories.map(pma => `
                                 <div class="pma-sidebar-item ${selectedPmaId === pma.id ? 'active' : ''}" 
                                      onclick="selectPMA('${pma.id}')">
-                                    <span class="pma-item-icon">${pma.icon || '📦'}</span>
+                                    <span class="pma-item-icon">${pma.icon || 'ðŸ“¦'}</span>
                                     <span class="pma-item-name">${pma.name}</span>
                                     <span class="pma-item-count">${(pma.infoCategories || []).length}</span>
                                 </div>
@@ -7955,11 +8244,11 @@ function renderProductCategoriesPanel(container) {
                     </div>
                 </div>
                 
-                <!-- 右側: 選択されたPMAの詳細 -->
+                <!-- å³å´: é¸æŠžã•ã‚ŒãŸPMAã®è©³ç´° -->
                 <div class="pma-detail">
                     ${selectedPma ? renderPMADetail(selectedPma) : `
                         <div class="pma-detail-empty">
-                            <p>👈 左のPMA一覧から選択してください</p>
+                            <p>ðŸ‘ˆ å·¦ã®PMAä¸€è¦§ã‹ã‚‰é¸æŠžã—ã¦ãã ã•ã„</p>
                         </div>
                     `}
                 </div>
@@ -7968,38 +8257,38 @@ function renderProductCategoriesPanel(container) {
     `;
 }
 
-// PMA選択
+// PMAé¸æŠž
 function selectPMA(pmaId) {
     state.selectedPmaId = pmaId;
     renderAdminPanel();
 }
 
-// PMA詳細をレンダリング
+// PMAè©³ç´°ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderPMADetail(pma) {
     const infoCategories = pma.infoCategories || [];
     
     return `
         <div class="pma-detail-header">
             <div class="pma-detail-title">
-                <button class="btn btn-sm btn-secondary" onclick="deselectPMA()" style="margin-right: 12px;">← 戻る</button>
-                <span class="pma-detail-icon">${pma.icon || '📦'}</span>
+                <button class="btn btn-sm btn-secondary" onclick="deselectPMA()" style="margin-right: 12px;">â† æˆ»ã‚‹</button>
+                <span class="pma-detail-icon">${pma.icon || 'ðŸ“¦'}</span>
                 <span class="pma-detail-name">${pma.name}</span>
             </div>
             <div class="pma-detail-actions">
-                <button class="btn btn-sm btn-secondary" onclick="openEditPMAModal('${pma.id}')">✏️ 編集</button>
-                <button class="btn btn-sm btn-danger" onclick="confirmDeletePMA('${pma.id}')">🗑️ 削除</button>
+                <button class="btn btn-sm btn-secondary" onclick="openEditPMAModal('${pma.id}')">âœï¸ ç·¨é›†</button>
+                <button class="btn btn-sm btn-danger" onclick="confirmDeletePMA('${pma.id}')">ðŸ—‘ï¸ å‰Šé™¤</button>
             </div>
         </div>
         
         <div class="info-categories-section">
             <div class="info-categories-header">
-                <span class="section-label">情報分類</span>
-                <button class="btn btn-sm btn-primary" onclick="openAddInfoCategoryModal('${pma.id}')">+ 情報分類追加</button>
+                <span class="section-label">æƒ…å ±åˆ†é¡ž</span>
+                <button class="btn btn-sm btn-primary" onclick="openAddInfoCategoryModal('${pma.id}')">+ æƒ…å ±åˆ†é¡žè¿½åŠ </button>
             </div>
             
             <div class="info-categories-list">
                 ${infoCategories.length === 0 ? 
-                    '<p class="no-items-message">情報分類がありません。「+ 情報分類追加」ボタンから追加してください。</p>' :
+                    '<p class="no-items-message">æƒ…å ±åˆ†é¡žãŒã‚ã‚Šã¾ã›ã‚“ã€‚ã€Œ+ æƒ…å ±åˆ†é¡žè¿½åŠ ã€ãƒœã‚¿ãƒ³ã‹ã‚‰è¿½åŠ ã—ã¦ãã ã•ã„ã€‚</p>' :
                     infoCategories.map(info => renderInfoCategoryItem(pma.id, info)).join('')
                 }
             </div>
@@ -8007,34 +8296,34 @@ function renderPMADetail(pma) {
     `;
 }
 
-// 情報分類アイテムをレンダリング
+// æƒ…å ±åˆ†é¡žã‚¢ã‚¤ãƒ†ãƒ ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderInfoCategoryItem(pmaId, info) {
     return `
         <div class="info-category-item" data-info-id="${info.id}">
             <div class="info-category-header">
                 <span class="info-category-name">${info.name}</span>
                 <div class="info-category-actions">
-                    <button class="btn btn-xs btn-secondary" onclick="openEditInfoCategoryModal('${pmaId}', '${info.id}')">✏️</button>
-                    <button class="btn btn-xs btn-danger" onclick="confirmDeleteInfoCategory('${pmaId}', '${info.id}')">🗑️</button>
+                    <button class="btn btn-xs btn-secondary" onclick="openEditInfoCategoryModal('${pmaId}', '${info.id}')">âœï¸</button>
+                    <button class="btn btn-xs btn-danger" onclick="confirmDeleteInfoCategory('${pmaId}', '${info.id}')">ðŸ—‘ï¸</button>
                 </div>
             </div>
         </div>
     `;
 }
 
-// PMA選択解除
+// PMAé¸æŠžè§£é™¤
 function deselectPMA() {
     state.selectedPmaId = null;
     renderAdminPanel();
 }
 
-// PMA追加モーダルを開く
+// PMAè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openAddPMAModal() {
     const modal = createCategoryModal({
-        title: '📦 PMA（大分類）追加',
+        title: 'ðŸ“¦ PMAï¼ˆå¤§åˆ†é¡žï¼‰è¿½åŠ ',
         fields: [
-            { name: 'name', label: 'PMA名', type: 'text', placeholder: '例: 米飯', required: true },
-            { name: 'icon', label: 'アイコン', type: 'text', placeholder: '例: 🍙', maxLength: 2 }
+            { name: 'name', label: 'PMAå', type: 'text', placeholder: 'ä¾‹: ç±³é£¯', required: true },
+            { name: 'icon', label: 'ã‚¢ã‚¤ã‚³ãƒ³', type: 'text', placeholder: 'ä¾‹: ðŸ™', maxLength: 2 }
         ],
         onSubmit: (data) => {
             addPMA(data);
@@ -8043,16 +8332,16 @@ function openAddPMAModal() {
     document.body.appendChild(modal);
 }
 
-// PMA編集モーダルを開く
+// PMAç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditPMAModal(pmaId) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     if (!pma) return;
     
     const modal = createCategoryModal({
-        title: '📦 PMA（大分類）編集',
+        title: 'ðŸ“¦ PMAï¼ˆå¤§åˆ†é¡žï¼‰ç·¨é›†',
         fields: [
-            { name: 'name', label: 'PMA名', type: 'text', value: pma.name, required: true },
-            { name: 'icon', label: 'アイコン', type: 'text', value: pma.icon || '', maxLength: 2 }
+            { name: 'name', label: 'PMAå', type: 'text', value: pma.name, required: true },
+            { name: 'icon', label: 'ã‚¢ã‚¤ã‚³ãƒ³', type: 'text', value: pma.icon || '', maxLength: 2 }
         ],
         onSubmit: (data) => {
             updatePMA(pmaId, data);
@@ -8061,12 +8350,12 @@ function openEditPMAModal(pmaId) {
     document.body.appendChild(modal);
 }
 
-// 情報分類追加モーダルを開く
+// æƒ…å ±åˆ†é¡žè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openAddInfoCategoryModal(pmaId) {
     const modal = createCategoryModal({
-        title: '📁 情報分類追加',
+        title: 'ðŸ“ æƒ…å ±åˆ†é¡žè¿½åŠ ',
         fields: [
-            { name: 'name', label: '情報分類名', type: 'text', placeholder: '例: おにぎり', required: true }
+            { name: 'name', label: 'æƒ…å ±åˆ†é¡žå', type: 'text', placeholder: 'ä¾‹: ãŠã«ãŽã‚Š', required: true }
         ],
         onSubmit: (data) => {
             addInfoCategory(pmaId, data);
@@ -8075,16 +8364,16 @@ function openAddInfoCategoryModal(pmaId) {
     document.body.appendChild(modal);
 }
 
-// 情報分類編集モーダルを開く
+// æƒ…å ±åˆ†é¡žç·¨é›†ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‹ã
 function openEditInfoCategoryModal(pmaId, infoId) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     const info = pma?.infoCategories?.find(i => i.id === infoId);
     if (!info) return;
     
     const modal = createCategoryModal({
-        title: '📁 情報分類編集',
+        title: 'ðŸ“ æƒ…å ±åˆ†é¡žç·¨é›†',
         fields: [
-            { name: 'name', label: '情報分類名', type: 'text', value: info.name, required: true }
+            { name: 'name', label: 'æƒ…å ±åˆ†é¡žå', type: 'text', value: info.name, required: true }
         ],
         onSubmit: (data) => {
             updateInfoCategory(pmaId, infoId, data);
@@ -8093,7 +8382,7 @@ function openEditInfoCategoryModal(pmaId, infoId) {
     document.body.appendChild(modal);
 }
 
-// カテゴリモーダルを作成（汎用）
+// ã‚«ãƒ†ã‚´ãƒªãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’ä½œæˆï¼ˆæ±Žç”¨ï¼‰
 function createCategoryModal({ title, fields, onSubmit }) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay category-modal-overlay active';
@@ -8115,22 +8404,22 @@ function createCategoryModal({ title, fields, onSubmit }) {
         <div class="modal category-modal">
             <div class="modal-header">
                 <h2 class="modal-title">${title}</h2>
-                <button class="modal-close" onclick="closeCategoryModal(this)">×</button>
+                <button class="modal-close" onclick="closeCategoryModal(this)">Ã—</button>
             </div>
             <form class="modal-body" onsubmit="handleCategoryFormSubmit(event, this)">
                 ${fieldsHtml}
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeCategoryModal(this)">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCategoryModal(this)">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                    <button type="submit" class="btn btn-primary">ä¿å­˜</button>
                 </div>
             </form>
         </div>
     `;
     
-    // onSubmitコールバックを保存
+    // onSubmitã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯ã‚’ä¿å­˜
     overlay._onSubmit = onSubmit;
     
-    // オーバーレイクリックで閉じる
+    // ã‚ªãƒ¼ãƒãƒ¼ãƒ¬ã‚¤ã‚¯ãƒªãƒƒã‚¯ã§é–‰ã˜ã‚‹
     overlay.onclick = (e) => {
         if (e.target === overlay) {
             overlay.remove();
@@ -8140,13 +8429,13 @@ function createCategoryModal({ title, fields, onSubmit }) {
     return overlay;
 }
 
-// カテゴリモーダルを閉じる
+// ã‚«ãƒ†ã‚´ãƒªãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
 function closeCategoryModal(element) {
     const overlay = element.closest('.category-modal-overlay');
     if (overlay) overlay.remove();
 }
 
-// カテゴリフォーム送信処理
+// ã‚«ãƒ†ã‚´ãƒªãƒ•ã‚©ãƒ¼ãƒ é€ä¿¡å‡¦ç†
 function handleCategoryFormSubmit(event, form) {
     event.preventDefault();
     const overlay = form.closest('.category-modal-overlay');
@@ -8162,12 +8451,12 @@ function handleCategoryFormSubmit(event, form) {
     overlay.remove();
 }
 
-// PMA追加
+// PMAè¿½åŠ 
 function addPMA(data) {
     const newPMA = {
         id: 'pma-' + Date.now(),
         name: data.name,
-        icon: data.icon || '📦',
+        icon: data.icon || 'ðŸ“¦',
         infoCategories: [],
         createdAt: new Date().toISOString()
     };
@@ -8177,37 +8466,37 @@ function addPMA(data) {
     renderAdminPanel();
 }
 
-// PMA更新
+// PMAæ›´æ–°
 function updatePMA(pmaId, data) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     if (!pma) return;
     
     pma.name = data.name;
-    pma.icon = data.icon || '📦';
+    pma.icon = data.icon || 'ðŸ“¦';
     pma.updatedAt = new Date().toISOString();
     
     saveToFirebase('productCategories', state.productCategories);
     renderAdminPanel();
 }
 
-// PMA削除確認
+// PMAå‰Šé™¤ç¢ºèª
 function confirmDeletePMA(pmaId) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     if (!pma) return;
     
-    if (confirm(`「${pma.name}」を削除しますか？\n含まれる情報分類・小分類もすべて削除されます。`)) {
+    if (confirm(`ã€Œ${pma.name}ã€ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ\nå«ã¾ã‚Œã‚‹æƒ…å ±åˆ†é¡žãƒ»å°åˆ†é¡žã‚‚ã™ã¹ã¦å‰Šé™¤ã•ã‚Œã¾ã™ã€‚`)) {
         deletePMA(pmaId);
     }
 }
 
-// PMA削除
+// PMAå‰Šé™¤
 function deletePMA(pmaId) {
     state.productCategories = state.productCategories.filter(p => p.id !== pmaId);
     saveToFirebase('productCategories', state.productCategories);
     renderAdminPanel();
 }
 
-// 情報分類追加
+// æƒ…å ±åˆ†é¡žè¿½åŠ 
 function addInfoCategory(pmaId, data) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     if (!pma) return;
@@ -8225,7 +8514,7 @@ function addInfoCategory(pmaId, data) {
     renderAdminPanel();
 }
 
-// 情報分類更新
+// æƒ…å ±åˆ†é¡žæ›´æ–°
 function updateInfoCategory(pmaId, infoId, data) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     const info = pma?.infoCategories?.find(i => i.id === infoId);
@@ -8238,18 +8527,18 @@ function updateInfoCategory(pmaId, infoId, data) {
     renderAdminPanel();
 }
 
-// 情報分類削除確認
+// æƒ…å ±åˆ†é¡žå‰Šé™¤ç¢ºèª
 function confirmDeleteInfoCategory(pmaId, infoId) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     const info = pma?.infoCategories?.find(i => i.id === infoId);
     if (!info) return;
     
-    if (confirm(`「${info.name}」を削除しますか？\n含まれる小分類もすべて削除されます。`)) {
+    if (confirm(`ã€Œ${info.name}ã€ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ\nå«ã¾ã‚Œã‚‹å°åˆ†é¡žã‚‚ã™ã¹ã¦å‰Šé™¤ã•ã‚Œã¾ã™ã€‚`)) {
         deleteInfoCategory(pmaId, infoId);
     }
 }
 
-// 情報分類削除
+// æƒ…å ±åˆ†é¡žå‰Šé™¤
 function deleteInfoCategory(pmaId, infoId) {
     const pma = state.productCategories.find(p => p.id === pmaId);
     if (!pma) return;
@@ -8259,14 +8548,14 @@ function deleteInfoCategory(pmaId, infoId) {
     renderAdminPanel();
 }
 
-// フィードバック集計をレンダリング（管理者専用）
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é›†è¨ˆã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ï¼ˆç®¡ç†è€…å°‚ç”¨ï¼‰
 function renderFeedbackStats(container) {
     const feedbackData = state.orderAdvice?.feedbackData || {};
     const feedbackList = Object.values(feedbackData);
     
     console.log('renderFeedbackStats called', { feedbackData, feedbackList });
     
-    // フィルター状態の初期化
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼çŠ¶æ…‹ã®åˆæœŸåŒ–
     if (!state.feedbackFilter) {
         state.feedbackFilter = {
             period: 'all',
@@ -8276,40 +8565,40 @@ function renderFeedbackStats(container) {
         };
     }
     
-    // 担当者リストを作成
+    // æ‹…å½“è€…ãƒªã‚¹ãƒˆã‚’ä½œæˆ
     const staffNames = [...new Set(feedbackList.map(f => f.submittedBy).filter(Boolean))].sort();
     
-    // フィルターUI
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼UI
     container.innerHTML = `
         <div class="feedback-stats-container">
             <div class="feedback-stats-header">
-                <h3>📊 発注フィードバック集計</h3>
+                <h3>ðŸ“Š ç™ºæ³¨ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é›†è¨ˆ</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">
-                    登録件数: ${feedbackList.length}件
+                    ç™»éŒ²ä»¶æ•°: ${feedbackList.length}ä»¶
                 </p>
             </div>
             
             <div class="feedback-filters">
                 <div class="filter-group">
-                    <label>期間:</label>
+                    <label>æœŸé–“:</label>
                     <select id="feedbackPeriodFilter" onchange="updateFeedbackFilter('period', this.value)">
-                        <option value="all" ${state.feedbackFilter.period === 'all' ? 'selected' : ''}>すべて</option>
-                        <option value="week" ${state.feedbackFilter.period === 'week' ? 'selected' : ''}>直近1週間</option>
-                        <option value="month" ${state.feedbackFilter.period === 'month' ? 'selected' : ''}>直近1ヶ月</option>
-                        <option value="custom" ${state.feedbackFilter.period === 'custom' ? 'selected' : ''}>期間指定</option>
+                        <option value="all" ${state.feedbackFilter.period === 'all' ? 'selected' : ''}>ã™ã¹ã¦</option>
+                        <option value="week" ${state.feedbackFilter.period === 'week' ? 'selected' : ''}>ç›´è¿‘1é€±é–“</option>
+                        <option value="month" ${state.feedbackFilter.period === 'month' ? 'selected' : ''}>ç›´è¿‘1ãƒ¶æœˆ</option>
+                        <option value="custom" ${state.feedbackFilter.period === 'custom' ? 'selected' : ''}>æœŸé–“æŒ‡å®š</option>
                     </select>
                 </div>
                 
                 <div class="filter-group custom-date-range" id="customDateRange" style="display: ${state.feedbackFilter.period === 'custom' ? 'flex' : 'none'}">
                     <input type="date" id="feedbackStartDate" value="${state.feedbackFilter.startDate}" onchange="updateFeedbackFilter('startDate', this.value)">
-                    <span>〜</span>
+                    <span>ã€œ</span>
                     <input type="date" id="feedbackEndDate" value="${state.feedbackFilter.endDate}" onchange="updateFeedbackFilter('endDate', this.value)">
                 </div>
                 
                 <div class="filter-group">
-                    <label>担当者:</label>
+                    <label>æ‹…å½“è€…:</label>
                     <select id="feedbackStaffFilter" onchange="updateFeedbackFilter('staffName', this.value)">
-                        <option value="all" ${state.feedbackFilter.staffName === 'all' ? 'selected' : ''}>全員</option>
+                        <option value="all" ${state.feedbackFilter.staffName === 'all' ? 'selected' : ''}>å…¨å“¡</option>
                         ${staffNames.map(name => `<option value="${name}" ${state.feedbackFilter.staffName === name ? 'selected' : ''}>${name}</option>`).join('')}
                     </select>
                 </div>
@@ -8318,25 +8607,25 @@ function renderFeedbackStats(container) {
             <div class="feedback-stats-summary" id="feedbackSummary"></div>
             
             <div class="feedback-stats-tabs">
-                <button class="stats-tab active" data-view="byStaff" onclick="switchFeedbackView('byStaff')">👤 担当者別</button>
-                <button class="stats-tab" data-view="byDate" onclick="switchFeedbackView('byDate')">📅 日付別</button>
-                <button class="stats-tab" data-view="list" onclick="switchFeedbackView('list')">📋 一覧</button>
+                <button class="stats-tab active" data-view="byStaff" onclick="switchFeedbackView('byStaff')">ðŸ‘¤ æ‹…å½“è€…åˆ¥</button>
+                <button class="stats-tab" data-view="byDate" onclick="switchFeedbackView('byDate')">ðŸ“… æ—¥ä»˜åˆ¥</button>
+                <button class="stats-tab" data-view="list" onclick="switchFeedbackView('list')">ðŸ“‹ ä¸€è¦§</button>
             </div>
             
             <div class="feedback-stats-content" id="feedbackStatsContent"></div>
         </div>
     `;
     
-    // 初期表示
+    // åˆæœŸè¡¨ç¤º
     if (!state.feedbackView) state.feedbackView = 'byStaff';
     renderFeedbackContent(feedbackList);
 }
 
-// フィードバックフィルター更新
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼æ›´æ–°
 function updateFeedbackFilter(key, value) {
     state.feedbackFilter[key] = value;
     
-    // 期間指定の表示切り替え
+    // æœŸé–“æŒ‡å®šã®è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
     const customRange = document.getElementById('customDateRange');
     if (customRange) {
         customRange.style.display = state.feedbackFilter.period === 'custom' ? 'flex' : 'none';
@@ -8345,11 +8634,11 @@ function updateFeedbackFilter(key, value) {
     renderFeedbackContent(Object.values(state.orderAdvice.feedbackData || {}));
 }
 
-// フィードバック表示切り替え
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
 function switchFeedbackView(view) {
     state.feedbackView = view;
     
-    // タブのアクティブ状態を更新
+    // ã‚¿ãƒ–ã®ã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ã‚’æ›´æ–°
     document.querySelectorAll('.stats-tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.view === view);
     });
@@ -8357,12 +8646,12 @@ function switchFeedbackView(view) {
     renderFeedbackContent(Object.values(state.orderAdvice.feedbackData || {}));
 }
 
-// フィードバック内容をレンダリング
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯å†…å®¹ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderFeedbackContent(feedbackList) {
-    // フィルタリング
+    // ãƒ•ã‚£ãƒ«ã‚¿ãƒªãƒ³ã‚°
     let filtered = [...feedbackList];
     
-    // 期間フィルター
+    // æœŸé–“ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
     if (state.feedbackFilter.period !== 'all') {
         const now = new Date();
         let startDate;
@@ -8389,12 +8678,12 @@ function renderFeedbackContent(feedbackList) {
         }
     }
     
-    // 担当者フィルター
+    // æ‹…å½“è€…ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
     if (state.feedbackFilter.staffName !== 'all') {
         filtered = filtered.filter(f => f.submittedBy === state.feedbackFilter.staffName);
     }
     
-    // サマリー更新
+    // ã‚µãƒžãƒªãƒ¼æ›´æ–°
     const summaryEl = document.getElementById('feedbackSummary');
     if (summaryEl) {
         const totalCount = filtered.length;
@@ -8410,31 +8699,31 @@ function renderFeedbackContent(feedbackList) {
             <div class="summary-cards">
                 <div class="summary-card">
                     <div class="summary-value">${totalCount}</div>
-                    <div class="summary-label">総フィードバック数</div>
+                    <div class="summary-label">ç·ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯æ•°</div>
                 </div>
                 <div class="summary-card">
                     <div class="summary-value">${staffCount}</div>
-                    <div class="summary-label">担当者数</div>
+                    <div class="summary-label">æ‹…å½“è€…æ•°</div>
                 </div>
                 <div class="summary-card rating-card">
                     <div class="rating-breakdown">
-                        <span class="rating-item excellent">◎ ${ratingCounts.excellent}</span>
-                        <span class="rating-item good">○ ${ratingCounts.good}</span>
-                        <span class="rating-item fair">△ ${ratingCounts.fair}</span>
-                        <span class="rating-item poor">× ${ratingCounts.poor}</span>
+                        <span class="rating-item excellent">â—Ž ${ratingCounts.excellent}</span>
+                        <span class="rating-item good">â—‹ ${ratingCounts.good}</span>
+                        <span class="rating-item fair">â–³ ${ratingCounts.fair}</span>
+                        <span class="rating-item poor">Ã— ${ratingCounts.poor}</span>
                     </div>
-                    <div class="summary-label">評価内訳</div>
+                    <div class="summary-label">è©•ä¾¡å†…è¨³</div>
                 </div>
             </div>
         `;
     }
     
-    // コンテンツ更新
+    // ã‚³ãƒ³ãƒ†ãƒ³ãƒ„æ›´æ–°
     const contentEl = document.getElementById('feedbackStatsContent');
     if (!contentEl) return;
     
     if (filtered.length === 0) {
-        contentEl.innerHTML = '<p class="no-data-message">フィードバックデータがありません</p>';
+        contentEl.innerHTML = '<p class="no-data-message">ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯ãƒ‡ãƒ¼ã‚¿ãŒã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
     
@@ -8447,19 +8736,19 @@ function renderFeedbackContent(feedbackList) {
     }
 }
 
-// 担当者別表示
+// æ‹…å½“è€…åˆ¥è¡¨ç¤º
 function renderFeedbackByStaff(container, feedbackList) {
-    // 担当者ごとにグループ化
+    // æ‹…å½“è€…ã”ã¨ã«ã‚°ãƒ«ãƒ¼ãƒ—åŒ–
     const byStaff = {};
     feedbackList.forEach(f => {
-        const name = f.submittedBy || '不明';
+        const name = f.submittedBy || 'ä¸æ˜Ž';
         if (!byStaff[name]) {
             byStaff[name] = [];
         }
         byStaff[name].push(f);
     });
     
-    // フィードバック数で降順ソート
+    // ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯æ•°ã§é™é †ã‚½ãƒ¼ãƒˆ
     const sortedStaff = Object.entries(byStaff).sort((a, b) => b[1].length - a[1].length);
     
     let html = '<div class="staff-stats-list">';
@@ -8472,7 +8761,7 @@ function renderFeedbackByStaff(container, feedbackList) {
             poor: feedbacks.filter(f => f.rating === 'poor').length
         };
         
-        // 最新のフィードバック日時
+        // æœ€æ–°ã®ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯æ—¥æ™‚
         const latestFeedback = feedbacks.sort((a, b) => 
             new Date(b.submittedAt) - new Date(a.submittedAt)
         )[0];
@@ -8484,34 +8773,34 @@ function renderFeedbackByStaff(container, feedbackList) {
                     <div class="staff-avatar">${staffName.charAt(0)}</div>
                     <div class="staff-info">
                         <div class="staff-name">${staffName}</div>
-                        <div class="staff-meta">最終フィードバック: ${latestDate}</div>
+                        <div class="staff-meta">æœ€çµ‚ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯: ${latestDate}</div>
                     </div>
-                    <div class="staff-count">${feedbacks.length}件</div>
+                    <div class="staff-count">${feedbacks.length}ä»¶</div>
                 </div>
                 <div class="staff-rating-bars">
                     <div class="rating-bar-row">
-                        <span class="rating-label">◎ 的中</span>
+                        <span class="rating-label">â—Ž çš„ä¸­</span>
                         <div class="rating-bar">
                             <div class="rating-bar-fill excellent" style="width: ${feedbacks.length > 0 ? (ratingCounts.excellent / feedbacks.length * 100) : 0}%"></div>
                         </div>
                         <span class="rating-count">${ratingCounts.excellent}</span>
                     </div>
                     <div class="rating-bar-row">
-                        <span class="rating-label">○ まあまあ</span>
+                        <span class="rating-label">â—‹ ã¾ã‚ã¾ã‚</span>
                         <div class="rating-bar">
                             <div class="rating-bar-fill good" style="width: ${feedbacks.length > 0 ? (ratingCounts.good / feedbacks.length * 100) : 0}%"></div>
                         </div>
                         <span class="rating-count">${ratingCounts.good}</span>
                     </div>
                     <div class="rating-bar-row">
-                        <span class="rating-label">△ 普通</span>
+                        <span class="rating-label">â–³ æ™®é€š</span>
                         <div class="rating-bar">
                             <div class="rating-bar-fill fair" style="width: ${feedbacks.length > 0 ? (ratingCounts.fair / feedbacks.length * 100) : 0}%"></div>
                         </div>
                         <span class="rating-count">${ratingCounts.fair}</span>
                     </div>
                     <div class="rating-bar-row">
-                        <span class="rating-label">× 外れ</span>
+                        <span class="rating-label">Ã— å¤–ã‚Œ</span>
                         <div class="rating-bar">
                             <div class="rating-bar-fill poor" style="width: ${feedbacks.length > 0 ? (ratingCounts.poor / feedbacks.length * 100) : 0}%"></div>
                         </div>
@@ -8526,9 +8815,9 @@ function renderFeedbackByStaff(container, feedbackList) {
     container.innerHTML = html;
 }
 
-// 日付別表示
+// æ—¥ä»˜åˆ¥è¡¨ç¤º
 function renderFeedbackByDate(container, feedbackList) {
-    // 日付ごとにグループ化（フィードバック送信日）
+    // æ—¥ä»˜ã”ã¨ã«ã‚°ãƒ«ãƒ¼ãƒ—åŒ–ï¼ˆãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯é€ä¿¡æ—¥ï¼‰
     const byDate = {};
     feedbackList.forEach(f => {
         const dateStr = f.submittedAt ? f.submittedAt.split('T')[0] : 'unknown';
@@ -8538,20 +8827,20 @@ function renderFeedbackByDate(container, feedbackList) {
         byDate[dateStr].push(f);
     });
     
-    // 日付で降順ソート
+    // æ—¥ä»˜ã§é™é †ã‚½ãƒ¼ãƒˆ
     const sortedDates = Object.entries(byDate).sort((a, b) => b[0].localeCompare(a[0]));
     
     let html = '<div class="date-stats-list">';
     
     sortedDates.forEach(([dateStr, feedbacks]) => {
         const date = new Date(dateStr);
-        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        const displayDate = `${date.getMonth() + 1}/${date.getDate()}（${dayNames[date.getDay()]}）`;
+        const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+        const displayDate = `${date.getMonth() + 1}/${date.getDate()}ï¼ˆ${dayNames[date.getDay()]}ï¼‰`;
         
-        // 担当者ごとに集計
+        // æ‹…å½“è€…ã”ã¨ã«é›†è¨ˆ
         const staffCounts = {};
         feedbacks.forEach(f => {
-            const name = f.submittedBy || '不明';
+            const name = f.submittedBy || 'ä¸æ˜Ž';
             staffCounts[name] = (staffCounts[name] || 0) + 1;
         });
         
@@ -8559,11 +8848,11 @@ function renderFeedbackByDate(container, feedbackList) {
             <div class="date-stat-card">
                 <div class="date-stat-header">
                     <span class="date-display">${displayDate}</span>
-                    <span class="date-count">${feedbacks.length}件のフィードバック</span>
+                    <span class="date-count">${feedbacks.length}ä»¶ã®ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯</span>
                 </div>
                 <div class="date-staff-list">
                     ${Object.entries(staffCounts).map(([name, count]) => `
-                        <span class="staff-chip">${name}: ${count}件</span>
+                        <span class="staff-chip">${name}: ${count}ä»¶</span>
                     `).join('')}
                 </div>
             </div>
@@ -8574,27 +8863,27 @@ function renderFeedbackByDate(container, feedbackList) {
     container.innerHTML = html;
 }
 
-// 一覧表示
+// ä¸€è¦§è¡¨ç¤º
 function renderFeedbackList(container, feedbackList) {
-    // 送信日時で降順ソート
+    // é€ä¿¡æ—¥æ™‚ã§é™é †ã‚½ãƒ¼ãƒˆ
     const sorted = [...feedbackList].sort((a, b) => 
         new Date(b.submittedAt) - new Date(a.submittedAt)
     );
     
-    // カテゴリマップを作成
+    // ã‚«ãƒ†ã‚´ãƒªãƒžãƒƒãƒ—ã‚’ä½œæˆ
     const categoryMap = {};
     ORDER_ADVICE_CATEGORIES.forEach(cat => {
         categoryMap[cat.id] = cat;
     });
     
     const ratingLabels = {
-        excellent: '◎ 的中',
-        good: '○ まあまあ',
-        fair: '△ 普通',
-        poor: '× 外れ'
+        excellent: 'â—Ž çš„ä¸­',
+        good: 'â—‹ ã¾ã‚ã¾ã‚',
+        fair: 'â–³ æ™®é€š',
+        poor: 'Ã— å¤–ã‚Œ'
     };
     
-    let html = '<div class="feedback-list-table"><table><thead><tr><th>送信日時</th><th>担当者</th><th>対象日</th><th>カテゴリ</th><th>評価</th><th>詳細</th></tr></thead><tbody>';
+    let html = '<div class="feedback-list-table"><table><thead><tr><th>é€ä¿¡æ—¥æ™‚</th><th>æ‹…å½“è€…</th><th>å¯¾è±¡æ—¥</th><th>ã‚«ãƒ†ã‚´ãƒª</th><th>è©•ä¾¡</th><th>è©³ç´°</th></tr></thead><tbody>';
     
     sorted.forEach(f => {
         const category = categoryMap[f.categoryId];
@@ -8603,14 +8892,14 @@ function renderFeedbackList(container, feedbackList) {
         const ratingClass = f.rating || '';
         
         const details = [];
-        if (f.oversold) details.push(`売れ残り: ${f.oversold}`);
-        if (f.undersold) details.push(`欠品: ${f.undersold}`);
-        if (f.notes) details.push(`メモ: ${f.notes}`);
+        if (f.oversold) details.push(`å£²ã‚Œæ®‹ã‚Š: ${f.oversold}`);
+        if (f.undersold) details.push(`æ¬ å“: ${f.undersold}`);
+        if (f.notes) details.push(`ãƒ¡ãƒ¢: ${f.notes}`);
         
         html += `
             <tr>
                 <td>${formatDateTime(f.submittedAt)}</td>
-                <td>${f.submittedBy || '不明'}</td>
+                <td>${f.submittedBy || 'ä¸æ˜Ž'}</td>
                 <td>${f.date || '-'}</td>
                 <td class="category-cell">${categoryName}</td>
                 <td class="rating-cell ${ratingClass}">${ratingLabel}</td>
@@ -8623,7 +8912,7 @@ function renderFeedbackList(container, feedbackList) {
     container.innerHTML = html;
 }
 
-// フィードバックデータをFirebaseから読み込み
+// ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯ãƒ‡ãƒ¼ã‚¿ã‚’Firebaseã‹ã‚‰èª­ã¿è¾¼ã¿
 function loadOrderFeedback() {
     database.ref('orderFeedback').on('value', snap => {
         const data = snap.val();
@@ -8634,14 +8923,14 @@ function loadOrderFeedback() {
 }
 
 // ========================================
-// 利用統計機能
+// åˆ©ç”¨çµ±è¨ˆæ©Ÿèƒ½
 // ========================================
 
-// 利用統計の表示関数
+// åˆ©ç”¨çµ±è¨ˆã®è¡¨ç¤ºé–¢æ•°
 function renderUsageStats(container) {
     const stats = state.usageStats || [];
     
-    // 期間フィルター用の日付を計算
+    // æœŸé–“ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ç”¨ã®æ—¥ä»˜ã‚’è¨ˆç®—
     const today = new Date();
     const todayStr = formatDate(today);
     const weekAgo = new Date(today);
@@ -8651,11 +8940,11 @@ function renderUsageStats(container) {
     monthAgo.setDate(monthAgo.getDate() - 30);
     const monthAgoStr = formatDate(monthAgo);
     
-    // 現在のフィルター設定を取得
+    // ç¾åœ¨ã®ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼è¨­å®šã‚’å–å¾—
     const currentPeriod = state.usageStatsPeriod || 'week';
     const currentView = state.usageStatsView || 'byFeature';
     
-    // 期間でフィルター
+    // æœŸé–“ã§ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
     let filtered = stats;
     if (currentPeriod === 'today') {
         filtered = stats.filter(s => s.date === todayStr);
@@ -8665,12 +8954,12 @@ function renderUsageStats(container) {
         filtered = stats.filter(s => s.date >= monthAgoStr);
     }
     
-    // サマリー統計を計算
+    // ã‚µãƒžãƒªãƒ¼çµ±è¨ˆã‚’è¨ˆç®—
     const totalActions = filtered.length;
     const uniqueUsers = [...new Set(filtered.map(s => s.userName))].length;
     const uniqueFeatures = [...new Set(filtered.map(s => s.featureId))].length;
     
-    // 機能別集計
+    // æ©Ÿèƒ½åˆ¥é›†è¨ˆ
     const byFeature = {};
     filtered.forEach(s => {
         if (!byFeature[s.featureId]) {
@@ -8686,7 +8975,7 @@ function renderUsageStats(container) {
         byFeature[s.featureId].users.add(s.userName);
     });
     
-    // ユーザー別集計（機能ごとの詳細も含む）
+    // ãƒ¦ãƒ¼ã‚¶ãƒ¼åˆ¥é›†è¨ˆï¼ˆæ©Ÿèƒ½ã”ã¨ã®è©³ç´°ã‚‚å«ã‚€ï¼‰
     const byUser = {};
     filtered.forEach(s => {
         if (!byUser[s.userName]) {
@@ -8694,15 +8983,15 @@ function renderUsageStats(container) {
                 userName: s.userName,
                 count: 0,
                 features: new Set(),
-                featureDetails: {}, // 機能ごとの詳細
-                categoryDetails: {}, // カテゴリごとの詳細
-                recentActions: [] // 最近のアクション
+                featureDetails: {}, // æ©Ÿèƒ½ã”ã¨ã®è©³ç´°
+                categoryDetails: {}, // ã‚«ãƒ†ã‚´ãƒªã”ã¨ã®è©³ç´°
+                recentActions: [] // æœ€è¿‘ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³
             };
         }
         byUser[s.userName].count++;
         byUser[s.userName].features.add(s.featureId);
         
-        // 機能ごとの使用回数を記録
+        // æ©Ÿèƒ½ã”ã¨ã®ä½¿ç”¨å›žæ•°ã‚’è¨˜éŒ²
         if (!byUser[s.userName].featureDetails[s.featureId]) {
             byUser[s.userName].featureDetails[s.featureId] = {
                 featureId: s.featureId,
@@ -8715,7 +9004,7 @@ function renderUsageStats(container) {
         byUser[s.userName].featureDetails[s.featureId].count++;
         byUser[s.userName].featureDetails[s.featureId].lastUsed = s.timestamp;
         
-        // カテゴリごとの使用回数を記録
+        // ã‚«ãƒ†ã‚´ãƒªã”ã¨ã®ä½¿ç”¨å›žæ•°ã‚’è¨˜éŒ²
         if (!byUser[s.userName].categoryDetails[s.category]) {
             byUser[s.userName].categoryDetails[s.category] = {
                 category: s.category,
@@ -8726,7 +9015,7 @@ function renderUsageStats(container) {
         byUser[s.userName].categoryDetails[s.category].count++;
         byUser[s.userName].categoryDetails[s.category].features.add(s.featureId);
         
-        // 最近のアクション（最新20件まで）
+        // æœ€è¿‘ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ï¼ˆæœ€æ–°20ä»¶ã¾ã§ï¼‰
         if (byUser[s.userName].recentActions.length < 20) {
             byUser[s.userName].recentActions.push({
                 featureId: s.featureId,
@@ -8737,12 +9026,12 @@ function renderUsageStats(container) {
         }
     });
     
-    // 各ユーザーの最近のアクションを時系列でソート（新しい順）
+    // å„ãƒ¦ãƒ¼ã‚¶ãƒ¼ã®æœ€è¿‘ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã‚’æ™‚ç³»åˆ—ã§ã‚½ãƒ¼ãƒˆï¼ˆæ–°ã—ã„é †ï¼‰
     Object.values(byUser).forEach(u => {
         u.recentActions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     });
     
-    // カテゴリ別集計
+    // ã‚«ãƒ†ã‚´ãƒªåˆ¥é›†è¨ˆ
     const byCategory = {};
     filtered.forEach(s => {
         if (!byCategory[s.category]) {
@@ -8752,54 +9041,54 @@ function renderUsageStats(container) {
         byCategory[s.category].features.add(s.featureId);
     });
     
-    // 未使用機能を特定
+    // æœªä½¿ç”¨æ©Ÿèƒ½ã‚’ç‰¹å®š
     const usedFeatures = new Set(filtered.map(s => s.featureId));
     const unusedFeatures = Object.keys(USAGE_FEATURES).filter(f => !usedFeatures.has(f));
     
     container.innerHTML = `
         <div class="usage-stats-container">
             <div class="usage-stats-header">
-                <h3>📊 利用統計</h3>
+                <h3>ðŸ“Š åˆ©ç”¨çµ±è¨ˆ</h3>
                 <div class="usage-stats-controls">
                     <div class="filter-group">
-                        <label>期間:</label>
+                        <label>æœŸé–“:</label>
                         <select id="usagePeriodFilter" onchange="changeUsageStatsPeriod(this.value)">
-                            <option value="today" ${currentPeriod === 'today' ? 'selected' : ''}>今日</option>
-                            <option value="week" ${currentPeriod === 'week' ? 'selected' : ''}>過去7日間</option>
-                            <option value="month" ${currentPeriod === 'month' ? 'selected' : ''}>過去30日間</option>
-                            <option value="all" ${currentPeriod === 'all' ? 'selected' : ''}>全期間</option>
+                            <option value="today" ${currentPeriod === 'today' ? 'selected' : ''}>ä»Šæ—¥</option>
+                            <option value="week" ${currentPeriod === 'week' ? 'selected' : ''}>éŽåŽ»7æ—¥é–“</option>
+                            <option value="month" ${currentPeriod === 'month' ? 'selected' : ''}>éŽåŽ»30æ—¥é–“</option>
+                            <option value="all" ${currentPeriod === 'all' ? 'selected' : ''}>å…¨æœŸé–“</option>
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label>表示:</label>
+                        <label>è¡¨ç¤º:</label>
                         <select id="usageViewFilter" onchange="changeUsageStatsView(this.value)">
-                            <option value="byFeature" ${currentView === 'byFeature' ? 'selected' : ''}>機能別</option>
-                            <option value="byUser" ${currentView === 'byUser' ? 'selected' : ''}>ユーザー別</option>
-                            <option value="byCategory" ${currentView === 'byCategory' ? 'selected' : ''}>カテゴリ別</option>
-                            <option value="unused" ${currentView === 'unused' ? 'selected' : ''}>未使用機能</option>
-                            <option value="timeline" ${currentView === 'timeline' ? 'selected' : ''}>タイムライン</option>
+                            <option value="byFeature" ${currentView === 'byFeature' ? 'selected' : ''}>æ©Ÿèƒ½åˆ¥</option>
+                            <option value="byUser" ${currentView === 'byUser' ? 'selected' : ''}>ãƒ¦ãƒ¼ã‚¶ãƒ¼åˆ¥</option>
+                            <option value="byCategory" ${currentView === 'byCategory' ? 'selected' : ''}>ã‚«ãƒ†ã‚´ãƒªåˆ¥</option>
+                            <option value="unused" ${currentView === 'unused' ? 'selected' : ''}>æœªä½¿ç”¨æ©Ÿèƒ½</option>
+                            <option value="timeline" ${currentView === 'timeline' ? 'selected' : ''}>ã‚¿ã‚¤ãƒ ãƒ©ã‚¤ãƒ³</option>
                         </select>
                     </div>
-                    <button class="btn btn-danger btn-sm" onclick="clearUsageStats()">🗑️ データクリア</button>
+                    <button class="btn btn-danger btn-sm" onclick="clearUsageStats()">ðŸ—‘ï¸ ãƒ‡ãƒ¼ã‚¿ã‚¯ãƒªã‚¢</button>
                 </div>
             </div>
             
             <div class="usage-stats-summary">
                 <div class="summary-card">
                     <div class="summary-value">${totalActions}</div>
-                    <div class="summary-label">総アクション数</div>
+                    <div class="summary-label">ç·ã‚¢ã‚¯ã‚·ãƒ§ãƒ³æ•°</div>
                 </div>
                 <div class="summary-card">
                     <div class="summary-value">${uniqueUsers}</div>
-                    <div class="summary-label">アクティブユーザー</div>
+                    <div class="summary-label">ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãƒ¦ãƒ¼ã‚¶ãƒ¼</div>
                 </div>
                 <div class="summary-card">
                     <div class="summary-value">${uniqueFeatures}</div>
-                    <div class="summary-label">使用機能数</div>
+                    <div class="summary-label">ä½¿ç”¨æ©Ÿèƒ½æ•°</div>
                 </div>
                 <div class="summary-card">
                     <div class="summary-value">${unusedFeatures.length}</div>
-                    <div class="summary-label">未使用機能</div>
+                    <div class="summary-label">æœªä½¿ç”¨æ©Ÿèƒ½</div>
                 </div>
             </div>
             
@@ -8822,12 +9111,12 @@ function renderUsageStats(container) {
     }
 }
 
-// 機能別表示
+// æ©Ÿèƒ½åˆ¥è¡¨ç¤º
 function renderUsageByFeature(container, byFeature) {
     const sorted = Object.values(byFeature).sort((a, b) => b.count - a.count);
     
     if (sorted.length === 0) {
-        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        container.innerHTML = '<p class="no-data-message">ã“ã®æœŸé–“ã®åˆ©ç”¨ãƒ‡ãƒ¼ã‚¿ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
     
@@ -8836,7 +9125,7 @@ function renderUsageByFeature(container, byFeature) {
     let html = '<div class="usage-feature-list">';
     sorted.forEach(f => {
         const feature = USAGE_FEATURES[f.featureId];
-        const icon = feature?.icon || '📌';
+        const icon = feature?.icon || 'ðŸ“Œ';
         const percentage = (f.count / maxCount * 100).toFixed(0);
         
         html += `
@@ -8852,8 +9141,8 @@ function renderUsageByFeature(container, byFeature) {
                     <div class="usage-bar-container">
                         <div class="usage-bar" style="width: ${percentage}%"></div>
                     </div>
-                    <span class="usage-count">${f.count}回</span>
-                    <span class="usage-users">${f.users.size}人</span>
+                    <span class="usage-count">${f.count}å›ž</span>
+                    <span class="usage-users">${f.users.size}äºº</span>
                 </div>
             </div>
         `;
@@ -8862,12 +9151,12 @@ function renderUsageByFeature(container, byFeature) {
     container.innerHTML = html;
 }
 
-// ユーザー別表示
+// ãƒ¦ãƒ¼ã‚¶ãƒ¼åˆ¥è¡¨ç¤º
 function renderUsageByUser(container, byUser) {
     const sorted = Object.values(byUser).sort((a, b) => b.count - a.count);
     
     if (sorted.length === 0) {
-        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        container.innerHTML = '<p class="no-data-message">ã“ã®æœŸé–“ã®åˆ©ç”¨ãƒ‡ãƒ¼ã‚¿ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
     
@@ -8878,10 +9167,10 @@ function renderUsageByUser(container, byUser) {
         const percentage = (u.count / maxCount * 100).toFixed(0);
         const userId = `user-detail-${index}`;
         
-        // カテゴリ別の使用状況をソート
+        // ã‚«ãƒ†ã‚´ãƒªåˆ¥ã®ä½¿ç”¨çŠ¶æ³ã‚’ã‚½ãƒ¼ãƒˆ
         const sortedCategories = Object.values(u.categoryDetails || {}).sort((a, b) => b.count - a.count);
         
-        // 機能別の使用状況をソート
+        // æ©Ÿèƒ½åˆ¥ã®ä½¿ç”¨çŠ¶æ³ã‚’ã‚½ãƒ¼ãƒˆ
         const sortedFeatures = Object.values(u.featureDetails || {}).sort((a, b) => b.count - a.count);
         
         html += `
@@ -8891,24 +9180,24 @@ function renderUsageByUser(container, byUser) {
                         <div class="user-avatar">${u.userName.charAt(0)}</div>
                         <div class="user-name-section">
                             <span class="user-name">${u.userName}</span>
-                            <span class="user-summary">${sortedCategories.slice(0, 2).map(c => c.category).join('・') || '-'}</span>
+                            <span class="user-summary">${sortedCategories.slice(0, 2).map(c => c.category).join('ãƒ»') || '-'}</span>
                         </div>
                     </div>
                     <div class="user-stats">
                         <div class="usage-bar-container">
                             <div class="usage-bar" style="width: ${percentage}%"></div>
                         </div>
-                        <span class="usage-count">${u.count}回</span>
-                        <span class="usage-features">${u.features.size}機能</span>
-                        <span class="user-expand-icon" id="${userId}-icon">▼</span>
+                        <span class="usage-count">${u.count}å›ž</span>
+                        <span class="usage-features">${u.features.size}æ©Ÿèƒ½</span>
+                        <span class="user-expand-icon" id="${userId}-icon">â–¼</span>
                     </div>
                 </div>
                 
                 <div class="user-detail-panel" id="${userId}" style="display: none;">
                     <div class="user-detail-tabs">
-                        <button class="user-detail-tab active" onclick="switchUserDetailTab('${userId}', 'category', event)">カテゴリ別</button>
-                        <button class="user-detail-tab" onclick="switchUserDetailTab('${userId}', 'feature', event)">機能別</button>
-                        <button class="user-detail-tab" onclick="switchUserDetailTab('${userId}', 'recent', event)">最近の操作</button>
+                        <button class="user-detail-tab active" onclick="switchUserDetailTab('${userId}', 'category', event)">ã‚«ãƒ†ã‚´ãƒªåˆ¥</button>
+                        <button class="user-detail-tab" onclick="switchUserDetailTab('${userId}', 'feature', event)">æ©Ÿèƒ½åˆ¥</button>
+                        <button class="user-detail-tab" onclick="switchUserDetailTab('${userId}', 'recent', event)">æœ€è¿‘ã®æ“ä½œ</button>
                     </div>
                     
                     <div class="user-detail-content" id="${userId}-category">
@@ -8930,29 +9219,29 @@ function renderUsageByUser(container, byUser) {
     container.innerHTML = html;
 }
 
-// ユーザー詳細の展開/折りたたみ
+// ãƒ¦ãƒ¼ã‚¶ãƒ¼è©³ç´°ã®å±•é–‹/æŠ˜ã‚ŠãŸãŸã¿
 function toggleUserDetail(userId) {
     const panel = document.getElementById(userId);
     const icon = document.getElementById(`${userId}-icon`);
     if (panel) {
         if (panel.style.display === 'none') {
             panel.style.display = 'block';
-            if (icon) icon.textContent = '▲';
+            if (icon) icon.textContent = 'â–²';
         } else {
             panel.style.display = 'none';
-            if (icon) icon.textContent = '▼';
+            if (icon) icon.textContent = 'â–¼';
         }
     }
 }
 
-// ユーザー詳細タブの切り替え
+// ãƒ¦ãƒ¼ã‚¶ãƒ¼è©³ç´°ã‚¿ãƒ–ã®åˆ‡ã‚Šæ›¿ãˆ
 function switchUserDetailTab(userId, tab, event) {
-    // タブボタンのアクティブ状態を切り替え
+    // ã‚¿ãƒ–ãƒœã‚¿ãƒ³ã®ã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ã‚’åˆ‡ã‚Šæ›¿ãˆ
     const tabContainer = event.target.parentElement;
     tabContainer.querySelectorAll('.user-detail-tab').forEach(t => t.classList.remove('active'));
     event.target.classList.add('active');
     
-    // コンテンツの表示/非表示を切り替え
+    // ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ã®è¡¨ç¤º/éžè¡¨ç¤ºã‚’åˆ‡ã‚Šæ›¿ãˆ
     ['category', 'feature', 'recent'].forEach(t => {
         const content = document.getElementById(`${userId}-${t}`);
         if (content) {
@@ -8961,10 +9250,10 @@ function switchUserDetailTab(userId, tab, event) {
     });
 }
 
-// カテゴリ別詳細をレンダリング
+// ã‚«ãƒ†ã‚´ãƒªåˆ¥è©³ç´°ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderUserCategoryDetail(categories) {
     if (!categories || categories.length === 0) {
-        return '<p class="no-data-message">データがありません</p>';
+        return '<p class="no-data-message">ãƒ‡ãƒ¼ã‚¿ãŒã‚ã‚Šã¾ã›ã‚“</p>';
     }
     
     const maxCount = categories[0]?.count || 1;
@@ -8979,8 +9268,8 @@ function renderUserCategoryDetail(categories) {
                     <div class="mini-bar-container">
                         <div class="mini-bar" style="width: ${percentage}%"></div>
                     </div>
-                    <span class="category-detail-count">${c.count}回</span>
-                    <span class="category-detail-features">${c.features.size}機能</span>
+                    <span class="category-detail-count">${c.count}å›ž</span>
+                    <span class="category-detail-features">${c.features.size}æ©Ÿèƒ½</span>
                 </div>
             </div>
         `;
@@ -8989,10 +9278,10 @@ function renderUserCategoryDetail(categories) {
     return html;
 }
 
-// 機能別詳細をレンダリング
+// æ©Ÿèƒ½åˆ¥è©³ç´°ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderUserFeatureDetail(features) {
     if (!features || features.length === 0) {
-        return '<p class="no-data-message">データがありません</p>';
+        return '<p class="no-data-message">ãƒ‡ãƒ¼ã‚¿ãŒã‚ã‚Šã¾ã›ã‚“</p>';
     }
     
     const maxCount = features[0]?.count || 1;
@@ -9000,7 +9289,7 @@ function renderUserFeatureDetail(features) {
     let html = '<div class="user-feature-detail-list">';
     features.forEach(f => {
         const feature = USAGE_FEATURES[f.featureId];
-        const icon = feature?.icon || '📌';
+        const icon = feature?.icon || 'ðŸ“Œ';
         const percentage = (f.count / maxCount * 100).toFixed(0);
         const lastUsed = f.lastUsed ? formatLastUsed(f.lastUsed) : '-';
         
@@ -9017,8 +9306,8 @@ function renderUserFeatureDetail(features) {
                     <div class="mini-bar-container">
                         <div class="mini-bar feature-bar" style="width: ${percentage}%"></div>
                     </div>
-                    <span class="feature-detail-count">${f.count}回</span>
-                    <span class="feature-detail-last">最終: ${lastUsed}</span>
+                    <span class="feature-detail-count">${f.count}å›ž</span>
+                    <span class="feature-detail-last">æœ€çµ‚: ${lastUsed}</span>
                 </div>
             </div>
         `;
@@ -9027,16 +9316,16 @@ function renderUserFeatureDetail(features) {
     return html;
 }
 
-// 最近のアクションをレンダリング
+// æœ€è¿‘ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°
 function renderUserRecentActions(actions) {
     if (!actions || actions.length === 0) {
-        return '<p class="no-data-message">データがありません</p>';
+        return '<p class="no-data-message">ãƒ‡ãƒ¼ã‚¿ãŒã‚ã‚Šã¾ã›ã‚“</p>';
     }
     
     let html = '<div class="user-recent-actions">';
     actions.forEach(a => {
         const feature = USAGE_FEATURES[a.featureId];
-        const icon = feature?.icon || '📌';
+        const icon = feature?.icon || 'ðŸ“Œ';
         const time = new Date(a.timestamp);
         const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
         
@@ -9053,32 +9342,32 @@ function renderUserRecentActions(actions) {
     return html;
 }
 
-// 最終使用日時をフォーマット
+// æœ€çµ‚ä½¿ç”¨æ—¥æ™‚ã‚’ãƒ•ã‚©ãƒ¼ãƒžãƒƒãƒˆ
 function formatLastUsed(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
     
-    // 1時間以内
+    // 1æ™‚é–“ä»¥å†…
     if (diff < 3600000) {
         const mins = Math.floor(diff / 60000);
-        return `${mins}分前`;
+        return `${mins}åˆ†å‰`;
     }
-    // 24時間以内
+    // 24æ™‚é–“ä»¥å†…
     if (diff < 86400000) {
         const hours = Math.floor(diff / 3600000);
-        return `${hours}時間前`;
+        return `${hours}æ™‚é–“å‰`;
     }
-    // それ以外
+    // ãã‚Œä»¥å¤–
     return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
-// カテゴリ別表示
+// ã‚«ãƒ†ã‚´ãƒªåˆ¥è¡¨ç¤º
 function renderUsageByCategory(container, byCategory) {
     const sorted = Object.entries(byCategory).sort((a, b) => b[1].count - a[1].count);
     
     if (sorted.length === 0) {
-        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        container.innerHTML = '<p class="no-data-message">ã“ã®æœŸé–“ã®åˆ©ç”¨ãƒ‡ãƒ¼ã‚¿ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
     
@@ -9097,8 +9386,8 @@ function renderUsageByCategory(container, byCategory) {
                     <div class="usage-bar-container">
                         <div class="usage-bar category-bar" style="width: ${percentage}%"></div>
                     </div>
-                    <span class="usage-count">${data.count}回</span>
-                    <span class="usage-features">${data.features.size}機能</span>
+                    <span class="usage-count">${data.count}å›ž</span>
+                    <span class="usage-features">${data.features.size}æ©Ÿèƒ½</span>
                 </div>
             </div>
         `;
@@ -9107,14 +9396,14 @@ function renderUsageByCategory(container, byCategory) {
     container.innerHTML = html;
 }
 
-// 未使用機能表示
+// æœªä½¿ç”¨æ©Ÿèƒ½è¡¨ç¤º
 function renderUnusedFeatures(container, unusedFeatures) {
     if (unusedFeatures.length === 0) {
-        container.innerHTML = '<p class="success-message">🎉 すべての機能が使用されています！</p>';
+        container.innerHTML = '<p class="success-message">ðŸŽ‰ ã™ã¹ã¦ã®æ©Ÿèƒ½ãŒä½¿ç”¨ã•ã‚Œã¦ã„ã¾ã™ï¼</p>';
         return;
     }
     
-    // カテゴリごとにグループ化
+    // ã‚«ãƒ†ã‚´ãƒªã”ã¨ã«ã‚°ãƒ«ãƒ¼ãƒ—åŒ–
     const byCategory = {};
     unusedFeatures.forEach(fId => {
         const feature = USAGE_FEATURES[fId];
@@ -9126,7 +9415,7 @@ function renderUnusedFeatures(container, unusedFeatures) {
     });
     
     let html = '<div class="unused-features-list">';
-    html += '<p class="unused-description">以下の機能は選択期間中に使用されていません。削除または改善を検討してください。</p>';
+    html += '<p class="unused-description">ä»¥ä¸‹ã®æ©Ÿèƒ½ã¯é¸æŠžæœŸé–“ä¸­ã«ä½¿ç”¨ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚å‰Šé™¤ã¾ãŸã¯æ”¹å–„ã‚’æ¤œè¨Žã—ã¦ãã ã•ã„ã€‚</p>';
     
     Object.entries(byCategory).forEach(([category, features]) => {
         html += `
@@ -9147,20 +9436,20 @@ function renderUnusedFeatures(container, unusedFeatures) {
     container.innerHTML = html;
 }
 
-// タイムライン表示
+// ã‚¿ã‚¤ãƒ ãƒ©ã‚¤ãƒ³è¡¨ç¤º
 function renderUsageTimeline(container, filtered) {
     const sorted = [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
     if (sorted.length === 0) {
-        container.innerHTML = '<p class="no-data-message">この期間の利用データはありません</p>';
+        container.innerHTML = '<p class="no-data-message">ã“ã®æœŸé–“ã®åˆ©ç”¨ãƒ‡ãƒ¼ã‚¿ã¯ã‚ã‚Šã¾ã›ã‚“</p>';
         return;
     }
     
-    // 最新100件のみ表示
+    // æœ€æ–°100ä»¶ã®ã¿è¡¨ç¤º
     const limited = sorted.slice(0, 100);
     
     let html = '<div class="usage-timeline">';
-    html += `<p class="timeline-info">最新${Math.min(sorted.length, 100)}件を表示 ${sorted.length > 100 ? `(全${sorted.length}件)` : ''}</p>`;
+    html += `<p class="timeline-info">æœ€æ–°${Math.min(sorted.length, 100)}ä»¶ã‚’è¡¨ç¤º ${sorted.length > 100 ? `(å…¨${sorted.length}ä»¶)` : ''}</p>`;
     
     let currentDate = '';
     limited.forEach(s => {
@@ -9168,14 +9457,14 @@ function renderUsageTimeline(container, filtered) {
         if (date !== currentDate) {
             if (currentDate) html += '</div>';
             const d = new Date(date);
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-            html += `<div class="timeline-date-header">${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）</div>`;
+            const dayNames = ['æ—¥', 'æœˆ', 'ç«', 'æ°´', 'æœ¨', 'é‡‘', 'åœŸ'];
+            html += `<div class="timeline-date-header">${d.getMonth() + 1}/${d.getDate()}ï¼ˆ${dayNames[d.getDay()]}ï¼‰</div>`;
             html += '<div class="timeline-entries">';
             currentDate = date;
         }
         
         const feature = USAGE_FEATURES[s.featureId];
-        const icon = feature?.icon || '📌';
+        const icon = feature?.icon || 'ðŸ“Œ';
         const time = new Date(s.timestamp);
         const timeStr = `${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
         
@@ -9193,35 +9482,36 @@ function renderUsageTimeline(container, filtered) {
     container.innerHTML = html;
 }
 
-// 期間フィルター変更
+// æœŸé–“ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼å¤‰æ›´
 function changeUsageStatsPeriod(period) {
     state.usageStatsPeriod = period;
     renderAdminPanel();
 }
 
-// 表示切り替え
+// è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
 function changeUsageStatsView(view) {
     state.usageStatsView = view;
     renderAdminPanel();
 }
 
-// 利用統計データクリア
+// åˆ©ç”¨çµ±è¨ˆãƒ‡ãƒ¼ã‚¿ã‚¯ãƒªã‚¢
 function clearUsageStats() {
-    if (!confirm('利用統計データをすべて削除しますか？この操作は取り消せません。')) return;
+    if (!confirm('åˆ©ç”¨çµ±è¨ˆãƒ‡ãƒ¼ã‚¿ã‚’ã™ã¹ã¦å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿã“ã®æ“ä½œã¯å–ã‚Šæ¶ˆã›ã¾ã›ã‚“ã€‚')) return;
     database.ref('usageStats').remove();
     state.usageStats = [];
     renderAdminPanel();
-    alert('利用統計データを削除しました');
+    alert('åˆ©ç”¨çµ±è¨ˆãƒ‡ãƒ¼ã‚¿ã‚’å‰Šé™¤ã—ã¾ã—ãŸ');
 }
 
-// 発注アドバイスボタンのイベントリスナー
+// ç™ºæ³¨ã‚¢ãƒ‰ãƒã‚¤ã‚¹ãƒœã‚¿ãƒ³ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼
 document.getElementById('orderAdviceBtn').addEventListener('click', showOrderAdviceScreen);
 
-// モバイル用フローティングボタンのイベントリスナー
+// ãƒ¢ãƒã‚¤ãƒ«ç”¨ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ãƒœã‚¿ãƒ³ã®ã‚¤ãƒ™ãƒ³ãƒˆãƒªã‚¹ãƒŠãƒ¼
 const orderAdviceBtnMobile = document.getElementById('orderAdviceBtnMobile');
 if (orderAdviceBtnMobile) {
     orderAdviceBtnMobile.addEventListener('click', showOrderAdviceScreen);
 }
 
-// 初期化時にフィードバックデータを読み込み
+// åˆæœŸåŒ–æ™‚ã«ãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯ãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿è¾¼ã¿
 loadOrderFeedback();
+
