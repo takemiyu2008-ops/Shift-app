@@ -5858,6 +5858,18 @@ body {
     font-size: 0.85rem;
 }
 
+.timeline-target {
+    color: var(--warning, #f59e0b);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.recent-action-target {
+    color: var(--warning, #f59e0b);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
 /* モバイル対応 */
 @media (max-width: 768px) {
     .usage-stats-header {
@@ -6113,6 +6125,17 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.user-email {
+    font-size: 0.75rem;
+    color: var(--primary);
+    font-weight: normal;
+}
+
+.user-email.legacy {
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 .user-summary {

@@ -460,20 +460,28 @@ const USAGE_FEATURES = {
 };
 
 // 利用統計を記録する関数
-function trackUsage(featureId, userName = null) {
+function trackUsage(featureId, targetName = null) {
     const feature = USAGE_FEATURES[featureId];
     if (!feature) return;
-    
+
+    // ログインユーザー情報を自動取得
+    const user = currentUser;
+    const userEmail = user ? user.email : null;
+    const userDisplayName = user ? (user.displayName || userEmail?.split('@')[0] || '不明') : '未ログイン';
+
     const stat = {
         id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
         featureId: featureId,
         featureName: feature.name,
         category: feature.category,
-        userName: userName || '匿名',
+        userName: userDisplayName,
+        userId: user ? user.uid : null,
+        userEmail: userEmail || null,
+        targetName: targetName || null,
         timestamp: new Date().toISOString(),
         date: formatDate(new Date())
     };
-    
+
     // Firebaseに保存
     database.ref('usageStats/' + stat.id).set(stat);
 }
@@ -9108,7 +9116,7 @@ function renderUsageStats(container) {
     
     // サマリー統計を計算
     const totalActions = filtered.length;
-    const uniqueUsers = [...new Set(filtered.map(s => s.userName))].length;
+    const uniqueUsers = [...new Set(filtered.map(s => s.userId || s.userName))].length;
     const uniqueFeatures = [...new Set(filtered.map(s => s.featureId))].length;
     
     // 機能別集計
@@ -9128,11 +9136,15 @@ function renderUsageStats(container) {
     });
     
     // ユーザー別集計（機能ごとの詳細も含む）
+    // userId（Firebase Auth UID）をキーとし、旧データはuserNameをキーにフォールバック
     const byUser = {};
     filtered.forEach(s => {
-        if (!byUser[s.userName]) {
-            byUser[s.userName] = {
+        const userKey = s.userId || s.userName;
+        if (!byUser[userKey]) {
+            byUser[userKey] = {
                 userName: s.userName,
+                userId: s.userId || null,
+                userEmail: s.userEmail || null,
                 count: 0,
                 features: new Set(),
                 featureDetails: {}, // 機能ごとの詳細
@@ -9140,12 +9152,17 @@ function renderUsageStats(container) {
                 recentActions: [] // 最近のアクション
             };
         }
-        byUser[s.userName].count++;
-        byUser[s.userName].features.add(s.featureId);
-        
+        // より新しいデータで表示名・メールを更新
+        if (s.userId && s.userEmail) {
+            byUser[userKey].userEmail = s.userEmail;
+            byUser[userKey].userName = s.userName;
+        }
+        byUser[userKey].count++;
+        byUser[userKey].features.add(s.featureId);
+
         // 機能ごとの使用回数を記録
-        if (!byUser[s.userName].featureDetails[s.featureId]) {
-            byUser[s.userName].featureDetails[s.featureId] = {
+        if (!byUser[userKey].featureDetails[s.featureId]) {
+            byUser[userKey].featureDetails[s.featureId] = {
                 featureId: s.featureId,
                 featureName: s.featureName,
                 category: s.category,
@@ -9153,26 +9170,27 @@ function renderUsageStats(container) {
                 lastUsed: null
             };
         }
-        byUser[s.userName].featureDetails[s.featureId].count++;
-        byUser[s.userName].featureDetails[s.featureId].lastUsed = s.timestamp;
-        
+        byUser[userKey].featureDetails[s.featureId].count++;
+        byUser[userKey].featureDetails[s.featureId].lastUsed = s.timestamp;
+
         // カテゴリごとの使用回数を記録
-        if (!byUser[s.userName].categoryDetails[s.category]) {
-            byUser[s.userName].categoryDetails[s.category] = {
+        if (!byUser[userKey].categoryDetails[s.category]) {
+            byUser[userKey].categoryDetails[s.category] = {
                 category: s.category,
                 count: 0,
                 features: new Set()
             };
         }
-        byUser[s.userName].categoryDetails[s.category].count++;
-        byUser[s.userName].categoryDetails[s.category].features.add(s.featureId);
-        
+        byUser[userKey].categoryDetails[s.category].count++;
+        byUser[userKey].categoryDetails[s.category].features.add(s.featureId);
+
         // 最近のアクション（最新20件まで）
-        if (byUser[s.userName].recentActions.length < 20) {
-            byUser[s.userName].recentActions.push({
+        if (byUser[userKey].recentActions.length < 20) {
+            byUser[userKey].recentActions.push({
                 featureId: s.featureId,
                 featureName: s.featureName,
                 category: s.category,
+                targetName: s.targetName || null,
                 timestamp: s.timestamp
             });
         }
@@ -9325,6 +9343,8 @@ function renderUsageByUser(container, byUser) {
         // 機能別の使用状況をソート
         const sortedFeatures = Object.values(u.featureDetails || {}).sort((a, b) => b.count - a.count);
         
+        const emailDisplay = u.userEmail ? `<span class="user-email">${u.userEmail}</span>` : '<span class="user-email legacy">旧データ（未ログイン時）</span>';
+
         html += `
             <div class="usage-user-card">
                 <div class="usage-user-item" onclick="toggleUserDetail('${userId}')">
@@ -9332,6 +9352,7 @@ function renderUsageByUser(container, byUser) {
                         <div class="user-avatar">${u.userName.charAt(0)}</div>
                         <div class="user-name-section">
                             <span class="user-name">${u.userName}</span>
+                            ${emailDisplay}
                             <span class="user-summary">${sortedCategories.slice(0, 2).map(c => c.category).join('・') || '-'}</span>
                         </div>
                     </div>
@@ -9481,11 +9502,14 @@ function renderUserRecentActions(actions) {
         const time = new Date(a.timestamp);
         const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
         
+        const targetLabel = a.targetName ? `<span class="recent-action-target">→ ${a.targetName}</span>` : '';
+
         html += `
             <div class="user-recent-action-item">
                 <span class="recent-action-time">${timeStr}</span>
                 <span class="recent-action-icon">${icon}</span>
                 <span class="recent-action-name">${a.featureName}</span>
+                ${targetLabel}
                 <span class="recent-action-category">${a.category}</span>
             </div>
         `;
@@ -9620,12 +9644,15 @@ function renderUsageTimeline(container, filtered) {
         const time = new Date(s.timestamp);
         const timeStr = `${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
         
+        const targetInfo = s.targetName ? `<span class="timeline-target">→ ${s.targetName}</span>` : '';
+
         html += `
             <div class="timeline-entry">
                 <span class="timeline-time">${timeStr}</span>
                 <span class="timeline-icon">${icon}</span>
                 <span class="timeline-feature">${s.featureName}</span>
-                <span class="timeline-user">${s.userName}</span>
+                ${targetInfo}
+                <span class="timeline-user">${s.userName}${s.userEmail ? ' (' + s.userEmail + ')' : ''}</span>
             </div>
         `;
     });
