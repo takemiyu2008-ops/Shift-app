@@ -2313,7 +2313,7 @@ body {
 }
 
 .gantt-date-label.is-holiday {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%), var(--bg-secondary);
 }
 
 .date-number.holiday {
