@@ -2762,6 +2762,7 @@ body {
     font-size: 0.95rem;
     color: var(--text-primary);
     line-height: 1.7;
+    white-space: normal;
     padding: 16px;
     background: var(--bg-secondary);
     border-radius: var(--radius-md);
@@ -2839,7 +2840,7 @@ body {
     font-size: 0.95rem;
     color: var(--text-primary);
     line-height: 1.7;
-    white-space: pre-wrap;
+    white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
 }
@@ -2855,6 +2856,199 @@ body {
 /* トレンドレポートの左ボーダー色 */
 .trend-report-card {
     border-left-color: #3B82F6;
+}
+
+/* ========================================
+   Markdownレンダリングスタイル
+   ======================================== */
+.report-content h1,
+.report-content h2,
+.report-content h3,
+.report-content h4,
+.report-content h5,
+.report-content h6,
+.admin-card-content h1,
+.admin-card-content h2,
+.admin-card-content h3,
+.admin-card-content h4,
+.admin-card-content h5,
+.admin-card-content h6 {
+    margin: 0.8em 0 0.4em;
+    line-height: 1.3;
+    color: var(--text-primary);
+}
+
+.report-content h1,
+.admin-card-content h1 {
+    font-size: 1.4em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.report-content h2,
+.admin-card-content h2 {
+    font-size: 1.2em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.2em;
+}
+
+.report-content h3,
+.admin-card-content h3 {
+    font-size: 1.1em;
+}
+
+.report-content h4,
+.report-content h5,
+.report-content h6,
+.admin-card-content h4,
+.admin-card-content h5,
+.admin-card-content h6 {
+    font-size: 1em;
+}
+
+.report-content p,
+.admin-card-content p {
+    margin: 0.5em 0;
+}
+
+.report-content ul,
+.report-content ol,
+.admin-card-content ul,
+.admin-card-content ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+}
+
+.report-content li,
+.admin-card-content li {
+    margin: 0.25em 0;
+}
+
+.report-content strong,
+.admin-card-content strong {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.report-content em,
+.admin-card-content em {
+    font-style: italic;
+}
+
+.report-content blockquote,
+.admin-card-content blockquote {
+    margin: 0.5em 0;
+    padding: 0.5em 1em;
+    border-left: 3px solid var(--primary);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.report-content code,
+.admin-card-content code {
+    background: var(--bg-secondary);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.report-content pre,
+.admin-card-content pre {
+    margin: 0.5em 0;
+    padding: 1em;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+}
+
+.report-content pre code,
+.admin-card-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.report-content table,
+.admin-card-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.9em;
+}
+
+.report-content th,
+.report-content td,
+.admin-card-content th,
+.admin-card-content td {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.report-content th,
+.admin-card-content th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.report-content a,
+.admin-card-content a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.report-content hr,
+.admin-card-content hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1em 0;
+}
+
+.report-content img,
+.admin-card-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+}
+
+/* ========================================
+   Markdownプレビュータブ
+   ======================================== */
+.preview-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.preview-tab {
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preview-tab:hover {
+    background: var(--bg-hover);
+}
+
+.preview-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.markdown-preview {
+    min-height: 150px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    overflow-y: auto;
+    max-height: 400px;
 }
 
 /* 新商品レポート モバイル対応 */

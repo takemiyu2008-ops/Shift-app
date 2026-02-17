@@ -459,6 +459,43 @@ const USAGE_FEATURES = {
     'print_shift': { name: 'シフト表印刷', category: 'その他', icon: '🖨️' }
 };
 
+// Markdownレンダリングヘルパー関数
+function renderMarkdown(text) {
+    if (!text) return '';
+    if (typeof marked !== 'undefined') {
+        return marked.parse(text);
+    }
+    // fallback: 従来の改行変換
+    return text.replace(/\n/g, '<br>');
+}
+
+// Markdownプレビュー切替関数
+function toggleMarkdownPreview(formGroup, mode) {
+    const textarea = formGroup.querySelector('textarea');
+    let preview = formGroup.querySelector('.markdown-preview');
+    const tabs = formGroup.querySelector('.preview-tabs');
+
+    if (!preview) {
+        preview = document.createElement('div');
+        preview.className = 'markdown-preview report-content';
+        preview.style.display = 'none';
+        textarea.parentNode.insertBefore(preview, textarea.nextSibling);
+    }
+
+    tabs.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+
+    if (mode === 'preview') {
+        textarea.style.display = 'none';
+        preview.style.display = 'block';
+        preview.innerHTML = renderMarkdown(textarea.value);
+        tabs.querySelector('[data-mode="preview"]').classList.add('active');
+    } else {
+        textarea.style.display = '';
+        preview.style.display = 'none';
+        tabs.querySelector('[data-mode="edit"]').classList.add('active');
+    }
+}
+
 // 利用統計を記録する関数
 function trackUsage(featureId, targetName = null) {
     const feature = USAGE_FEATURES[featureId];
@@ -6555,7 +6592,7 @@ function renderTrendReportsAdmin(container) {
                     <div class="admin-card-content">
                         ${isOldFormat 
                             ? `<p style="color:var(--text-muted);">このレポートはファイル形式です。記述式に変更するには削除して新規作成してください。<br>ファイル: ${report.fileName || '不明'} (${formatFileSize(report.fileSize) || '不明'})</p>`
-                            : (report.content || '').replace(/\n/g, '<br>')
+                            : renderMarkdown(report.content)
                         }
                     </div>
                     <div class="admin-card-actions">
@@ -6612,7 +6649,7 @@ function renderNewProductReportAdmin(container) {
                             ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
                         </div>
                     </div>
-                    <div class="admin-card-content">${report.content.replace(/\n/g, '<br>')}</div>
+                    <div class="admin-card-content">${renderMarkdown(report.content)}</div>
                     <div class="admin-card-actions">
                         <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">✏️ 編集</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteNewProductReport('${report.id}')">🗑️ 削除</button>
@@ -6659,7 +6696,7 @@ function renderNewProductReport() {
                         <span class="report-title">${report.title}</span>
                         <span class="report-date">📅 ${dateStr}</span>
                     </div>
-                    <div class="report-content">${report.content.replace(/\n/g, '<br>')}</div>
+                    <div class="report-content">${renderMarkdown(report.content)}</div>
                     ${state.isAdmin ? `
                         <div class="report-actions">
                             <button class="btn btn-sm btn-secondary" onclick="openEditNewProductReportModal('${report.id}')">✏️ 編集</button>
@@ -6712,9 +6749,13 @@ function openAddNewProductReportModal() {
                     <label>タイトル <span class="required">*</span></label>
                     <input type="text" name="title" placeholder="例: 2026年1月 新商品情報" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group markdown-form-group">
                     <label>内容 <span class="required">*</span></label>
-                    <textarea name="content" rows="10" placeholder="新商品の情報を入力してください..." required></textarea>
+                    <div class="preview-tabs">
+                        <button type="button" class="preview-tab active" data-mode="edit" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'edit')">✏️ 編集</button>
+                        <button type="button" class="preview-tab" data-mode="preview" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'preview')">👁️ プレビュー</button>
+                    </div>
+                    <textarea name="content" rows="10" placeholder="新商品の情報を入力してください（Markdown対応）..." required></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
@@ -6723,11 +6764,11 @@ function openAddNewProductReportModal() {
             </form>
         </div>
     `;
-    
+
     modal.onclick = (e) => {
         if (e.target === modal) modal.remove();
     };
-    
+
     document.body.appendChild(modal);
 }
 
@@ -6749,8 +6790,12 @@ function openEditNewProductReportModal(reportId) {
                     <label>タイトル <span class="required">*</span></label>
                     <input type="text" name="title" value="${report.title}" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group markdown-form-group">
                     <label>内容 <span class="required">*</span></label>
+                    <div class="preview-tabs">
+                        <button type="button" class="preview-tab active" data-mode="edit" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'edit')">✏️ 編集</button>
+                        <button type="button" class="preview-tab" data-mode="preview" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'preview')">👁️ プレビュー</button>
+                    </div>
                     <textarea name="content" rows="10" required>${report.content}</textarea>
                 </div>
                 <div class="modal-actions">
@@ -6760,11 +6805,11 @@ function openEditNewProductReportModal(reportId) {
             </form>
         </div>
     `;
-    
+
     modal.onclick = (e) => {
         if (e.target === modal) modal.remove();
     };
-    
+
     document.body.appendChild(modal);
 }
 
@@ -7190,7 +7235,7 @@ function renderTrendReports() {
                             <span class="report-title">${report.title}</span>
                             <span class="report-date">📅 ${dateStr}</span>
                         </div>
-                        <div class="report-content">${(report.content || '').replace(/\n/g, '<br>')}</div>
+                        <div class="report-content">${renderMarkdown(report.content)}</div>
                         ${state.isAdmin ? `
                             <div class="report-actions">
                                 <button class="btn btn-sm btn-secondary" onclick="openEditTrendReportModal('${report.id}')">✏️ 編集</button>
@@ -7484,9 +7529,13 @@ function openAddTrendReportModal() {
                     <label>タイトル <span class="required">*</span></label>
                     <input type="text" name="title" placeholder="例: コンビニ3社 新商品ヒット予測レポート 2026年1月27日号" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group markdown-form-group">
                     <label>内容 <span class="required">*</span></label>
-                    <textarea name="content" rows="15" placeholder="トレンド情報を入力してください..." required></textarea>
+                    <div class="preview-tabs">
+                        <button type="button" class="preview-tab active" data-mode="edit" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'edit')">✏️ 編集</button>
+                        <button type="button" class="preview-tab" data-mode="preview" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'preview')">👁️ プレビュー</button>
+                    </div>
+                    <textarea name="content" rows="15" placeholder="トレンド情報を入力してください（Markdown対応）..." required></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
@@ -7495,11 +7544,11 @@ function openAddTrendReportModal() {
             </form>
         </div>
     `;
-    
+
     modal.onclick = (e) => {
         if (e.target === modal) modal.remove();
     };
-    
+
     document.body.appendChild(modal);
 }
 
@@ -7528,8 +7577,12 @@ function openEditTrendReportModal(reportId) {
                     <label>タイトル <span class="required">*</span></label>
                     <input type="text" name="title" value="${escapeHtml(report.title)}" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group markdown-form-group">
                     <label>内容 <span class="required">*</span></label>
+                    <div class="preview-tabs">
+                        <button type="button" class="preview-tab active" data-mode="edit" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'edit')">✏️ 編集</button>
+                        <button type="button" class="preview-tab" data-mode="preview" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'preview')">👁️ プレビュー</button>
+                    </div>
                     <textarea name="content" rows="15" required>${escapeHtml(report.content || '')}</textarea>
                 </div>
                 <div class="modal-actions">
@@ -7539,11 +7592,11 @@ function openEditTrendReportModal(reportId) {
             </form>
         </div>
     `;
-    
+
     modal.onclick = (e) => {
         if (e.target === modal) modal.remove();
     };
-    
+
     document.body.appendChild(modal);
 }
 
