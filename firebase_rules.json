@@ -1,31 +1,32 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
-    
+    ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
+    ".write": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
+
     "users": {
       "$uid": {
+        ".read": "$uid === auth.uid || root.child('admins').child(auth.uid).exists()",
         ".write": "$uid === auth.uid || root.child('admins').child(auth.uid).exists()"
       }
     },
-    
+
     "shifts": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)"
     },
-    
+
     "employees": {
-      ".read": "auth != null",
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
       ".write": "root.child('admins').child(auth.uid).exists()"
     },
-    
+
     "admins": {
       ".read": "auth != null",
       ".write": "root.child('admins').child(auth.uid).exists()"
     },
-    
+
     "settings": {
-      ".read": "auth != null",
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
       ".write": "root.child('admins').child(auth.uid).exists()"
     }
   }

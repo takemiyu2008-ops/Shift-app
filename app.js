@@ -33,46 +33,116 @@ function convertPassword(password) {
     return password + 'pw';
 }
 
+// 承認状態リスナーの参照を保持
+let pendingStatusListener = null;
+
+// 全画面を非表示にするヘルパー
+function hideAllScreens() {
+    document.getElementById('authContainer').classList.remove('show');
+    document.getElementById('pendingContainer').classList.remove('show');
+    document.getElementById('appContainer').classList.add('hidden');
+    document.getElementById('logoutBtnContainer').style.display = 'none';
+}
+
+// 承認待ち画面を表示
+function showPendingScreen(status) {
+    hideAllScreens();
+    const container = document.getElementById('pendingContainer');
+    const box = document.getElementById('pendingBox');
+    const title = document.getElementById('pendingTitle');
+    const message = document.getElementById('pendingMessage');
+
+    if (status === 'rejected') {
+        box.classList.add('rejected');
+        title.textContent = '登録が却下されました';
+        message.textContent = '管理者により登録が却下されました。詳細は管理者にお問い合わせください。';
+    } else {
+        box.classList.remove('rejected');
+        title.textContent = '承認待ち';
+        message.innerHTML = 'アカウント登録が完了しました。<br>管理者の承認をお待ちください。<br>承認されると自動的にアプリが利用可能になります。';
+    }
+    container.classList.add('show');
+}
+
 // 認証状態の監視
 auth.onAuthStateChanged((user) => {
+    // 前回のリスナーを解除
+    if (pendingStatusListener) {
+        pendingStatusListener();
+        pendingStatusListener = null;
+    }
+
     if (user) {
         // ログイン済み
         currentUser = user;
         console.log('ログイン済み:', user.email);
-        
-        // UIを表示
-        document.getElementById('authContainer').classList.remove('show');
-        document.getElementById('appContainer').classList.remove('hidden');
-        document.getElementById('logoutBtnContainer').style.display = 'block';
-        
-        // データベースにユーザー情報を保存（初回のみ）
+
+        // ユーザーの承認状態を確認
         const userRef = database.ref('users/' + user.uid);
         userRef.once('value', (snapshot) => {
             if (!snapshot.exists()) {
-                // 新規ユーザーの場合、データベースに登録
+                // 新規ユーザーの場合、データベースに登録（フォールバック）
                 const staffId = user.email.split('@')[0];
                 userRef.set({
                     staffId: staffId,
                     displayName: user.displayName || '従業員' + staffId,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    status: 'pending'
                 });
+                showPendingScreen('pending');
+                // リアルタイムで承認状態を監視
+                pendingStatusListener = userRef.child('status').on('value', (snap) => {
+                    const newStatus = snap.val();
+                    if (newStatus === 'approved') {
+                        pendingStatusListener = null;
+                        userRef.child('status').off('value');
+                        location.reload();
+                    } else if (newStatus === 'rejected') {
+                        showPendingScreen('rejected');
+                    }
+                });
+                return;
+            }
+
+            const userData = snapshot.val();
+            const status = userData.status || 'approved'; // 既存ユーザーはapproved扱い
+
+            if (status === 'approved') {
+                // 承認済み → アプリ表示
+                hideAllScreens();
+                document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('logoutBtnContainer').style.display = 'block';
+
+                if (typeof initApp === 'function') {
+                    initApp();
+                }
+            } else if (status === 'pending') {
+                // 承認待ち → 待機画面
+                showPendingScreen('pending');
+                // リアルタイムで承認状態を監視
+                pendingStatusListener = userRef.child('status').on('value', (snap) => {
+                    const newStatus = snap.val();
+                    if (newStatus === 'approved') {
+                        pendingStatusListener = null;
+                        userRef.child('status').off('value');
+                        location.reload();
+                    } else if (newStatus === 'rejected') {
+                        showPendingScreen('rejected');
+                    }
+                });
+            } else if (status === 'rejected') {
+                // 却下 → 却下画面
+                showPendingScreen('rejected');
             }
         });
-        
-        // 既存の初期化処理を実行
-        if (typeof initApp === 'function') {
-            initApp();
-        }
-        
+
     } else {
         // 未ログイン
         currentUser = null;
         console.log('未ログイン');
-        
-        // ログイン画面を表示
+
+        hideAllScreens();
         document.getElementById('authContainer').classList.add('show');
-        document.getElementById('appContainer').classList.add('hidden');
-        document.getElementById('logoutBtnContainer').style.display = 'none';
     }
 });
 
@@ -239,11 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayName: name
             });
             
-            // データベースにユーザー情報を保存
+            // データベースにユーザー情報を保存（承認待ち状態で登録）
             await database.ref('users/' + userCredential.user.uid).set({
                 staffId: staffId,
                 displayName: name,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                status: 'pending'
             });
             
             // 登録成功（onAuthStateChangedで処理される）
@@ -2813,29 +2884,59 @@ function switchToStaff() { state.isAdmin = false; document.getElementById('roleT
 function toggleRole() { state.isAdmin ? switchToStaff() : showPinModal(); }
 
 // 管理者タブの通知バッジ更新
+// ユーザー承認
+function approveUser(uid) {
+    if (!confirm('このユーザーを承認しますか？')) return;
+    database.ref('users/' + uid).update({ status: 'approved' }).then(() => {
+        alert('ユーザーを承認しました');
+        renderAdminPanel();
+    }).catch(err => {
+        console.error('承認エラー:', err);
+        alert('承認に失敗しました');
+    });
+}
+
+// ユーザー却下
+function rejectUser(uid) {
+    if (!confirm('このユーザーの登録を却下しますか？')) return;
+    database.ref('users/' + uid).update({ status: 'rejected' }).then(() => {
+        alert('ユーザーを却下しました');
+        renderAdminPanel();
+    }).catch(err => {
+        console.error('却下エラー:', err);
+        alert('却下に失敗しました');
+    });
+}
+
 function updateAdminBadges() {
     const changeCount = state.changeRequests.filter(r => r.status === 'pending').length;
     const swapCount = state.swapRequests.filter(r => r.status === 'pending').length;
     const leaveCount = state.leaveRequests.filter(r => r.status === 'pending').length;
     const holidayCount = state.holidayRequests.filter(r => r.status === 'pending').length;
 
-    document.querySelectorAll('.admin-tab').forEach(tab => {
-        // 既存のバッジを削除
-        const existingBadge = tab.querySelector('.tab-badge');
-        if (existingBadge) existingBadge.remove();
+    // 承認待ちユーザー数を非同期で取得してバッジ更新
+    database.ref('users').orderByChild('status').equalTo('pending').once('value', (snapshot) => {
+        const userApprovalCount = snapshot.numChildren();
 
-        let count = 0;
-        if (tab.dataset.tab === 'shiftChanges') count = changeCount;
-        else if (tab.dataset.tab === 'shiftSwaps') count = swapCount;
-        else if (tab.dataset.tab === 'leaveRequests') count = leaveCount;
-        else if (tab.dataset.tab === 'holidayRequests') count = holidayCount;
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            // 既存のバッジを削除
+            const existingBadge = tab.querySelector('.tab-badge');
+            if (existingBadge) existingBadge.remove();
 
-        if (count > 0) {
-            const badge = document.createElement('span');
-            badge.className = 'tab-badge';
-            badge.textContent = count;
-            tab.appendChild(badge);
-        }
+            let count = 0;
+            if (tab.dataset.tab === 'userApproval') count = userApprovalCount;
+            else if (tab.dataset.tab === 'shiftChanges') count = changeCount;
+            else if (tab.dataset.tab === 'shiftSwaps') count = swapCount;
+            else if (tab.dataset.tab === 'leaveRequests') count = leaveCount;
+            else if (tab.dataset.tab === 'holidayRequests') count = holidayCount;
+
+            if (count > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'tab-badge';
+                badge.textContent = count;
+                tab.appendChild(badge);
+            }
+        });
     });
 }
 
@@ -3006,7 +3107,27 @@ function renderAdminPanel() {
         c.classList.remove('trend-reports-content');
     }
     
-    if (state.activeAdminTab === 'shiftChanges') {
+    if (state.activeAdminTab === 'userApproval') {
+        c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">読み込み中...</p>';
+        database.ref('users').orderByChild('status').equalTo('pending').once('value', (snapshot) => {
+            c.innerHTML = '';
+            const pendingUsers = [];
+            snapshot.forEach(child => {
+                pendingUsers.push({ uid: child.key, ...child.val() });
+            });
+            if (!pendingUsers.length) {
+                c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちユーザーなし</p>';
+                return;
+            }
+            pendingUsers.forEach(u => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                const createdAt = u.createdAt ? new Date(u.createdAt).toLocaleString('ja-JP') : '不明';
+                card.innerHTML = `<div class="request-info"><h4>👤 ユーザー登録申請</h4><p>名前: ${u.displayName || '不明'}</p><p>従業員番号: ${u.staffId || '不明'}</p><p>登録日時: ${createdAt}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveUser('${u.uid}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectUser('${u.uid}')">却下</button></div>`;
+                c.appendChild(card);
+            });
+        });
+    } else if (state.activeAdminTab === 'shiftChanges') {
         const reqs = state.changeRequests.filter(r => r.status === 'pending');
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
         reqs.forEach(r => {
