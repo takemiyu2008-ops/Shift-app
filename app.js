@@ -459,11 +459,90 @@ const USAGE_FEATURES = {
     'print_shift': { name: 'シフト表印刷', category: 'その他', icon: '🖨️' }
 };
 
+// Obsidian Calloutの種類定義
+const CALLOUT_TYPES = {
+    note:     { icon: '✏️', color: '#448aff' },
+    tip:      { icon: '💡', color: '#00bfa5' },
+    hint:     { icon: '💡', color: '#00bfa5' },
+    important:{ icon: '🔥', color: '#ff5252' },
+    warning:  { icon: '⚠️', color: '#ff9100' },
+    caution:  { icon: '⚠️', color: '#ff9100' },
+    danger:   { icon: '⚡', color: '#ff1744' },
+    error:    { icon: '❌', color: '#ff1744' },
+    info:     { icon: 'ℹ️', color: '#448aff' },
+    success:  { icon: '✅', color: '#00c853' },
+    check:    { icon: '✅', color: '#00c853' },
+    done:     { icon: '✅', color: '#00c853' },
+    question: { icon: '❓', color: '#ffab00' },
+    faq:      { icon: '❓', color: '#ffab00' },
+    help:     { icon: '❓', color: '#ffab00' },
+    quote:    { icon: '💬', color: '#9e9e9e' },
+    cite:     { icon: '💬', color: '#9e9e9e' },
+    example:  { icon: '📋', color: '#7c4dff' },
+    abstract: { icon: '📄', color: '#00b0ff' },
+    summary:  { icon: '📄', color: '#00b0ff' },
+    tldr:     { icon: '📄', color: '#00b0ff' },
+    bug:      { icon: '🐛', color: '#ff1744' },
+    todo:     { icon: '☑️', color: '#448aff' },
+};
+
+// Obsidian記法の前処理（==ハイライト== と コールアウト）
+function preprocessObsidian(text) {
+    // ==ハイライト== → <mark>ハイライト</mark>
+    text = text.replace(/==(.*?)==/g, '<mark>$1</mark>');
+
+    // Obsidian Callout: > [!type] Title の変換
+    text = text.replace(
+        /^(>\s*)\[!(\w+)\]([+-]?)[ \t]*(.*)?$/gm,
+        (match, prefix, type, foldable, title) => {
+            const t = type.toLowerCase();
+            const callout = CALLOUT_TYPES[t] || CALLOUT_TYPES.note;
+            const displayTitle = title || type.charAt(0).toUpperCase() + type.slice(1);
+            return `${prefix}<div class="obsidian-callout callout-${t}" style="--callout-color:${callout.color}"><div class="callout-title"><span class="callout-icon">${callout.icon}</span> ${displayTitle}</div><div class="callout-content">`;
+        }
+    );
+
+    // コールアウト内の後続行 ("> " で始まる行) を処理し、
+    // コールアウトでない行が来たらブロックを閉じる
+    const lines = text.split('\n');
+    const result = [];
+    let inCallout = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        if (line.includes('<div class="obsidian-callout')) {
+            if (inCallout) {
+                result.push('</div></div>\n');
+            }
+            inCallout = true;
+            // callout開始行から "> " プレフィックスを除去
+            result.push(line.replace(/^>\s*/, ''));
+        } else if (inCallout && /^>\s?/.test(line)) {
+            // コールアウト内の継続行
+            result.push(line.replace(/^>\s?/, ''));
+        } else {
+            if (inCallout) {
+                result.push('</div></div>\n');
+                inCallout = false;
+            }
+            result.push(line);
+        }
+    }
+
+    if (inCallout) {
+        result.push('</div></div>\n');
+    }
+
+    return result.join('\n');
+}
+
 // Markdownレンダリングヘルパー関数
 function renderMarkdown(text) {
     if (!text) return '';
     if (typeof marked !== 'undefined') {
-        return marked.parse(text);
+        const processed = preprocessObsidian(text);
+        return marked.parse(processed);
     }
     // fallback: 従来の改行変換
     return text.replace(/\n/g, '<br>');

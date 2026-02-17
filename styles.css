@@ -3051,6 +3051,60 @@ body {
     max-height: 400px;
 }
 
+/* ========================================
+   Obsidian コールアウトスタイル
+   ======================================== */
+.obsidian-callout {
+    margin: 0.8em 0;
+    padding: 0;
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--callout-color, #448aff);
+    background: color-mix(in srgb, var(--callout-color, #448aff) 8%, var(--bg-primary));
+    overflow: hidden;
+}
+
+.obsidian-callout .callout-title {
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--callout-color, #448aff);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.obsidian-callout .callout-icon {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+.obsidian-callout .callout-content {
+    padding: 2px 14px 10px;
+    font-size: 0.93em;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.obsidian-callout .callout-content p {
+    margin: 0.3em 0;
+}
+
+.obsidian-callout .callout-content ul,
+.obsidian-callout .callout-content ol {
+    margin: 0.3em 0;
+    padding-left: 1.3em;
+}
+
+/* ==ハイライト== */
+.report-content mark,
+.admin-card-content mark,
+.markdown-preview mark {
+    background: linear-gradient(to bottom, transparent 40%, rgba(255, 235, 59, 0.45) 40%);
+    padding: 0 2px;
+    border-radius: 2px;
+    color: inherit;
+}
+
 /* 新商品レポート モバイル対応 */
 @media (max-width: 768px) {
     .new-product-report-card,
