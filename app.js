@@ -3038,29 +3038,46 @@ function updateAdminBadges() {
     const leaveCount = state.leaveRequests.filter(r => r.status === 'pending').length;
     const holidayCount = state.holidayRequests.filter(r => r.status === 'pending').length;
 
+    // 同期的にバッジを更新（state から取得できるもの）
+    const badgeCounts = {
+        shiftChanges: changeCount,
+        shiftSwaps: swapCount,
+        leaveRequests: leaveCount,
+        holidayRequests: holidayCount
+    };
+
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        const tabName = tab.dataset.tab;
+        // userApproval は非同期で別途更新するのでここではスキップ
+        if (tabName === 'userApproval') return;
+
+        const existingBadge = tab.querySelector('.tab-badge');
+        if (existingBadge) existingBadge.remove();
+
+        const count = badgeCounts[tabName] || 0;
+        if (count > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'tab-badge';
+            badge.textContent = count;
+            tab.appendChild(badge);
+        }
+    });
+
     // 承認待ちユーザー数を非同期で取得してバッジ更新
     database.ref('users').orderByChild('status').equalTo('pending').once('value', (snapshot) => {
         const userApprovalCount = snapshot.numChildren();
+        const tab = document.querySelector('.admin-tab[data-tab="userApproval"]');
+        if (!tab) return;
 
-        document.querySelectorAll('.admin-tab').forEach(tab => {
-            // 既存のバッジを削除
-            const existingBadge = tab.querySelector('.tab-badge');
-            if (existingBadge) existingBadge.remove();
+        const existingBadge = tab.querySelector('.tab-badge');
+        if (existingBadge) existingBadge.remove();
 
-            let count = 0;
-            if (tab.dataset.tab === 'userApproval') count = userApprovalCount;
-            else if (tab.dataset.tab === 'shiftChanges') count = changeCount;
-            else if (tab.dataset.tab === 'shiftSwaps') count = swapCount;
-            else if (tab.dataset.tab === 'leaveRequests') count = leaveCount;
-            else if (tab.dataset.tab === 'holidayRequests') count = holidayCount;
-
-            if (count > 0) {
-                const badge = document.createElement('span');
-                badge.className = 'tab-badge';
-                badge.textContent = count;
-                tab.appendChild(badge);
-            }
-        });
+        if (userApprovalCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'tab-badge';
+            badge.textContent = userApprovalCount;
+            tab.appendChild(badge);
+        }
     });
 }
 
