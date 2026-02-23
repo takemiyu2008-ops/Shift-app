@@ -77,7 +77,7 @@
       ".indexOn": ["status"],
       "$uid": {
         ".read": "auth != null",
-        ".write": "auth.uid === $uid"
+        ".write": "auth != null"
       }
     },
     "settings": {
