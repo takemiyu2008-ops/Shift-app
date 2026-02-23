@@ -3064,21 +3064,25 @@ function updateAdminBadges() {
     });
 
     // 承認待ちユーザー数を非同期で取得してバッジ更新
-    database.ref('users').orderByChild('status').equalTo('pending').once('value', (snapshot) => {
-        const userApprovalCount = snapshot.numChildren();
-        const tab = document.querySelector('.admin-tab[data-tab="userApproval"]');
-        if (!tab) return;
+    database.ref('users').orderByChild('status').equalTo('pending').once('value')
+        .then((snapshot) => {
+            const userApprovalCount = snapshot.numChildren();
+            const tab = document.querySelector('.admin-tab[data-tab="userApproval"]');
+            if (!tab) return;
 
-        const existingBadge = tab.querySelector('.tab-badge');
-        if (existingBadge) existingBadge.remove();
+            const existingBadge = tab.querySelector('.tab-badge');
+            if (existingBadge) existingBadge.remove();
 
-        if (userApprovalCount > 0) {
-            const badge = document.createElement('span');
-            badge.className = 'tab-badge';
-            badge.textContent = userApprovalCount;
-            tab.appendChild(badge);
-        }
-    });
+            if (userApprovalCount > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'tab-badge';
+                badge.textContent = userApprovalCount;
+                tab.appendChild(badge);
+            }
+        })
+        .catch((error) => {
+            console.error('承認待ちユーザー数取得エラー:', error);
+        });
 }
 
 // 固定シフト管理画面をレンダリング
@@ -3250,24 +3254,29 @@ function renderAdminPanel() {
     
     if (state.activeAdminTab === 'userApproval') {
         c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">読み込み中...</p>';
-        database.ref('users').orderByChild('status').equalTo('pending').once('value', (snapshot) => {
-            c.innerHTML = '';
-            const pendingUsers = [];
-            snapshot.forEach(child => {
-                pendingUsers.push({ uid: child.key, ...child.val() });
+        database.ref('users').orderByChild('status').equalTo('pending').once('value')
+            .then((snapshot) => {
+                c.innerHTML = '';
+                const pendingUsers = [];
+                snapshot.forEach(child => {
+                    pendingUsers.push({ uid: child.key, ...child.val() });
+                });
+                if (!pendingUsers.length) {
+                    c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちユーザーなし</p>';
+                    return;
+                }
+                pendingUsers.forEach(u => {
+                    const card = document.createElement('div');
+                    card.className = 'request-card';
+                    const createdAt = u.createdAt ? new Date(u.createdAt).toLocaleString('ja-JP') : '不明';
+                    card.innerHTML = `<div class="request-info"><h4>👤 ユーザー登録申請</h4><p>名前: ${u.displayName || '不明'}</p><p>従業員番号: ${u.staffId || '不明'}</p><p>登録日時: ${createdAt}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveUser('${u.uid}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectUser('${u.uid}')">却下</button></div>`;
+                    c.appendChild(card);
+                });
+            })
+            .catch((error) => {
+                console.error('ユーザー承認データ取得エラー:', error);
+                c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">データの取得に失敗しました。<br><small>Firebaseのセキュリティルールを確認してください。</small></p>';
             });
-            if (!pendingUsers.length) {
-                c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちユーザーなし</p>';
-                return;
-            }
-            pendingUsers.forEach(u => {
-                const card = document.createElement('div');
-                card.className = 'request-card';
-                const createdAt = u.createdAt ? new Date(u.createdAt).toLocaleString('ja-JP') : '不明';
-                card.innerHTML = `<div class="request-info"><h4>👤 ユーザー登録申請</h4><p>名前: ${u.displayName || '不明'}</p><p>従業員番号: ${u.staffId || '不明'}</p><p>登録日時: ${createdAt}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveUser('${u.uid}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectUser('${u.uid}')">却下</button></div>`;
-                c.appendChild(card);
-            });
-        });
     } else if (state.activeAdminTab === 'shiftChanges') {
         const reqs = state.changeRequests.filter(r => r.status === 'pending');
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }

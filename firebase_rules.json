@@ -1,33 +1,92 @@
 {
   "rules": {
-    ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
-    ".write": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
-
+    "shifts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "fixedShifts": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "shiftOverrides": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "changeRequests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "leaveRequests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "holidayRequests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "employees": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "messages": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "swapRequests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "dailyEvents": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "dailyChecklist": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "nonDailyAdvice": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "trendReports": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "newProductReports": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "categoryMemos": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "productCategories": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "specialEvents": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "usageStats": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "users": {
+      ".read": "auth != null",
+      ".indexOn": ["status"],
       "$uid": {
-        ".read": "$uid === auth.uid || root.child('admins').child(auth.uid).exists()",
-        ".write": "$uid === auth.uid || root.child('admins').child(auth.uid).exists()"
+        ".read": "auth != null",
+        ".write": "auth.uid === $uid"
       }
     },
-
-    "shifts": {
-      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
-      ".write": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)"
-    },
-
-    "employees": {
-      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
-      ".write": "root.child('admins').child(auth.uid).exists()"
-    },
-
-    "admins": {
-      ".read": "auth != null",
-      ".write": "root.child('admins').child(auth.uid).exists()"
-    },
-
     "settings": {
-      ".read": "auth != null && (root.child('users').child(auth.uid).child('status').val() === 'approved' || root.child('users').child(auth.uid).child('status').val() === null)",
-      ".write": "root.child('admins').child(auth.uid).exists()"
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
     }
   }
 }
