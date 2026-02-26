@@ -387,6 +387,7 @@ const state = {
     nonDailyAdvice: [], // 非デイリー発注アドバイス
     trendReports: [], // コンビニ3社 新商品ヒット予測レポート
     newProductReports: [], // 週次インテリジェンス（マクロ環境）
+    infographics: [], // インフォグラフィック
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
@@ -678,7 +679,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents'];
+    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents', 'infographics'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -687,6 +688,7 @@ function loadData() {
             if (key === 'nonDailyAdvice') renderNonDailyAdvisor();
             if (key === 'newProductReports') renderNewProductReport();
             if (key === 'trendReports') renderTrendReports();
+            if (key === 'infographics') renderInfographics();
             render();
             if (state.isAdmin) renderAdminPanel();
             updateMessageBar();
@@ -3246,7 +3248,7 @@ function renderAdminPanel() {
     c.innerHTML = '';
     
     // トレンドレポートタブの場合はmax-heightを解除
-    if (state.activeAdminTab === 'trendReports' || state.activeAdminTab === 'newProductReport') {
+    if (state.activeAdminTab === 'trendReports' || state.activeAdminTab === 'newProductReport' || state.activeAdminTab === 'infographics') {
         c.classList.add('trend-reports-content');
     } else {
         c.classList.remove('trend-reports-content');
@@ -3488,6 +3490,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'newProductReport') {
         // 週次インテリジェンス（マクロ環境）管理
         renderNewProductReportAdmin(c);
+    } else if (state.activeAdminTab === 'infographics') {
+        // インフォグラフィック管理
+        renderInfographicAdmin(c);
     } else if (state.activeAdminTab === 'usageStats') {
         // 利用統計
         renderUsageStats(c);
@@ -4958,6 +4963,7 @@ function init() {
     initReportsGroupToggle(); // レポートグループのトグルを初期化
     initTrendReportToggle(); // コンビニ3社 新商品ヒット予測レポートのトグルを初期化
     initNewProductToggle(); // 週次インテリジェンス（マクロ環境）のトグルを初期化
+    initInfographicToggle(); // インフォグラフィックのトグルを初期化
     loadData();
     render();
 
@@ -6960,6 +6966,246 @@ function deleteNewProductReport(reportId) {
     saveToFirebase('newProductReports', state.newProductReports);
     trackUsage('delete_new_product', '管理者');
     renderNewProductReport();
+}
+
+// ========================================
+// インフォグラフィック
+// ========================================
+
+// インフォグラフィック管理画面
+function renderInfographicAdmin(container) {
+    const items = state.infographics || [];
+
+    const sortedItems = [...items].sort((a, b) =>
+        new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+    );
+
+    let html = `
+        <div class="infographic-admin-container">
+            <div class="new-product-admin-header">
+                <h3>🖼️ インフォグラフィック管理</h3>
+                <p class="header-description">SVGインフォグラフィックを登録・管理します。登録した内容は「レポート」セクションに表示されます。</p>
+                <button class="btn btn-primary" onclick="openAddInfographicModal()">+ インフォグラフィック追加</button>
+            </div>
+
+            <div class="infographic-admin-list">
+    `;
+
+    if (sortedItems.length === 0) {
+        html += '<p class="no-data-message">インフォグラフィックがまだ登録されていません。<br>「+ インフォグラフィック追加」ボタンから追加してください。</p>';
+    } else {
+        sortedItems.forEach(item => {
+            const createdDate = new Date(item.createdAt);
+            const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
+            const updatedDate = item.updatedAt ? new Date(item.updatedAt) : null;
+            const updatedStr = updatedDate ? `${updatedDate.getFullYear()}/${updatedDate.getMonth() + 1}/${updatedDate.getDate()}` : null;
+
+            html += `
+                <div class="infographic-admin-card">
+                    <div class="admin-card-header">
+                        <div class="admin-card-title">${item.title}</div>
+                        <div class="admin-card-meta">
+                            <span>📅 作成: ${dateStr}</span>
+                            ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="admin-card-content">${item.svgContent}</div>
+                    <div class="admin-card-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="openEditInfographicModal('${item.id}')">✏️ 編集</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteInfographic('${item.id}')">🗑️ 削除</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// インフォグラフィックをフロント描画
+function renderInfographics() {
+    const container = document.getElementById('infographicSection');
+    const content = document.getElementById('infographicContent');
+    if (!container || !content) return;
+
+    const items = state.infographics || [];
+
+    const sortedItems = [...items].sort((a, b) =>
+        new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+    );
+
+    let html = '';
+
+    if (sortedItems.length === 0) {
+        html += '<p class="no-report-message">インフォグラフィックはまだありません。</p>';
+    } else {
+        html += '<div class="infographic-list">';
+        sortedItems.forEach(item => {
+            const createdDate = new Date(item.createdAt);
+            const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
+
+            html += `
+                <div class="infographic-card">
+                    <div class="report-header">
+                        <span class="report-title">${item.title}</span>
+                        <span class="report-date">📅 ${dateStr}</span>
+                    </div>
+                    <div class="infographic-svg-container">${item.svgContent}</div>
+                    ${state.isAdmin ? `
+                        <div class="report-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openEditInfographicModal('${item.id}')">✏️ 編集</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteInfographic('${item.id}')">🗑️ 削除</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    content.innerHTML = html;
+
+    initInfographicToggle();
+}
+
+// インフォグラフィックのトグル機能を初期化
+function initInfographicToggle() {
+    const container = document.getElementById('infographicSection');
+    if (!container) return;
+
+    const header = container.querySelector('.advisor-header');
+    const toggle = document.getElementById('infographicToggle');
+    const content = document.getElementById('infographicContent');
+
+    if (header && toggle && content) {
+        header.onclick = (e) => {
+            e.stopPropagation();
+            toggle.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+        };
+    }
+}
+
+// インフォグラフィック追加モーダルを開く
+function openAddInfographicModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay category-modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal category-modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🖼️ インフォグラフィック追加</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <form class="modal-body" onsubmit="submitInfographic(event, this)">
+                <div class="form-group">
+                    <label>タイトル <span class="required">*</span></label>
+                    <input type="text" name="title" placeholder="例: バフェット流・6つの投資原則" required>
+                </div>
+                <div class="form-group">
+                    <label>SVGコード <span class="required">*</span></label>
+                    <textarea name="svgContent" rows="12" placeholder="SVGコードを貼り付けてください（<svg>...</svg>）" required style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+
+    document.body.appendChild(modal);
+}
+
+// インフォグラフィック編集モーダルを開く
+function openEditInfographicModal(id) {
+    const item = state.infographics.find(i => i.id === id);
+    if (!item) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay category-modal-overlay active';
+    modal.innerHTML = `
+        <div class="modal category-modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🖼️ インフォグラフィック編集</h2>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <form class="modal-body" onsubmit="submitInfographic(event, this, '${id}')">
+                <div class="form-group">
+                    <label>タイトル <span class="required">*</span></label>
+                    <input type="text" name="title" value="${item.title}" required>
+                </div>
+                <div class="form-group">
+                    <label>SVGコード <span class="required">*</span></label>
+                    <textarea name="svgContent" rows="12" required style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    // textareaにSVGコンテンツをセット（HTMLエスケープ問題を回避）
+    modal.querySelector('textarea[name="svgContent"]').value = item.svgContent;
+
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+
+    document.body.appendChild(modal);
+}
+
+// インフォグラフィック保存
+function submitInfographic(event, form, id = null) {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const title = formData.get('title');
+    const svgContent = formData.get('svgContent');
+
+    if (id) {
+        const item = state.infographics.find(i => i.id === id);
+        if (item) {
+            item.title = title;
+            item.svgContent = svgContent;
+            item.updatedAt = new Date().toISOString();
+        }
+        trackUsage('edit_infographic', '管理者');
+    } else {
+        const newItem = {
+            id: 'infographic-' + Date.now(),
+            title,
+            svgContent,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        state.infographics.push(newItem);
+        trackUsage('add_infographic', '管理者');
+    }
+
+    saveToFirebase('infographics', state.infographics);
+    form.closest('.modal-overlay').remove();
+    renderInfographics();
+}
+
+// インフォグラフィック削除
+function deleteInfographic(id) {
+    if (!confirm('このインフォグラフィックを削除しますか？')) return;
+
+    state.infographics = state.infographics.filter(i => i.id !== id);
+    saveToFirebase('infographics', state.infographics);
+    trackUsage('delete_infographic', '管理者');
+    renderInfographics();
 }
 
 // ========================================
