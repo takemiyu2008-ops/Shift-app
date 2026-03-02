@@ -538,12 +538,29 @@ function preprocessObsidian(text) {
     return result.join('\n');
 }
 
+// SVGブロック内の空行を除去（marked.jsがHTMLブロックを分断するのを防止）
+function stripBlankLinesInSvg(text) {
+    const lines = text.split('\n');
+    const result = [];
+    let inSvg = false;
+
+    for (const line of lines) {
+        if (/<svg[\s>]/i.test(line)) inSvg = true;
+        if (inSvg && line.trim() === '') continue;
+        result.push(line);
+        if (/<\/svg>/i.test(line)) inSvg = false;
+    }
+
+    return result.join('\n');
+}
+
 // Markdownレンダリングヘルパー関数
 function renderMarkdown(text) {
     if (!text) return '';
     if (typeof marked !== 'undefined') {
         const processed = preprocessObsidian(text);
-        return marked.parse(processed);
+        const svgCleaned = stripBlankLinesInSvg(processed);
+        return marked.parse(svgCleaned);
     }
     // fallback: 従来の改行変換
     return text.replace(/\n/g, '<br>');
