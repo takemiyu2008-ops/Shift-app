@@ -2767,7 +2767,7 @@ body {
     background: var(--bg-secondary);
     border-radius: var(--radius-md);
     margin-bottom: 12px;
-    max-height: 200px;
+    max-height: 600px;
     overflow-y: auto;
 }
 
@@ -3009,6 +3009,21 @@ body {
     max-width: 100%;
     height: auto;
     border-radius: var(--radius-md);
+}
+
+.report-content .infographic-svg-container,
+.admin-card-content .infographic-svg-container {
+    width: 100%;
+    margin: 1em 0;
+    overflow-x: auto;
+}
+
+.report-content .infographic-svg-container svg,
+.admin-card-content .infographic-svg-container svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-width: 100%;
 }
 
 /* ========================================

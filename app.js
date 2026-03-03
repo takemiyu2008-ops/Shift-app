@@ -538,20 +538,26 @@ function preprocessObsidian(text) {
     return result.join('\n');
 }
 
-// SVGブロック内の空行を除去（marked.jsがHTMLブロックを分断するのを防止）
-function stripBlankLinesInSvg(text) {
-    const lines = text.split('\n');
-    const result = [];
-    let inSvg = false;
+// SVGブロックを抽出しプレースホルダーに置換（marked.jsはsvgをブロックレベルHTMLとして認識しないため）
+function extractSvgBlocks(text) {
+    const svgBlocks = [];
+    const replaced = text.replace(/<svg[\s>][\s\S]*?<\/svg>/gi, (match) => {
+        svgBlocks.push(match);
+        return `\n<!--SVG_PLACEHOLDER_${svgBlocks.length - 1}-->\n`;
+    });
+    return { text: replaced, svgBlocks };
+}
 
-    for (const line of lines) {
-        if (/<svg[\s>]/i.test(line)) inSvg = true;
-        if (inSvg && line.trim() === '') continue;
-        result.push(line);
-        if (/<\/svg>/i.test(line)) inSvg = false;
-    }
-
-    return result.join('\n');
+// プレースホルダーをSVGブロックに戻す
+function restoreSvgBlocks(html, svgBlocks) {
+    svgBlocks.forEach((svg, i) => {
+        const placeholder = `<!--SVG_PLACEHOLDER_${i}-->`;
+        html = html.replace(
+            placeholder,
+            `<div class="infographic-svg-container">${svg}</div>`
+        );
+    });
+    return html;
 }
 
 // Markdownレンダリングヘルパー関数
@@ -559,8 +565,10 @@ function renderMarkdown(text) {
     if (!text) return '';
     if (typeof marked !== 'undefined') {
         const processed = preprocessObsidian(text);
-        const svgCleaned = stripBlankLinesInSvg(processed);
-        return marked.parse(svgCleaned);
+        const { text: withoutSvg, svgBlocks } = extractSvgBlocks(processed);
+        let html = marked.parse(withoutSvg);
+        html = restoreSvgBlocks(html, svgBlocks);
+        return html;
     }
     // fallback: 従来の改行変換
     return text.replace(/\n/g, '<br>');
