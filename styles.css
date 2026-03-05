@@ -3011,20 +3011,6 @@ body {
     border-radius: var(--radius-md);
 }
 
-.report-content .infographic-svg-container,
-.admin-card-content .infographic-svg-container {
-    width: 100%;
-    margin: 1em 0;
-    overflow-x: auto;
-}
-
-.report-content .infographic-svg-container svg,
-.admin-card-content .infographic-svg-container svg {
-    width: 100%;
-    height: auto;
-    display: block;
-    max-width: 100%;
-}
 
 /* ========================================
    Markdownプレビュータブ
@@ -3123,22 +3109,26 @@ body {
 /* 新商品レポート モバイル対応 */
 @media (max-width: 768px) {
     .new-product-report-card,
-    .trend-report-card {
+    .trend-report-card,
+    .product-research-card {
         padding: 14px;
     }
-    
+
     .new-product-report-card .report-title,
-    .trend-report-card .report-title {
+    .trend-report-card .report-title,
+    .product-research-card .report-title {
         font-size: 1rem;
     }
-    
+
     .new-product-report-card .report-content,
-    .trend-report-card .report-content {
+    .trend-report-card .report-content,
+    .product-research-card .report-content {
         font-size: 0.9rem;
     }
-    
+
     .new-product-report-card .report-actions,
-    .trend-report-card .report-actions {
+    .trend-report-card .report-actions,
+    .product-research-card .report-actions {
         justify-content: center;
     }
     
@@ -7181,119 +7171,67 @@ body {
 }
 
 /* ========================================
-   インフォグラフィック
+   新規商品調査レポート
    ======================================== */
-.infographic-section .advisor-header.sub-header {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(52, 211, 153, 0.08));
-    border-left: 3px solid #10b981;
+.product-research-section .advisor-header.sub-header {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.08));
+    border-left: 3px solid #F59E0B;
 }
 
-.infographic-card {
+.product-research-reports-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.product-research-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-left: 4px solid #10b981;
-    border-radius: 12px;
+    border-left: 4px solid #F59E0B;
+    border-radius: var(--radius-md);
     padding: 16px;
+    transition: all var(--transition-fast);
     margin-bottom: 12px;
-    transition: all 0.2s ease;
 }
 
-.infographic-card:hover {
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.1);
+.product-research-card:hover {
+    box-shadow: var(--shadow-md);
 }
 
-.infographic-card .report-header {
+.product-research-card .report-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.infographic-card .report-title {
+.product-research-card .report-title {
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
-    font-size: 1rem;
 }
 
-.infographic-card .report-date {
-    font-size: 0.8rem;
-    color: var(--text-muted);
+.product-research-card .report-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
 }
 
-.infographic-svg-container {
-    background: #fff;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 8px 0;
-    overflow: hidden;
+.product-research-card .report-content {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
-.infographic-svg-container svg {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.infographic-card .report-actions {
+.product-research-card .report-actions {
     display: flex;
     gap: 8px;
     margin-top: 12px;
     justify-content: flex-end;
-}
-
-/* 管理画面用 */
-.infographic-admin-container {
-    padding: 20px;
-}
-
-.infographic-admin-container h3 {
-    color: var(--text-primary);
-    margin-bottom: 8px;
-}
-
-.infographic-admin-container .header-description {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 16px;
-}
-
-.infographic-admin-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-left: 4px solid #10b981;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-}
-
-.infographic-admin-card .admin-card-content {
-    background: #fff;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 12px 0;
-    overflow: hidden;
-}
-
-.infographic-admin-card .admin-card-content svg {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-/* モバイル対応 */
-@media (max-width: 768px) {
-    .infographic-svg-container {
-        padding: 8px;
-    }
-    .infographic-card {
-        padding: 12px;
-    }
-    .infographic-card .report-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-    }
 }
 
 /* モバイル対応 */

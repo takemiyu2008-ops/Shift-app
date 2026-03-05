@@ -387,7 +387,7 @@ const state = {
     nonDailyAdvice: [], // 非デイリー発注アドバイス
     trendReports: [], // コンビニ3社 新商品ヒット予測レポート
     newProductReports: [], // 週次インテリジェンス（マクロ環境）
-    infographics: [], // インフォグラフィック
+    productResearchReports: [], // 新規商品調査レポート
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
@@ -538,39 +538,12 @@ function preprocessObsidian(text) {
     return result.join('\n');
 }
 
-// SVGブロックを抽出しプレースホルダーに置換（marked.jsはsvgをブロックレベルHTMLとして認識しないため）
-function extractSvgBlocks(text) {
-    const svgBlocks = [];
-    const replaced = text.replace(/<svg[\s>][\s\S]*?<\/svg>/gi, (match) => {
-        svgBlocks.push(match);
-        return `\n<!--SVG_PLACEHOLDER_${svgBlocks.length - 1}-->\n`;
-    });
-    return { text: replaced, svgBlocks };
-}
-
-// プレースホルダーをSVGブロックに戻す
-function restoreSvgBlocks(html, svgBlocks) {
-    svgBlocks.forEach((svg, i) => {
-        const placeholder = `<!--SVG_PLACEHOLDER_${i}-->`;
-        html = html.replace(
-            placeholder,
-            `<div class="infographic-svg-container">${svg}</div>`
-        );
-    });
-    return html;
-}
-
 // Markdownレンダリングヘルパー関数
 function renderMarkdown(text) {
     if (!text) return '';
     if (typeof marked !== 'undefined') {
-        const processed = preprocessObsidian(text);
-        const { text: withoutSvg, svgBlocks } = extractSvgBlocks(processed);
-        let html = marked.parse(withoutSvg);
-        html = restoreSvgBlocks(html, svgBlocks);
-        return html;
+        return marked.parse(preprocessObsidian(text));
     }
-    // fallback: 従来の改行変換
     return text.replace(/\n/g, '<br>');
 }
 
@@ -704,7 +677,7 @@ function updateShiftDateDay() {
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents', 'infographics'];
+    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents', 'productResearchReports'];
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
@@ -713,7 +686,7 @@ function loadData() {
             if (key === 'nonDailyAdvice') renderNonDailyAdvisor();
             if (key === 'newProductReports') renderNewProductReport();
             if (key === 'trendReports') renderTrendReports();
-            if (key === 'infographics') renderInfographics();
+            if (key === 'productResearchReports') renderProductResearch();
             render();
             if (state.isAdmin) renderAdminPanel();
             updateMessageBar();
@@ -3273,7 +3246,7 @@ function renderAdminPanel() {
     c.innerHTML = '';
     
     // トレンドレポートタブの場合はmax-heightを解除
-    if (state.activeAdminTab === 'trendReports' || state.activeAdminTab === 'newProductReport' || state.activeAdminTab === 'infographics') {
+    if (state.activeAdminTab === 'trendReports' || state.activeAdminTab === 'newProductReport' || state.activeAdminTab === 'productResearch') {
         c.classList.add('trend-reports-content');
     } else {
         c.classList.remove('trend-reports-content');
@@ -3515,9 +3488,9 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'newProductReport') {
         // 週次インテリジェンス（マクロ環境）管理
         renderNewProductReportAdmin(c);
-    } else if (state.activeAdminTab === 'infographics') {
-        // インフォグラフィック管理
-        renderInfographicAdmin(c);
+    } else if (state.activeAdminTab === 'productResearch') {
+        // 新規商品調査レポート管理
+        renderProductResearchAdmin(c);
     } else if (state.activeAdminTab === 'usageStats') {
         // 利用統計
         renderUsageStats(c);
@@ -4988,7 +4961,7 @@ function init() {
     initReportsGroupToggle(); // レポートグループのトグルを初期化
     initTrendReportToggle(); // コンビニ3社 新商品ヒット予測レポートのトグルを初期化
     initNewProductToggle(); // 週次インテリジェンス（マクロ環境）のトグルを初期化
-    initInfographicToggle(); // インフォグラフィックのトグルを初期化
+    initProductResearchToggle(); // 新規商品調査レポートのトグルを初期化
     loadData();
     render();
 
@@ -6994,50 +6967,50 @@ function deleteNewProductReport(reportId) {
 }
 
 // ========================================
-// インフォグラフィック
+// 新規商品調査レポート
 // ========================================
 
-// インフォグラフィック管理画面
-function renderInfographicAdmin(container) {
-    const items = state.infographics || [];
+// 新規商品調査レポート管理画面
+function renderProductResearchAdmin(container) {
+    const reports = state.productResearchReports || [];
 
-    const sortedItems = [...items].sort((a, b) =>
+    const sortedReports = [...reports].sort((a, b) =>
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
 
     let html = `
-        <div class="infographic-admin-container">
+        <div class="new-product-admin-container">
             <div class="new-product-admin-header">
-                <h3>🖼️ インフォグラフィック管理</h3>
-                <p class="header-description">SVGインフォグラフィックを登録・管理します。登録した内容は「レポート」セクションに表示されます。</p>
-                <button class="btn btn-primary" onclick="openAddInfographicModal()">+ インフォグラフィック追加</button>
+                <h3>🔍 新規商品調査レポート管理</h3>
+                <p class="header-description">新規商品の調査レポートを登録・管理します。登録した内容は「レポート」セクションに表示されます。</p>
+                <button class="btn btn-primary" onclick="openAddProductResearchModal()">+ 新規商品調査レポート追加</button>
             </div>
 
-            <div class="infographic-admin-list">
+            <div class="new-product-admin-list">
     `;
 
-    if (sortedItems.length === 0) {
-        html += '<p class="no-data-message">インフォグラフィックがまだ登録されていません。<br>「+ インフォグラフィック追加」ボタンから追加してください。</p>';
+    if (sortedReports.length === 0) {
+        html += '<p class="no-data-message">新規商品調査レポートがまだ登録されていません。<br>「+ 新規商品調査レポート追加」ボタンから追加してください。</p>';
     } else {
-        sortedItems.forEach(item => {
-            const createdDate = new Date(item.createdAt);
+        sortedReports.forEach(report => {
+            const createdDate = new Date(report.createdAt);
             const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
-            const updatedDate = item.updatedAt ? new Date(item.updatedAt) : null;
+            const updatedDate = report.updatedAt ? new Date(report.updatedAt) : null;
             const updatedStr = updatedDate ? `${updatedDate.getFullYear()}/${updatedDate.getMonth() + 1}/${updatedDate.getDate()}` : null;
 
             html += `
-                <div class="infographic-admin-card">
+                <div class="new-product-admin-card">
                     <div class="admin-card-header">
-                        <div class="admin-card-title">${item.title}</div>
+                        <div class="admin-card-title">${report.title}</div>
                         <div class="admin-card-meta">
                             <span>📅 作成: ${dateStr}</span>
                             ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
                         </div>
                     </div>
-                    <div class="admin-card-content">${item.svgContent}</div>
+                    <div class="admin-card-content">${renderMarkdown(report.content)}</div>
                     <div class="admin-card-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="openEditInfographicModal('${item.id}')">✏️ 編集</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteInfographic('${item.id}')">🗑️ 削除</button>
+                        <button class="btn btn-sm btn-secondary" onclick="openEditProductResearchModal('${report.id}')">✏️ 編集</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProductResearch('${report.id}')">🗑️ 削除</button>
                     </div>
                 </div>
             `;
@@ -7052,39 +7025,39 @@ function renderInfographicAdmin(container) {
     container.innerHTML = html;
 }
 
-// インフォグラフィックをフロント描画
-function renderInfographics() {
-    const container = document.getElementById('infographicSection');
-    const content = document.getElementById('infographicContent');
+// 新規商品調査レポートを描画（フロント表示用）
+function renderProductResearch() {
+    const container = document.getElementById('productResearchSection');
+    const content = document.getElementById('productResearchContent');
     if (!container || !content) return;
 
-    const items = state.infographics || [];
+    const reports = state.productResearchReports || [];
 
-    const sortedItems = [...items].sort((a, b) =>
+    const sortedReports = [...reports].sort((a, b) =>
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
 
     let html = '';
 
-    if (sortedItems.length === 0) {
-        html += '<p class="no-report-message">インフォグラフィックはまだありません。</p>';
+    if (sortedReports.length === 0) {
+        html += '<p class="no-report-message">新規商品調査レポートはまだありません。</p>';
     } else {
-        html += '<div class="infographic-list">';
-        sortedItems.forEach(item => {
-            const createdDate = new Date(item.createdAt);
+        html += '<div class="product-research-reports-list">';
+        sortedReports.forEach(report => {
+            const createdDate = new Date(report.createdAt);
             const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
 
             html += `
-                <div class="infographic-card">
+                <div class="product-research-card">
                     <div class="report-header">
-                        <span class="report-title">${item.title}</span>
+                        <span class="report-title">${report.title}</span>
                         <span class="report-date">📅 ${dateStr}</span>
                     </div>
-                    <div class="infographic-svg-container">${item.svgContent}</div>
+                    <div class="report-content">${renderMarkdown(report.content)}</div>
                     ${state.isAdmin ? `
                         <div class="report-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="openEditInfographicModal('${item.id}')">✏️ 編集</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteInfographic('${item.id}')">🗑️ 削除</button>
+                            <button class="btn btn-sm btn-secondary" onclick="openEditProductResearchModal('${report.id}')">✏️ 編集</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProductResearch('${report.id}')">🗑️ 削除</button>
                         </div>
                     ` : ''}
                 </div>
@@ -7095,17 +7068,17 @@ function renderInfographics() {
 
     content.innerHTML = html;
 
-    initInfographicToggle();
+    initProductResearchToggle();
 }
 
-// インフォグラフィックのトグル機能を初期化
-function initInfographicToggle() {
-    const container = document.getElementById('infographicSection');
+// 新規商品調査レポートのトグル機能を初期化
+function initProductResearchToggle() {
+    const container = document.getElementById('productResearchSection');
     if (!container) return;
 
     const header = container.querySelector('.advisor-header');
-    const toggle = document.getElementById('infographicToggle');
-    const content = document.getElementById('infographicContent');
+    const toggle = document.getElementById('productResearchToggle');
+    const content = document.getElementById('productResearchContent');
 
     if (header && toggle && content) {
         header.onclick = (e) => {
@@ -7117,24 +7090,28 @@ function initInfographicToggle() {
     }
 }
 
-// インフォグラフィック追加モーダルを開く
-function openAddInfographicModal() {
+// 新規商品調査レポート追加モーダルを開く
+function openAddProductResearchModal() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
-        <div class="modal category-modal" style="max-width: 700px;">
+        <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">🖼️ インフォグラフィック追加</h2>
+                <h2 class="modal-title">🔍 新規商品調査レポート追加</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
-            <form class="modal-body" onsubmit="submitInfographic(event, this)">
+            <form class="modal-body" onsubmit="submitProductResearch(event, this)">
                 <div class="form-group">
                     <label>タイトル <span class="required">*</span></label>
-                    <input type="text" name="title" placeholder="例: バフェット流・6つの投資原則" required>
+                    <input type="text" name="title" placeholder="例: 2026年3月 新規商品調査レポート" required>
                 </div>
-                <div class="form-group">
-                    <label>SVGコード <span class="required">*</span></label>
-                    <textarea name="svgContent" rows="12" placeholder="SVGコードを貼り付けてください（<svg>...</svg>）" required style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                <div class="form-group markdown-form-group">
+                    <label>内容 <span class="required">*</span></label>
+                    <div class="preview-tabs">
+                        <button type="button" class="preview-tab active" data-mode="edit" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'edit')">✏️ 編集</button>
+                        <button type="button" class="preview-tab" data-mode="preview" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'preview')">👁️ プレビュー</button>
+                    </div>
+                    <textarea name="content" rows="10" placeholder="新規商品の調査内容を入力してください（Markdown対応）..." required></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
@@ -7151,27 +7128,31 @@ function openAddInfographicModal() {
     document.body.appendChild(modal);
 }
 
-// インフォグラフィック編集モーダルを開く
-function openEditInfographicModal(id) {
-    const item = state.infographics.find(i => i.id === id);
-    if (!item) return;
+// 新規商品調査レポート編集モーダルを開く
+function openEditProductResearchModal(reportId) {
+    const report = state.productResearchReports.find(r => r.id === reportId);
+    if (!report) return;
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
-        <div class="modal category-modal" style="max-width: 700px;">
+        <div class="modal category-modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">🖼️ インフォグラフィック編集</h2>
+                <h2 class="modal-title">🔍 新規商品調査レポート編集</h2>
                 <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
-            <form class="modal-body" onsubmit="submitInfographic(event, this, '${id}')">
+            <form class="modal-body" onsubmit="submitProductResearch(event, this, '${reportId}')">
                 <div class="form-group">
                     <label>タイトル <span class="required">*</span></label>
-                    <input type="text" name="title" value="${item.title}" required>
+                    <input type="text" name="title" value="${report.title}" required>
                 </div>
-                <div class="form-group">
-                    <label>SVGコード <span class="required">*</span></label>
-                    <textarea name="svgContent" rows="12" required style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                <div class="form-group markdown-form-group">
+                    <label>内容 <span class="required">*</span></label>
+                    <div class="preview-tabs">
+                        <button type="button" class="preview-tab active" data-mode="edit" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'edit')">✏️ 編集</button>
+                        <button type="button" class="preview-tab" data-mode="preview" onclick="toggleMarkdownPreview(this.closest('.markdown-form-group'), 'preview')">👁️ プレビュー</button>
+                    </div>
+                    <textarea name="content" rows="10" required>${report.content}</textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
@@ -7181,9 +7162,6 @@ function openEditInfographicModal(id) {
         </div>
     `;
 
-    // textareaにSVGコンテンツをセット（HTMLエスケープ問題を回避）
-    modal.querySelector('textarea[name="svgContent"]').value = item.svgContent;
-
     modal.onclick = (e) => {
         if (e.target === modal) modal.remove();
     };
@@ -7191,46 +7169,46 @@ function openEditInfographicModal(id) {
     document.body.appendChild(modal);
 }
 
-// インフォグラフィック保存
-function submitInfographic(event, form, id = null) {
+// 新規商品調査レポート送信
+function submitProductResearch(event, form, reportId = null) {
     event.preventDefault();
     const formData = new FormData(form);
     const title = formData.get('title');
-    const svgContent = formData.get('svgContent');
+    const content = formData.get('content');
 
-    if (id) {
-        const item = state.infographics.find(i => i.id === id);
-        if (item) {
-            item.title = title;
-            item.svgContent = svgContent;
-            item.updatedAt = new Date().toISOString();
+    if (reportId) {
+        const report = state.productResearchReports.find(r => r.id === reportId);
+        if (report) {
+            report.title = title;
+            report.content = content;
+            report.updatedAt = new Date().toISOString();
         }
-        trackUsage('edit_infographic', '管理者');
+        trackUsage('edit_product_research', '管理者');
     } else {
-        const newItem = {
-            id: 'infographic-' + Date.now(),
+        const newReport = {
+            id: 'research-' + Date.now(),
             title,
-            svgContent,
+            content,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
-        state.infographics.push(newItem);
-        trackUsage('add_infographic', '管理者');
+        state.productResearchReports.push(newReport);
+        trackUsage('add_product_research', '管理者');
     }
 
-    saveToFirebase('infographics', state.infographics);
+    saveToFirebase('productResearchReports', state.productResearchReports);
     form.closest('.modal-overlay').remove();
-    renderInfographics();
+    renderProductResearch();
 }
 
-// インフォグラフィック削除
-function deleteInfographic(id) {
-    if (!confirm('このインフォグラフィックを削除しますか？')) return;
+// 新規商品調査レポート削除
+function deleteProductResearch(reportId) {
+    if (!confirm('このレポートを削除しますか？')) return;
 
-    state.infographics = state.infographics.filter(i => i.id !== id);
-    saveToFirebase('infographics', state.infographics);
-    trackUsage('delete_infographic', '管理者');
-    renderInfographics();
+    state.productResearchReports = state.productResearchReports.filter(r => r.id !== reportId);
+    saveToFirebase('productResearchReports', state.productResearchReports);
+    trackUsage('delete_product_research', '管理者');
+    renderProductResearch();
 }
 
 // ========================================
