@@ -68,7 +68,7 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
-    "infographics": {
+    "productResearchReports": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
