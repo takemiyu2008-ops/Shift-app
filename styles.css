@@ -3106,6 +3106,19 @@ body {
     color: inherit;
 }
 
+/* SVGインフォグラフィックコンテナ */
+.infographic-svg-container {
+    width: 100%;
+    margin: 1em 0;
+    text-align: center;
+    overflow-x: auto;
+}
+
+.infographic-svg-container svg {
+    max-width: 100%;
+    height: auto;
+}
+
 /* 新商品レポート モバイル対応 */
 @media (max-width: 768px) {
     .new-product-report-card,

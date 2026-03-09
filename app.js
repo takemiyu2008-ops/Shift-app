@@ -538,11 +538,34 @@ function preprocessObsidian(text) {
     return result.join('\n');
 }
 
+// SVGブロック抽出（marked.jsがSVGを破壊するのを防止）
+function extractSvgBlocks(text) {
+    const svgBlocks = [];
+    const processed = text.replace(/<svg[\s\S]*?<\/svg>/gi, (match) => {
+        svgBlocks.push(match);
+        return `<!--SVG_PLACEHOLDER_${svgBlocks.length - 1}-->`;
+    });
+    return { text: processed, svgBlocks };
+}
+
+// SVGブロック復元
+function restoreSvgBlocks(html, svgBlocks) {
+    return html.replace(/<!--SVG_PLACEHOLDER_(\d+)-->/g, (match, index) => {
+        const idx = parseInt(index);
+        if (idx < svgBlocks.length) {
+            return `<div class="infographic-svg-container">${svgBlocks[idx]}</div>`;
+        }
+        return match;
+    });
+}
+
 // Markdownレンダリングヘルパー関数
 function renderMarkdown(text) {
     if (!text) return '';
     if (typeof marked !== 'undefined') {
-        return marked.parse(preprocessObsidian(text));
+        const { text: cleanText, svgBlocks } = extractSvgBlocks(text);
+        const html = marked.parse(preprocessObsidian(cleanText));
+        return svgBlocks.length > 0 ? restoreSvgBlocks(html, svgBlocks) : html;
     }
     return text.replace(/\n/g, '<br>');
 }
