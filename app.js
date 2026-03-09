@@ -543,14 +543,14 @@ function extractSvgBlocks(text) {
     const svgBlocks = [];
     const processed = text.replace(/<svg[\s\S]*?<\/svg>/gi, (match) => {
         svgBlocks.push(match);
-        return `<!--SVG_PLACEHOLDER_${svgBlocks.length - 1}-->`;
+        return `<div data-svg-placeholder="${svgBlocks.length - 1}"></div>`;
     });
     return { text: processed, svgBlocks };
 }
 
 // SVGブロック復元
 function restoreSvgBlocks(html, svgBlocks) {
-    return html.replace(/<!--SVG_PLACEHOLDER_(\d+)-->/g, (match, index) => {
+    return html.replace(/<div data-svg-placeholder="(\d+)"><\/div>/g, (match, index) => {
         const idx = parseInt(index);
         if (idx < svgBlocks.length) {
             return `<div class="infographic-svg-container">${svgBlocks[idx]}</div>`;
