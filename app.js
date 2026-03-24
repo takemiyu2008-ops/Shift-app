@@ -7173,59 +7173,18 @@ function renderProductResearch() {
     if (!container || !content) return;
 
     const reports = state.productResearchReports || [];
-    const activeFilter = state.productResearchFilter || 'all';
 
     const sortedReports = [...reports].sort((a, b) =>
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
 
-    // カテゴリフィルター適用（Firebase がカテゴリ配列をオブジェクトで返す場合にも対応）
-    const getCats = (r) => {
-        if (!r.categories) return [];
-        return Array.isArray(r.categories) ? r.categories : Object.values(r.categories);
-    };
-    const filteredReports = activeFilter === 'all'
-        ? sortedReports
-        : activeFilter === 'uncategorized'
-            ? sortedReports.filter(r => getCats(r).length === 0)
-            : sortedReports.filter(r => getCats(r).includes(activeFilter));
+    const filteredReports = sortedReports;
 
     let html = '';
 
-    // カテゴリフィルターUI（レポートが1件以上ある場合のみ表示）
-    const usedCategories = new Set();
-    let uncategorizedCount = 0;
-    sortedReports.forEach(r => {
-        if (!r.categories || r.categories.length === 0) {
-            uncategorizedCount++;
-        } else {
-            (Array.isArray(r.categories) ? r.categories : Object.values(r.categories)).forEach(c => usedCategories.add(c));
-        }
-    });
-
-    if (sortedReports.length > 0) {
-        html += '<div class="product-research-filter">';
-        html += `<button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="filterProductResearch('all')">📋 全て (${sortedReports.length})</button>`;
-        PRODUCT_RESEARCH_CATEGORIES.forEach(cat => {
-            if (usedCategories.has(cat.id)) {
-                const count = sortedReports.filter(r => {
-                    const cats = r.categories ? (Array.isArray(r.categories) ? r.categories : Object.values(r.categories)) : [];
-                    return cats.includes(cat.id);
-                }).length;
-                html += `<button class="filter-chip ${activeFilter === cat.id ? 'active' : ''}" onclick="filterProductResearch('${cat.id}')">${cat.icon} ${cat.name} (${count})</button>`;
-            }
-        });
-        if (uncategorizedCount > 0) {
-            html += `<button class="filter-chip ${activeFilter === 'uncategorized' ? 'active' : ''}" onclick="filterProductResearch('uncategorized')">📁 未分類 (${uncategorizedCount})</button>`;
-        }
-        html += '</div>';
-
-        // フィルター結果表示
-        const filterLabel = activeFilter === 'all' ? '全て' : activeFilter === 'uncategorized' ? '未分類' : (() => {
-            const c = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === activeFilter);
-            return c ? `${c.icon} ${c.name}` : activeFilter;
-        })();
-        html += `<div class="product-research-filter-status" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; padding: 6px 12px; background: var(--bg-tertiary); border-radius: 8px;">📊 「${filterLabel}」${filteredReports.length}件 / 全${sortedReports.length}件を表示中</div>`;
+    // レポート件数表示（複数レポートがある場合）
+    if (sortedReports.length > 1) {
+        html += `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px;">📊 ${sortedReports.length}件のレポート</div>`;
     }
 
     if (filteredReports.length === 0) {
@@ -7236,28 +7195,42 @@ function renderProductResearch() {
         }
     } else {
         html += '<div class="product-research-reports-list">';
-        filteredReports.forEach(report => {
+        filteredReports.forEach((report, reportIdx) => {
             const createdDate = new Date(report.createdAt);
             const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
-            const reportCats = report.categories ? (Array.isArray(report.categories) ? report.categories : Object.values(report.categories)) : [];
-            const categoryTags = reportCats.map(catId => {
-                const cat = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === catId);
-                return cat ? `<span class="research-category-tag">${cat.icon} ${cat.name}</span>` : '';
-            }).join('');
 
-            // カテゴリ未設定の場合の表示
-            const noCategoryNotice = reportCats.length === 0
-                ? `<div class="research-category-tags"><span class="research-category-tag" style="background: rgba(156,163,175,0.2); color: var(--text-secondary);">📁 カテゴリ未設定</span>${state.isAdmin ? `<button class="btn btn-sm" style="font-size: 0.7rem; padding: 2px 8px; margin-left: 4px;" onclick="openEditProductResearchModal('${report.id}')">設定する</button>` : ''}</div>`
-                : '';
+            // Markdownコンテンツから### 見出しでセクション分割
+            const renderedContent = renderMarkdown(report.content);
+            const sections = extractReportSections(report.content);
+            const reportId = `report-${reportIdx}`;
+
+            // セクションフィルターUI（H3見出しが2つ以上ある場合のみ表示）
+            let sectionFilterHtml = '';
+            if (sections.length >= 2) {
+                sectionFilterHtml = `
+                    <div class="report-section-filter" id="${reportId}-filter">
+                        <button class="section-chip active" onclick="filterReportSection('${reportId}', 'all', this)">📋 全体</button>
+                        ${sections.map((sec, i) => `<button class="section-chip" onclick="filterReportSection('${reportId}', '${i}', this)">${sec.title}</button>`).join('')}
+                    </div>
+                `;
+            }
+
+            // セクション分割されたHTMLを生成
+            let sectionContentHtml;
+            if (sections.length >= 2) {
+                sectionContentHtml = buildSectionedReportHtml(report.content, sections, reportId);
+            } else {
+                sectionContentHtml = renderedContent;
+            }
 
             html += `
-                <div class="product-research-card">
+                <div class="product-research-card" id="${reportId}">
                     <div class="report-header">
                         <span class="report-title">${report.title}</span>
                         <span class="report-date">📅 ${dateStr}</span>
                     </div>
-                    ${categoryTags ? `<div class="research-category-tags">${categoryTags}</div>` : noCategoryNotice}
-                    <div class="report-content">${renderMarkdown(report.content)}</div>
+                    ${sectionFilterHtml}
+                    <div class="report-content">${sectionContentHtml}</div>
                     ${state.isAdmin ? `
                         <div class="report-actions">
                             <button class="btn btn-sm btn-secondary" onclick="openEditProductResearchModal('${report.id}')">✏️ 編集</button>
@@ -7273,6 +7246,68 @@ function renderProductResearch() {
     content.innerHTML = html;
 
     initProductResearchToggle();
+}
+
+// レポートのMarkdownコンテンツから### 見出しセクションを抽出
+function extractReportSections(markdownContent) {
+    const lines = markdownContent.split('\n');
+    const sections = [];
+    for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(/^### (.+)/);
+        if (match) {
+            sections.push({ title: match[1].trim(), lineIndex: i });
+        }
+    }
+    return sections;
+}
+
+// セクション分割されたHTMLを生成
+function buildSectionedReportHtml(markdownContent, sections, reportId) {
+    const lines = markdownContent.split('\n');
+
+    // セクション前のコンテンツ（概要サマリーなど）
+    const preContent = lines.slice(0, sections[0].lineIndex).join('\n');
+    let html = `<div class="report-section-block" data-report="${reportId}" data-section="pre">${renderMarkdown(preContent)}</div>`;
+
+    // 各セクション
+    sections.forEach((sec, i) => {
+        const startLine = sec.lineIndex;
+        const endLine = i + 1 < sections.length ? sections[i + 1].lineIndex : lines.length;
+        const sectionContent = lines.slice(startLine, endLine).join('\n');
+        html += `<div class="report-section-block" data-report="${reportId}" data-section="${i}">${renderMarkdown(sectionContent)}</div>`;
+    });
+
+    return html;
+}
+
+// レポート内セクションフィルター
+function filterReportSection(reportId, sectionId, btn) {
+    // ボタンのアクティブ状態を更新
+    const filterContainer = document.getElementById(`${reportId}-filter`);
+    if (filterContainer) {
+        filterContainer.querySelectorAll('.section-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // セクションの表示/非表示を切り替え
+    const blocks = document.querySelectorAll(`.report-section-block[data-report="${reportId}"]`);
+    blocks.forEach(block => {
+        if (sectionId === 'all') {
+            block.style.display = '';
+        } else {
+            const blockSection = block.dataset.section;
+            // 「pre」（概要部分）は常に表示、選択セクションのみ表示
+            block.style.display = (blockSection === 'pre' || blockSection === sectionId) ? '' : 'none';
+        }
+    });
+
+    // スクロール位置を調整（選択したセクションの先頭へ）
+    if (sectionId !== 'all') {
+        const targetBlock = document.querySelector(`.report-section-block[data-report="${reportId}"][data-section="${sectionId}"]`);
+        if (targetBlock) {
+            targetBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
 }
 
 // 新規商品調査レポートをカテゴリでフィルタリング

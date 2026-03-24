@@ -7264,6 +7264,58 @@ body {
     justify-content: flex-end;
 }
 
+/* レポート内セクションフィルター */
+.report-section-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.section-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.section-chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.section-chip.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .report-section-filter {
+        gap: 3px;
+        padding: 8px 10px;
+    }
+
+    .section-chip {
+        padding: 3px 7px;
+        font-size: 0.68rem;
+    }
+}
+
 /* カテゴリフィルター */
 .product-research-filter {
     display: flex;
