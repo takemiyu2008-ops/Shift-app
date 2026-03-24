@@ -963,8 +963,18 @@ function renderGanttBody() {
             // 単日上書きがあるか確認
             const override = dayOverrides.find(o => o.fixedShiftId === f.id);
             if (override) {
-                // 休日上書きの場合はnullを返して除外
-                if (override.isDayOff) return null;
+                // 休日上書きの場合は休日バーとして表示
+                if (override.isDayOff) {
+                    return {
+                        ...f,
+                        id: `fx-${f.id}-${dateStr}`,
+                        date: dateStr,
+                        isFixed: true,
+                        hasOverride: true,
+                        isDayOff: true,
+                        overrideId: override.id
+                    };
+                }
                 // 上書きデータを適用
                 return {
                     ...f,
@@ -980,7 +990,6 @@ function renderGanttBody() {
                 ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
             };
         }).filter(f => {
-            if (!f) return false;
             // 有給による上書きがある場合は除外
             if (leaveOverrideFixedIds.includes(f.id.replace(`fx-`, '').replace(`-${dateStr}`, ''))) {
                 return false;
@@ -1021,7 +1030,7 @@ function renderGanttBody() {
         }).map(f => {
             // 単日上書きがあるか確認
             const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
-            // 休日上書きの場合は夜勤継続もなし
+            // 休日上書きの場合は夜勤継続なし
             if (override && override.isDayOff) return null;
             if (override && override.overnight) {
                 return {
@@ -1388,6 +1397,36 @@ let touchMoved = false;
 // シフトバー作成（パーセントベースで位置計算）
 function createShiftBar(s, lvl) {
     const bar = document.createElement('div');
+
+    // 休日上書きの場合は休日バーとして表示
+    if (s.isDayOff) {
+        bar.className = 'shift-bar day-off-bar';
+        bar.dataset.id = s.id;
+        // 元のシフト時間帯に合わせて表示
+        let start = s.startHour, end = s.endHour;
+        if (s.overnight) end = 24;
+        const leftPercent = (start / 24) * 100;
+        const widthPercent = ((end - start) / 24) * 100;
+        bar.style.left = `${leftPercent}%`;
+        bar.style.width = `${widthPercent}%`;
+        bar.style.top = `${8 + lvl * 28}px`;
+        bar.style.height = '24px';
+        bar.style.background = 'linear-gradient(135deg, #9ca3af, #6b7280)';
+        bar.style.opacity = '0.8';
+        bar.innerHTML = `<span class="shift-name">🏖️ ${s.name} 休日</span>`;
+        bar.title = 'この日のみ休日（単日変更）';
+
+        // タップ・クリックでポップオーバーを表示
+        bar.addEventListener('click', (e) => { e.stopPropagation(); showShiftPopover(s, bar, e); });
+        bar.addEventListener('touchend', (e) => {
+            if (!touchMoved) { e.preventDefault(); e.stopPropagation(); showShiftPopover(s, bar, e); }
+        }, { passive: false });
+        bar.addEventListener('touchstart', () => { touchMoved = false; }, { passive: true });
+        bar.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
+
+        return bar;
+    }
+
     let cls = 'shift-bar';
     if (s.isFixed) cls += ' fixed';
     if (s.overnight && !s.isOvernightContinuation) cls += ' overnight';
@@ -1557,7 +1596,7 @@ function showShiftPopover(s, event, barElement = null) {
         const originalId = parts[1];
         const original = state.fixedShifts.find(f => f.id === originalId);
         if (original) {
-            displayShift = { ...original, date: s.date, isFixed: true, hasOverride: s.hasOverride, overrideId: s.overrideId };
+            displayShift = { ...original, date: s.date, isFixed: true, hasOverride: s.hasOverride, overrideId: s.overrideId, isDayOff: s.isDayOff };
         }
     } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
         const originalId = s.id.replace('on-', '');
@@ -1580,7 +1619,9 @@ function showShiftPopover(s, event, barElement = null) {
 
     // 時間表示
     let timeStr;
-    if (displayShift.overnight && !s.isOvernightContinuation) {
+    if (s.isDayOff) {
+        timeStr = '🏖️ この日は休日';
+    } else if (displayShift.overnight && !s.isOvernightContinuation) {
         timeStr = `${formatTime(displayShift.startHour)} 〜 翌${formatTime(displayShift.endHour)}`;
     } else if (s.isOvernightContinuation) {
         timeStr = `0:00 〜 ${formatTime(displayShift.endHour)}（前日からの継続）`;
@@ -1598,6 +1639,10 @@ function showShiftPopover(s, event, barElement = null) {
     const overrideRow = document.getElementById('popoverOverrideRow');
     if (overrideRow) {
         overrideRow.style.display = s.hasOverride ? 'flex' : 'none';
+        const overrideBadge = overrideRow.querySelector('.override-badge');
+        if (overrideBadge) {
+            overrideBadge.textContent = s.isDayOff ? '🏖️ この日のみ休日' : '📝 この日のみ変更済み';
+        }
     }
 
     // 「この日のみ変更」ボタンの表示制御（固定シフトの場合のみ表示）
@@ -2370,8 +2415,19 @@ function getEmployeeShiftsForPeriod(employeeName, weeks) {
                         // 単日上書きがあるか確認
                         const override = state.shiftOverrides.find(o => o.fixedShiftId === f.id && o.date === dateStr);
 
-                        // 休日上書きの場合はスキップ
-                        if (override && override.isDayOff) return;
+                        // 休日上書きの場合は休日として追加
+                        if (override && override.isDayOff) {
+                            shifts.push({
+                                date: dateStr,
+                                startHour: f.startHour,
+                                endHour: f.endHour,
+                                overnight: f.overnight || false,
+                                isFixed: true,
+                                fixedShiftId: f.id,
+                                isDayOff: true
+                            });
+                            return;
+                        }
 
                         shifts.push({
                             date: dateStr,
