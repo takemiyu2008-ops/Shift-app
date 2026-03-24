@@ -7204,14 +7204,29 @@ function renderProductResearch() {
             const sections = extractReportSections(report.content);
             const reportId = `report-${reportIdx}`;
 
+            // 商品名リストを抽出（H4見出し）
+            const productNames = extractProductNames(report.content);
+
             // セクションフィルターUI（H3見出しが2つ以上ある場合のみ表示）
             let sectionFilterHtml = '';
-            if (sections.length >= 2) {
+            if (sections.length >= 2 || productNames.length > 0) {
                 sectionFilterHtml = `
                     <div class="report-section-filter" id="${reportId}-filter">
-                        <button class="section-chip active" onclick="filterReportSection('${reportId}', 'all', this)">📋 全体</button>
-                        ${sections.map((sec, i) => `<button class="section-chip" onclick="filterReportSection('${reportId}', '${i}', this)">${sec.title}</button>`).join('')}
+                        ${sections.length >= 2 ? `
+                            <button class="section-chip active" onclick="filterReportSection('${reportId}', 'all', this)">📋 全体</button>
+                            ${sections.map((sec, i) => `<button class="section-chip" onclick="filterReportSection('${reportId}', '${i}', this)">${sec.title}</button>`).join('')}
+                        ` : ''}
                     </div>
+                    ${productNames.length > 0 ? `
+                        <div class="report-product-search" id="${reportId}-search">
+                            <div class="product-search-input-wrap">
+                                <span class="product-search-icon">🔍</span>
+                                <input type="text" class="product-search-input" placeholder="商品名で検索..." oninput="searchProductInReport('${reportId}', this.value)" id="${reportId}-search-input">
+                                <button class="product-search-clear" onclick="clearProductSearch('${reportId}')" style="display:none;" id="${reportId}-search-clear">✕</button>
+                            </div>
+                            <div class="product-search-results" id="${reportId}-search-results" style="display:none;"></div>
+                        </div>
+                    ` : ''}
                 `;
             }
 
@@ -7308,6 +7323,121 @@ function filterReportSection(reportId, sectionId, btn) {
             targetBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
+}
+
+// レポートのMarkdownコンテンツから#### 見出し（商品名）を抽出
+function extractProductNames(markdownContent) {
+    const lines = markdownContent.split('\n');
+    const products = [];
+    for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(/^#### (.+)/);
+        if (match) {
+            products.push(match[1].trim());
+        }
+    }
+    return products;
+}
+
+// 商品名検索
+function searchProductInReport(reportId, query) {
+    const resultsContainer = document.getElementById(`${reportId}-search-results`);
+    const clearBtn = document.getElementById(`${reportId}-search-clear`);
+    if (!resultsContainer || !clearBtn) return;
+
+    clearBtn.style.display = query ? '' : 'none';
+
+    if (!query || query.length < 1) {
+        resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
+        // ハイライトを消す
+        removeProductHighlights(reportId);
+        return;
+    }
+
+    // レポート内のH4要素から検索
+    const reportCard = document.getElementById(reportId);
+    if (!reportCard) return;
+    const h4Elements = reportCard.querySelectorAll('.report-content h4');
+    const matches = [];
+
+    h4Elements.forEach(h4 => {
+        const text = h4.textContent;
+        if (text.toLowerCase().includes(query.toLowerCase())) {
+            matches.push({ text, element: h4 });
+        }
+    });
+
+    if (matches.length === 0) {
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = '<div class="product-search-no-result">該当する商品が見つかりません</div>';
+    } else {
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = matches.map((m, i) =>
+            `<button class="product-search-result-item" onclick="jumpToProduct('${reportId}', ${i}, '${query.replace(/'/g, "\\'")}')">📦 ${m.text}</button>`
+        ).join('');
+    }
+}
+
+// 商品へジャンプ
+function jumpToProduct(reportId, matchIndex, query) {
+    const reportCard = document.getElementById(reportId);
+    if (!reportCard) return;
+
+    const h4Elements = reportCard.querySelectorAll('.report-content h4');
+    const matches = [];
+    h4Elements.forEach(h4 => {
+        if (h4.textContent.toLowerCase().includes(query.toLowerCase())) {
+            matches.push(h4);
+        }
+    });
+
+    if (matchIndex >= matches.length) return;
+    const target = matches[matchIndex];
+
+    // まず全セクションを表示に戻す
+    const blocks = document.querySelectorAll(`.report-section-block[data-report="${reportId}"]`);
+    blocks.forEach(block => block.style.display = '');
+    // セクションチップの「全体」をアクティブに
+    const filterContainer = document.getElementById(`${reportId}-filter`);
+    if (filterContainer) {
+        filterContainer.querySelectorAll('.section-chip').forEach(b => b.classList.remove('active'));
+        const allBtn = filterContainer.querySelector('.section-chip');
+        if (allBtn) allBtn.classList.add('active');
+    }
+
+    // 前回のハイライトを消す
+    removeProductHighlights(reportId);
+
+    // ハイライトを付ける
+    target.classList.add('product-highlight');
+    // 親のセクションブロックもハイライト
+    const parentBlock = target.closest('.report-section-block');
+    if (parentBlock) parentBlock.classList.add('product-section-highlight');
+
+    // スクロール
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 検索結果を閉じる
+    const resultsContainer = document.getElementById(`${reportId}-search-results`);
+    if (resultsContainer) resultsContainer.style.display = 'none';
+
+    // 3秒後にハイライトを消す
+    setTimeout(() => removeProductHighlights(reportId), 3000);
+}
+
+// ハイライト解除
+function removeProductHighlights(reportId) {
+    const reportCard = document.getElementById(reportId);
+    if (!reportCard) return;
+    reportCard.querySelectorAll('.product-highlight').forEach(el => el.classList.remove('product-highlight'));
+    reportCard.querySelectorAll('.product-section-highlight').forEach(el => el.classList.remove('product-section-highlight'));
+}
+
+// 検索クリア
+function clearProductSearch(reportId) {
+    const input = document.getElementById(`${reportId}-search-input`);
+    if (input) input.value = '';
+    searchProductInReport(reportId, '');
 }
 
 // 新規商品調査レポートをカテゴリでフィルタリング
