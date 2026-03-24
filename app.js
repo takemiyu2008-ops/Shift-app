@@ -388,6 +388,7 @@ const state = {
     trendReports: [], // コンビニ3社 新商品ヒット予測レポート
     newProductReports: [], // 週次インテリジェンス（マクロ環境）
     productResearchReports: [], // 新規商品調査レポート
+    productResearchFilter: 'all', // 新規商品調査レポートのカテゴリフィルター
     weatherData: {}, // 日付別の天気データ
     selectedColor: '#6366f1',
     isAdmin: false,
@@ -6993,6 +6994,23 @@ function deleteNewProductReport(reportId) {
 // 新規商品調査レポート
 // ========================================
 
+// 新規商品調査レポートのカテゴリ定義
+const PRODUCT_RESEARCH_CATEGORIES = [
+    { id: 'rice_bento', name: '米飯・弁当・おにぎり', icon: '🍙' },
+    { id: 'sandwich_bread', name: 'サンドイッチ・調理パン', icon: '🥪' },
+    { id: 'daily_deli', name: 'デイリー惣菜・デリカ', icon: '🍳' },
+    { id: 'daily_sweets', name: 'デイリースイーツ', icon: '🍰' },
+    { id: 'yogurt_dairy', name: 'ヨーグルト・乳製品・チルド飲料', icon: '🥛' },
+    { id: 'ice_frozen', name: 'アイス・フローズン', icon: '🍨' },
+    { id: 'alcohol', name: 'アルコール', icon: '🍺' },
+    { id: 'soft_drink', name: 'ソフトドリンク', icon: '🥤' },
+    { id: 'cup_noodle', name: 'カップ麺・即席食品', icon: '🍜' },
+    { id: 'snack', name: '菓子・スナック', icon: '🍫' },
+    { id: 'processed_food', name: '加工食品・調味料', icon: '🫙' },
+    { id: 'daily_goods', name: '日用品・雑貨・季節品', icon: '🧴' },
+    { id: 'special_order', name: '特別発注品', icon: '⭐' }
+];
+
 // 新規商品調査レポート管理画面
 function renderProductResearchAdmin(container) {
     const reports = state.productResearchReports || [];
@@ -7030,6 +7048,14 @@ function renderProductResearchAdmin(container) {
                             ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
                         </div>
                     </div>
+                    ${(report.categories || []).length > 0 ? `
+                        <div class="research-category-tags" style="margin: 8px 16px;">
+                            ${(report.categories || []).map(catId => {
+                                const cat = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === catId);
+                                return cat ? `<span class="research-category-tag">${cat.icon} ${cat.name}</span>` : '';
+                            }).join('')}
+                        </div>
+                    ` : ''}
                     <div class="admin-card-content">${renderMarkdown(report.content)}</div>
                     <div class="admin-card-actions">
                         <button class="btn btn-sm btn-secondary" onclick="openEditProductResearchModal('${report.id}')">✏️ 編集</button>
@@ -7055,20 +7081,49 @@ function renderProductResearch() {
     if (!container || !content) return;
 
     const reports = state.productResearchReports || [];
+    const activeFilter = state.productResearchFilter || 'all';
 
     const sortedReports = [...reports].sort((a, b) =>
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
 
+    // カテゴリフィルター適用
+    const filteredReports = activeFilter === 'all'
+        ? sortedReports
+        : sortedReports.filter(r => (r.categories || []).includes(activeFilter));
+
     let html = '';
 
-    if (sortedReports.length === 0) {
-        html += '<p class="no-report-message">新規商品調査レポートはまだありません。</p>';
+    // カテゴリフィルターUI（レポートが1件以上ある場合のみ表示）
+    if (sortedReports.length > 0) {
+        html += '<div class="product-research-filter">';
+        html += `<button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="filterProductResearch('all')">全て</button>`;
+        // レポートに実際に使われているカテゴリのみ表示
+        const usedCategories = new Set();
+        sortedReports.forEach(r => (r.categories || []).forEach(c => usedCategories.add(c)));
+        PRODUCT_RESEARCH_CATEGORIES.forEach(cat => {
+            if (usedCategories.has(cat.id)) {
+                html += `<button class="filter-chip ${activeFilter === cat.id ? 'active' : ''}" onclick="filterProductResearch('${cat.id}')">${cat.icon} ${cat.name}</button>`;
+            }
+        });
+        html += '</div>';
+    }
+
+    if (filteredReports.length === 0) {
+        if (sortedReports.length === 0) {
+            html += '<p class="no-report-message">新規商品調査レポートはまだありません。</p>';
+        } else {
+            html += '<p class="no-report-message">このカテゴリーのレポートはありません。</p>';
+        }
     } else {
         html += '<div class="product-research-reports-list">';
-        sortedReports.forEach(report => {
+        filteredReports.forEach(report => {
             const createdDate = new Date(report.createdAt);
             const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
+            const categoryTags = (report.categories || []).map(catId => {
+                const cat = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === catId);
+                return cat ? `<span class="research-category-tag">${cat.icon} ${cat.name}</span>` : '';
+            }).join('');
 
             html += `
                 <div class="product-research-card">
@@ -7076,6 +7131,7 @@ function renderProductResearch() {
                         <span class="report-title">${report.title}</span>
                         <span class="report-date">📅 ${dateStr}</span>
                     </div>
+                    ${categoryTags ? `<div class="research-category-tags">${categoryTags}</div>` : ''}
                     <div class="report-content">${renderMarkdown(report.content)}</div>
                     ${state.isAdmin ? `
                         <div class="report-actions">
@@ -7092,6 +7148,12 @@ function renderProductResearch() {
     content.innerHTML = html;
 
     initProductResearchToggle();
+}
+
+// 新規商品調査レポートをカテゴリでフィルタリング
+function filterProductResearch(categoryId) {
+    state.productResearchFilter = categoryId;
+    renderProductResearch();
 }
 
 // 新規商品調査レポートのトグル機能を初期化
@@ -7128,6 +7190,17 @@ function openAddProductResearchModal() {
                     <label>タイトル <span class="required">*</span></label>
                     <input type="text" name="title" placeholder="例: 2026年3月 新規商品調査レポート" required>
                 </div>
+                <div class="form-group">
+                    <label>カテゴリー <span class="required">*</span></label>
+                    <div class="product-research-category-checkboxes">
+                        ${PRODUCT_RESEARCH_CATEGORIES.map(cat => `
+                            <label class="category-checkbox-label">
+                                <input type="checkbox" name="categories" value="${cat.id}">
+                                <span>${cat.icon} ${cat.name}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
                 <div class="form-group markdown-form-group">
                     <label>内容 <span class="required">*</span></label>
                     <div class="preview-tabs">
@@ -7156,6 +7229,8 @@ function openEditProductResearchModal(reportId) {
     const report = state.productResearchReports.find(r => r.id === reportId);
     if (!report) return;
 
+    const reportCategories = report.categories || [];
+
     const modal = document.createElement('div');
     modal.className = 'modal-overlay category-modal-overlay active';
     modal.innerHTML = `
@@ -7168,6 +7243,17 @@ function openEditProductResearchModal(reportId) {
                 <div class="form-group">
                     <label>タイトル <span class="required">*</span></label>
                     <input type="text" name="title" value="${report.title}" required>
+                </div>
+                <div class="form-group">
+                    <label>カテゴリー <span class="required">*</span></label>
+                    <div class="product-research-category-checkboxes">
+                        ${PRODUCT_RESEARCH_CATEGORIES.map(cat => `
+                            <label class="category-checkbox-label">
+                                <input type="checkbox" name="categories" value="${cat.id}" ${reportCategories.includes(cat.id) ? 'checked' : ''}>
+                                <span>${cat.icon} ${cat.name}</span>
+                            </label>
+                        `).join('')}
+                    </div>
                 </div>
                 <div class="form-group markdown-form-group">
                     <label>内容 <span class="required">*</span></label>
@@ -7198,12 +7284,14 @@ function submitProductResearch(event, form, reportId = null) {
     const formData = new FormData(form);
     const title = formData.get('title');
     const content = formData.get('content');
+    const categories = formData.getAll('categories');
 
     if (reportId) {
         const report = state.productResearchReports.find(r => r.id === reportId);
         if (report) {
             report.title = title;
             report.content = content;
+            report.categories = categories;
             report.updatedAt = new Date().toISOString();
         }
         trackUsage('edit_product_research', '管理者');
@@ -7212,6 +7300,7 @@ function submitProductResearch(event, form, reportId = null) {
             id: 'research-' + Date.now(),
             title,
             content,
+            categories,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
