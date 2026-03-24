@@ -7175,22 +7175,36 @@ function renderProductResearch() {
     // カテゴリフィルター適用
     const filteredReports = activeFilter === 'all'
         ? sortedReports
-        : sortedReports.filter(r => (r.categories || []).includes(activeFilter));
+        : activeFilter === 'uncategorized'
+            ? sortedReports.filter(r => !r.categories || r.categories.length === 0)
+            : sortedReports.filter(r => (r.categories || []).includes(activeFilter));
 
     let html = '';
 
     // カテゴリフィルターUI（レポートが1件以上ある場合のみ表示）
     if (sortedReports.length > 0) {
         html += '<div class="product-research-filter">';
-        html += `<button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="filterProductResearch('all')">全て</button>`;
+        html += `<button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="filterProductResearch('all')">📋 全て (${sortedReports.length})</button>`;
         // レポートに実際に使われているカテゴリのみ表示
         const usedCategories = new Set();
-        sortedReports.forEach(r => (r.categories || []).forEach(c => usedCategories.add(c)));
-        PRODUCT_RESEARCH_CATEGORIES.forEach(cat => {
-            if (usedCategories.has(cat.id)) {
-                html += `<button class="filter-chip ${activeFilter === cat.id ? 'active' : ''}" onclick="filterProductResearch('${cat.id}')">${cat.icon} ${cat.name}</button>`;
+        let uncategorizedCount = 0;
+        sortedReports.forEach(r => {
+            if (!r.categories || r.categories.length === 0) {
+                uncategorizedCount++;
+            } else {
+                r.categories.forEach(c => usedCategories.add(c));
             }
         });
+        PRODUCT_RESEARCH_CATEGORIES.forEach(cat => {
+            if (usedCategories.has(cat.id)) {
+                const count = sortedReports.filter(r => (r.categories || []).includes(cat.id)).length;
+                html += `<button class="filter-chip ${activeFilter === cat.id ? 'active' : ''}" onclick="filterProductResearch('${cat.id}')">${cat.icon} ${cat.name} (${count})</button>`;
+            }
+        });
+        // 未分類レポートがある場合は「未分類」ボタンを表示
+        if (uncategorizedCount > 0) {
+            html += `<button class="filter-chip ${activeFilter === 'uncategorized' ? 'active' : ''}" onclick="filterProductResearch('uncategorized')">📁 未分類 (${uncategorizedCount})</button>`;
+        }
         html += '</div>';
     }
 
