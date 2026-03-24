@@ -7133,14 +7133,21 @@ function renderProductResearchAdmin(container) {
                             ${updatedStr && updatedStr !== dateStr ? `<span>✏️ 更新: ${updatedStr}</span>` : ''}
                         </div>
                     </div>
-                    ${(report.categories || []).length > 0 ? `
-                        <div class="research-category-tags" style="margin: 8px 16px;">
-                            ${(report.categories || []).map(catId => {
-                                const cat = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === catId);
-                                return cat ? `<span class="research-category-tag">${cat.icon} ${cat.name}</span>` : '';
-                            }).join('')}
-                        </div>
-                    ` : ''}
+                    ${(() => {
+                        const cats = report.categories ? (Array.isArray(report.categories) ? report.categories : Object.values(report.categories)) : [];
+                        if (cats.length > 0) {
+                            return `<div class="research-category-tags" style="margin: 8px 16px;">
+                                ${cats.map(catId => {
+                                    const cat = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === catId);
+                                    return cat ? `<span class="research-category-tag">${cat.icon} ${cat.name}</span>` : '';
+                                }).join('')}
+                            </div>`;
+                        }
+                        return `<div class="research-category-tags" style="margin: 8px 16px;">
+                            <span class="research-category-tag" style="background: rgba(156,163,175,0.2); color: var(--text-secondary);">⚠️ カテゴリ未設定</span>
+                            <button class="btn btn-sm" style="font-size: 0.7rem; padding: 2px 8px; margin-left: 4px;" onclick="openEditProductResearchModal('${report.id}')">設定する</button>
+                        </div>`;
+                    })()}
                     <div class="admin-card-content">${renderMarkdown(report.content)}</div>
                     <div class="admin-card-actions">
                         <button class="btn btn-sm btn-secondary" onclick="openEditProductResearchModal('${report.id}')">✏️ 編集</button>
@@ -7172,40 +7179,53 @@ function renderProductResearch() {
         new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
     );
 
-    // カテゴリフィルター適用
+    // カテゴリフィルター適用（Firebase がカテゴリ配列をオブジェクトで返す場合にも対応）
+    const getCats = (r) => {
+        if (!r.categories) return [];
+        return Array.isArray(r.categories) ? r.categories : Object.values(r.categories);
+    };
     const filteredReports = activeFilter === 'all'
         ? sortedReports
         : activeFilter === 'uncategorized'
-            ? sortedReports.filter(r => !r.categories || r.categories.length === 0)
-            : sortedReports.filter(r => (r.categories || []).includes(activeFilter));
+            ? sortedReports.filter(r => getCats(r).length === 0)
+            : sortedReports.filter(r => getCats(r).includes(activeFilter));
 
     let html = '';
 
     // カテゴリフィルターUI（レポートが1件以上ある場合のみ表示）
+    const usedCategories = new Set();
+    let uncategorizedCount = 0;
+    sortedReports.forEach(r => {
+        if (!r.categories || r.categories.length === 0) {
+            uncategorizedCount++;
+        } else {
+            (Array.isArray(r.categories) ? r.categories : Object.values(r.categories)).forEach(c => usedCategories.add(c));
+        }
+    });
+
     if (sortedReports.length > 0) {
         html += '<div class="product-research-filter">';
         html += `<button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="filterProductResearch('all')">📋 全て (${sortedReports.length})</button>`;
-        // レポートに実際に使われているカテゴリのみ表示
-        const usedCategories = new Set();
-        let uncategorizedCount = 0;
-        sortedReports.forEach(r => {
-            if (!r.categories || r.categories.length === 0) {
-                uncategorizedCount++;
-            } else {
-                r.categories.forEach(c => usedCategories.add(c));
-            }
-        });
         PRODUCT_RESEARCH_CATEGORIES.forEach(cat => {
             if (usedCategories.has(cat.id)) {
-                const count = sortedReports.filter(r => (r.categories || []).includes(cat.id)).length;
+                const count = sortedReports.filter(r => {
+                    const cats = r.categories ? (Array.isArray(r.categories) ? r.categories : Object.values(r.categories)) : [];
+                    return cats.includes(cat.id);
+                }).length;
                 html += `<button class="filter-chip ${activeFilter === cat.id ? 'active' : ''}" onclick="filterProductResearch('${cat.id}')">${cat.icon} ${cat.name} (${count})</button>`;
             }
         });
-        // 未分類レポートがある場合は「未分類」ボタンを表示
         if (uncategorizedCount > 0) {
             html += `<button class="filter-chip ${activeFilter === 'uncategorized' ? 'active' : ''}" onclick="filterProductResearch('uncategorized')">📁 未分類 (${uncategorizedCount})</button>`;
         }
         html += '</div>';
+
+        // フィルター結果表示
+        const filterLabel = activeFilter === 'all' ? '全て' : activeFilter === 'uncategorized' ? '未分類' : (() => {
+            const c = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === activeFilter);
+            return c ? `${c.icon} ${c.name}` : activeFilter;
+        })();
+        html += `<div class="product-research-filter-status" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; padding: 6px 12px; background: var(--bg-tertiary); border-radius: 8px;">📊 「${filterLabel}」${filteredReports.length}件 / 全${sortedReports.length}件を表示中</div>`;
     }
 
     if (filteredReports.length === 0) {
@@ -7219,10 +7239,16 @@ function renderProductResearch() {
         filteredReports.forEach(report => {
             const createdDate = new Date(report.createdAt);
             const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
-            const categoryTags = (report.categories || []).map(catId => {
+            const reportCats = report.categories ? (Array.isArray(report.categories) ? report.categories : Object.values(report.categories)) : [];
+            const categoryTags = reportCats.map(catId => {
                 const cat = PRODUCT_RESEARCH_CATEGORIES.find(c => c.id === catId);
                 return cat ? `<span class="research-category-tag">${cat.icon} ${cat.name}</span>` : '';
             }).join('');
+
+            // カテゴリ未設定の場合の表示
+            const noCategoryNotice = reportCats.length === 0
+                ? `<div class="research-category-tags"><span class="research-category-tag" style="background: rgba(156,163,175,0.2); color: var(--text-secondary);">📁 カテゴリ未設定</span>${state.isAdmin ? `<button class="btn btn-sm" style="font-size: 0.7rem; padding: 2px 8px; margin-left: 4px;" onclick="openEditProductResearchModal('${report.id}')">設定する</button>` : ''}</div>`
+                : '';
 
             html += `
                 <div class="product-research-card">
@@ -7230,7 +7256,7 @@ function renderProductResearch() {
                         <span class="report-title">${report.title}</span>
                         <span class="report-date">📅 ${dateStr}</span>
                     </div>
-                    ${categoryTags ? `<div class="research-category-tags">${categoryTags}</div>` : ''}
+                    ${categoryTags ? `<div class="research-category-tags">${categoryTags}</div>` : noCategoryNotice}
                     <div class="report-content">${renderMarkdown(report.content)}</div>
                     ${state.isAdmin ? `
                         <div class="report-actions">
