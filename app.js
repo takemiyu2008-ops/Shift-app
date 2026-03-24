@@ -963,6 +963,8 @@ function renderGanttBody() {
             // 単日上書きがあるか確認
             const override = dayOverrides.find(o => o.fixedShiftId === f.id);
             if (override) {
+                // 休日上書きの場合はnullを返して除外
+                if (override.isDayOff) return null;
                 // 上書きデータを適用
                 return {
                     ...f,
@@ -978,6 +980,7 @@ function renderGanttBody() {
                 ...f, id: `fx-${f.id}-${dateStr}`, date: dateStr, isFixed: true
             };
         }).filter(f => {
+            if (!f) return false;
             // 有給による上書きがある場合は除外
             if (leaveOverrideFixedIds.includes(f.id.replace(`fx-`, '').replace(`-${dateStr}`, ''))) {
                 return false;
@@ -1018,6 +1021,8 @@ function renderGanttBody() {
         }).map(f => {
             // 単日上書きがあるか確認
             const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
+            // 休日上書きの場合は夜勤継続もなし
+            if (override && override.isDayOff) return null;
             if (override && override.overnight) {
                 return {
                     ...f,
@@ -1036,6 +1041,7 @@ function renderGanttBody() {
                 ...f, id: `fxo-${f.id}-${dateStr}`, date: dateStr, startHour: 0, endHour: f.endHour, isFixed: true, isOvernightContinuation: true
             };
         }).filter(f => {
+            if (!f) return false;
             const originalId = f.id.split('-')[1];
             return !leaveOverrideFixedIdsForOvernight.includes(originalId);
         });
@@ -2363,7 +2369,10 @@ function getEmployeeShiftsForPeriod(employeeName, weeks) {
                     if (!isOverridden) {
                         // 単日上書きがあるか確認
                         const override = state.shiftOverrides.find(o => o.fixedShiftId === f.id && o.date === dateStr);
-                        
+
+                        // 休日上書きの場合はスキップ
+                        if (override && override.isDayOff) return;
+
                         shifts.push({
                             date: dateStr,
                             startHour: override ? override.startHour : f.startHour,
@@ -4567,6 +4576,7 @@ function openShiftOverrideModal(shift) {
     const currentStartHour = existingOverride ? existingOverride.startHour : fixedShift.startHour;
     const currentEndHour = existingOverride ? existingOverride.endHour : fixedShift.endHour;
     const currentOvernight = existingOverride ? existingOverride.overnight : (fixedShift.overnight || false);
+    const currentIsDayOff = existingOverride ? (existingOverride.isDayOff || false) : false;
     
     // モーダル作成
     const overlay = document.createElement('div');
@@ -4595,25 +4605,34 @@ function openShiftOverrideModal(shift) {
                     </p>
                 </div>
                 
-                <div class="form-group">
-                    <label>開始時刻</label>
-                    <select id="overrideStartHour" class="form-control">
-                        ${hourOptions}
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>終了時刻</label>
-                    <select id="overrideEndHour" class="form-control">
-                        ${hourOptionsEnd}
-                    </select>
-                </div>
-                
                 <div class="form-group checkbox-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" id="overrideOvernight" ${currentOvernight ? 'checked' : ''}>
-                        <span>🌙 夜勤（翌日に跨ぐ）</span>
+                        <input type="checkbox" id="overrideDayOff" ${currentIsDayOff ? 'checked' : ''} onchange="toggleOverrideDayOff()">
+                        <span>🏖️ この日を休日にする</span>
                     </label>
+                </div>
+
+                <div id="overrideTimeFields" style="${currentIsDayOff ? 'display:none;' : ''}">
+                    <div class="form-group">
+                        <label>開始時刻</label>
+                        <select id="overrideStartHour" class="form-control">
+                            ${hourOptions}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>終了時刻</label>
+                        <select id="overrideEndHour" class="form-control">
+                            ${hourOptionsEnd}
+                        </select>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="overrideOvernight" ${currentOvernight ? 'checked' : ''}>
+                            <span>🌙 夜勤（翌日に跨ぐ）</span>
+                        </label>
+                    </div>
                 </div>
                 
                 ${existingOverride ? `
@@ -4636,6 +4655,14 @@ function openShiftOverrideModal(shift) {
     document.body.appendChild(overlay);
 }
 
+function toggleOverrideDayOff() {
+    const isDayOff = document.getElementById('overrideDayOff').checked;
+    const timeFields = document.getElementById('overrideTimeFields');
+    if (timeFields) {
+        timeFields.style.display = isDayOff ? 'none' : '';
+    }
+}
+
 function closeOverrideModal() {
     const overlay = document.getElementById('overrideModalOverlay');
     if (overlay) {
@@ -4644,16 +4671,18 @@ function closeOverrideModal() {
 }
 
 function saveShiftOverride(fixedShiftId, dateStr, existingOverrideId) {
+    const isDayOff = document.getElementById('overrideDayOff').checked;
     const startHour = parseInt(document.getElementById('overrideStartHour').value);
     const endHour = parseInt(document.getElementById('overrideEndHour').value);
     const overnight = document.getElementById('overrideOvernight').checked;
-    
+
     const overrideData = {
         fixedShiftId,
         date: dateStr,
         startHour,
         endHour,
-        overnight
+        overnight,
+        isDayOff
     };
     
     if (existingOverrideId) {
