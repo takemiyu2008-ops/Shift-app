@@ -20,6 +20,9 @@ const database = firebase.database();
 // Firebase Auth の初期化（firebase.initializeApp の後に追加）
 const auth = firebase.auth();
 
+// セッション永続性をSESSIONに設定（タブ/ブラウザを閉じたらログアウト）
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+
 // 現在のユーザー情報を保持
 let currentUser = null;
 
@@ -35,6 +38,9 @@ function convertPassword(password) {
 
 // 承認状態リスナーの参照を保持
 let pendingStatusListener = null;
+
+// データリスナーが設定済みかどうか
+let dataListenersAttached = false;
 
 // 全画面を非表示にするヘルパー
 function hideAllScreens() {
@@ -112,6 +118,14 @@ auth.onAuthStateChanged((user) => {
                 hideAllScreens();
                 document.getElementById('appContainer').classList.remove('hidden');
                 document.getElementById('logoutBtnContainer').style.display = 'block';
+
+                // ログイン後にデータリスナーを再セットアップして描画
+                if (dataListenersAttached) {
+                    // 既存リスナーを解除してから再設定
+                    detachDataListeners();
+                }
+                loadData();
+                render();
 
                 if (typeof initApp === 'function') {
                     initApp();
@@ -699,9 +713,23 @@ function updateShiftDateDay() {
     }
 }
 
+// データリスナーで監視しているrefキー一覧
+const dataRefKeys = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents', 'productResearchReports'];
+
+// Firebase データリスナーを解除
+function detachDataListeners() {
+    dataRefKeys.forEach(key => {
+        database.ref(key).off('value');
+    });
+    database.ref('dailyChecklist').off('value');
+    database.ref('usageStats').off('value');
+    dataListenersAttached = false;
+}
+
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents', 'productResearchReports'];
+    const refs = dataRefKeys;
+    dataListenersAttached = true;
     refs.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
