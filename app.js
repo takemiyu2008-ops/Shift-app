@@ -4667,13 +4667,15 @@ function openShiftOverrideModal(shift) {
     overlay.className = 'modal-overlay category-modal-overlay active';
     overlay.id = 'overrideModalOverlay';
     
-    const hourOptions = Array.from({ length: 24 }, (_, i) => 
-        `<option value="${i}" ${i === currentStartHour ? 'selected' : ''}>${i}:00</option>`
-    ).join('');
-    
-    const hourOptionsEnd = Array.from({ length: 24 }, (_, i) => 
-        `<option value="${i}" ${i === currentEndHour ? 'selected' : ''}>${i}:00</option>`
-    ).join('');
+    const hourOptions = Array.from({ length: 48 }, (_, i) => {
+        const v = i * 0.5;
+        return `<option value="${v}" ${v === currentStartHour ? 'selected' : ''}>${formatTime(v)}</option>`;
+    }).join('');
+
+    const hourOptionsEnd = Array.from({ length: 48 }, (_, i) => {
+        const v = i * 0.5;
+        return `<option value="${v}" ${v === currentEndHour ? 'selected' : ''}>${formatTime(v)}</option>`;
+    }).join('');
     
     overlay.innerHTML = `
         <div class="modal category-modal" style="max-width: 400px;">
@@ -4756,8 +4758,8 @@ function closeOverrideModal() {
 
 function saveShiftOverride(fixedShiftId, dateStr, existingOverrideId) {
     const isDayOff = document.getElementById('overrideDayOff').checked;
-    const startHour = parseInt(document.getElementById('overrideStartHour').value);
-    const endHour = parseInt(document.getElementById('overrideEndHour').value);
+    const startHour = parseFloat(document.getElementById('overrideStartHour').value);
+    const endHour = parseFloat(document.getElementById('overrideEndHour').value);
     const overnight = document.getElementById('overrideOvernight').checked;
 
     const overrideData = {
