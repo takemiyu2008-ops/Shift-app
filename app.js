@@ -1934,8 +1934,17 @@ function updatePeriodDisplay() {
 }
 
 // メッセージバー
+// 現在の役割で見えるべきメッセージか判定
+// 管理者宛（to === '管理者'）のメッセージはスタッフモードでは非表示
+function isMessageVisibleInCurrentRole(m) {
+    if (m.to === '管理者' && !state.isAdmin) return false;
+    return true;
+}
+
 function updateMessageBar() {
-    const cnt = state.messages.filter(m => !m.read).length + state.swapRequests.filter(r => r.status === 'pending').length;
+    const unreadCount = state.messages.filter(m => !m.read && isMessageVisibleInCurrentRole(m)).length;
+    const swapCount = state.swapRequests.filter(r => r.status === 'pending').length;
+    const cnt = unreadCount + swapCount;
     const bar = document.getElementById('messageBar'), num = document.getElementById('messageCount');
     if (cnt > 0) { bar.style.display = 'flex'; num.textContent = cnt; }
     else bar.style.display = 'none';
@@ -3335,8 +3344,8 @@ function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.
 // 認証
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
 function verifyPin(p) { return p === CONFIG.ADMIN_PIN; }
-function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); }
-function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; }
+function switchToAdmin() { state.isAdmin = true; document.getElementById('roleToggle').classList.add('admin'); document.getElementById('roleText').textContent = '管理者'; document.querySelector('.role-icon').textContent = '👑'; document.getElementById('adminPanel').style.display = 'block'; renderAdminPanel(); updateMessageBar(); }
+function switchToStaff() { state.isAdmin = false; document.getElementById('roleToggle').classList.remove('admin'); document.getElementById('roleText').textContent = 'スタッフ'; document.querySelector('.role-icon').textContent = '👤'; document.getElementById('adminPanel').style.display = 'none'; updateMessageBar(); }
 function toggleRole() { state.isAdmin ? switchToStaff() : showPinModal(); }
 
 // 管理者タブの通知バッジ更新
@@ -3980,7 +3989,9 @@ function renderHistoryItems(container, allHistory, filter) {
 // メッセージ表示
 function renderMessages() {
     const c = document.getElementById('messagesContent');
-    const all = [...state.messages.map(m => ({ ...m, type: 'message' })), ...state.swapRequests.filter(r => r.status === 'pending').map(r => ({ ...r, type: 'swap' }))].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // 現在の役割で見えるメッセージのみ表示（管理者宛はスタッフモードでは非表示）
+    const visibleMessages = state.messages.filter(isMessageVisibleInCurrentRole);
+    const all = [...visibleMessages.map(m => ({ ...m, type: 'message' })), ...state.swapRequests.filter(r => r.status === 'pending').map(r => ({ ...r, type: 'swap' }))].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (!all.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center">メッセージなし</p>'; return; }
 
     // ヘッダーに全削除ボタンを追加
