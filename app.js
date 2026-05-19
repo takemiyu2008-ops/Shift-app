@@ -1788,6 +1788,12 @@ function showShiftPopover(s, event, barElement = null) {
         }
     }
 
+    // 「有給」ボタン行の表示制御（管理者のみ。休日上書き表示中は不可）
+    const paidLeaveRow = document.getElementById('popoverPaidLeaveRow');
+    if (paidLeaveRow) {
+        paidLeaveRow.style.display = (state.isAdmin && !s.isDayOff) ? 'flex' : 'none';
+    }
+
     // 変更履歴表示
     if (displayShift.changeHistory) {
         document.getElementById('popoverChangeRow').style.display = 'flex';
@@ -5196,6 +5202,96 @@ function initPopoverEvents() {
             e.preventDefault();
             e.stopPropagation();
             handleDayOff();
+        }, { passive: false });
+    }
+
+    // 有給ボタン（管理者のみ）
+    const paidLeaveBtn = document.getElementById('popoverPaidLeaveBtn');
+    const handlePaidLeave = () => {
+        if (!state.isAdmin) return;
+        if (!state.currentPopoverShift) return;
+
+        const s = state.currentPopoverShift;
+        closeShiftPopover();
+        setTimeout(() => {
+            if (!confirm('このシフトを有給にしますか？\nシフトが削除され、有給バーが表示されます。')) return;
+
+            // シフトの担当者名・日付・時刻を取得
+            let name, date, startHour, endHour, overnight, isFixed = false, fixedShiftId = null;
+            if (s.isFixed) {
+                const parts = s.id.split('-');
+                const originalId = parts[1];
+                const fixed = state.fixedShifts.find(f => f.id === originalId);
+                if (fixed) {
+                    name = fixed.name;
+                    date = s.date;
+                    startHour = fixed.startHour;
+                    endHour = fixed.endHour;
+                    overnight = fixed.overnight || false;
+                    isFixed = true;
+                    fixedShiftId = fixed.id;
+                }
+            } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
+                const originalId = s.id.replace('on-', '');
+                const original = state.shifts.find(x => x.id === originalId);
+                if (original) {
+                    name = original.name;
+                    date = original.date;
+                    startHour = original.startHour;
+                    endHour = original.endHour;
+                    overnight = original.overnight || false;
+                }
+            } else {
+                name = s.name;
+                date = s.date;
+                startHour = s.startHour;
+                endHour = s.endHour;
+                overnight = s.overnight || false;
+            }
+
+            if (!name || !date) {
+                alert('シフト情報の取得に失敗しました。');
+                return;
+            }
+
+            // pendingで有給申請を作成し、既存の承認処理で即承認
+            // → シフト削除/上書き/バックアップが全て自動で揃う
+            const selectedShift = {
+                date: date,
+                startHour: startHour,
+                endHour: endHour,
+                overnight: overnight
+            };
+            if (isFixed) {
+                selectedShift.isFixed = true;
+                selectedShift.fixedShiftId = fixedShiftId;
+            }
+
+            const leaveRequest = {
+                id: Date.now().toString(),
+                name: name,
+                startDate: date,
+                endDate: date,
+                selectedShifts: [selectedShift],
+                reason: '有給休暇（管理者即時承認）',
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            state.leaveRequests.push(leaveRequest);
+            // approveRequest が再度 saveToFirebase('leaveRequests', ...) を実行するので
+            // ここでの保存は省略可能（次行でまとめて保存される）
+
+            approveRequest('leave', leaveRequest.id);
+            alert('有給に変更しました。');
+        }, 100);
+    };
+
+    if (paidLeaveBtn) {
+        paidLeaveBtn.onclick = handlePaidLeave;
+        paidLeaveBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handlePaidLeave();
         }, { passive: false });
     }
 
