@@ -420,30 +420,50 @@
         <!-- 管理者パネル（管理者モード時のみ表示） -->
         <div class="admin-panel" id="adminPanel" style="display: none;">
             <div class="admin-header">
-                <h2>📋 管理者メニュー</h2>
-                <div class="admin-tabs">
-                    <button class="admin-tab" data-tab="userApproval">👤 ユーザー承認</button>
-                    <button class="admin-tab active" data-tab="shiftChanges">シフト変更</button>
-                    <button class="admin-tab" data-tab="shiftSwaps">シフト交換</button>
-                    <button class="admin-tab" data-tab="leaveRequests">有給申請</button>
-                    <button class="admin-tab" data-tab="holidayRequests">休日申請</button>
-                    <button class="admin-tab" data-tab="specialEvents">⚡ 臨時シフト管理</button>
-                    <button class="admin-tab" data-tab="fixedShiftManage">🔁 固定シフト管理</button>
-                    <button class="admin-tab" data-tab="dailyEvents">📅 店舗スケジュール</button>
-                    <button class="admin-tab" data-tab="nonDailyAdvice">📈 非デイリー参考情報</button>
-                    <button class="admin-tab" data-tab="feedbackStats">📊 フィードバック集計</button>
-                    <button class="admin-tab" data-tab="productCategories">📂 商品分類管理</button>
-                    <button class="admin-tab" data-tab="trendReports">📊 コンビニ3社 新商品ヒット予測レポート</button>
-                    <button class="admin-tab" data-tab="newProductReport">🆕 週次インテリジェンス（マクロ環境）</button>
-                    <button class="admin-tab" data-tab="productResearch">🔍 新規商品調査レポート</button>
-                    <button class="admin-tab" data-tab="usageStats">📈 利用統計</button>
-                    <button class="admin-tab" data-tab="history">📜 履歴</button>
-                    <button class="admin-tab" data-tab="employees">従業員管理</button>
-                    <button class="admin-tab" data-tab="broadcast">全員へ通知</button>
-                    <button class="admin-tab" data-tab="settings">設定</button>
-                </div>
+                <button class="admin-menu-trigger" id="adminMenuTrigger" type="button" aria-haspopup="dialog" aria-expanded="false">
+                    <span class="admin-menu-trigger-icon">📋</span>
+                    <span class="admin-menu-trigger-label">
+                        <span class="admin-menu-trigger-title">管理者メニュー</span>
+                        <span class="admin-menu-trigger-current" id="adminMenuCurrent">シフト変更</span>
+                    </span>
+                    <span class="admin-menu-trigger-caret" aria-hidden="true">▾</span>
+                    <span class="admin-menu-trigger-badge tab-badge" id="adminMenuTriggerBadge" style="display: none;">0</span>
+                </button>
             </div>
             <div class="admin-content" id="adminContent">
+            </div>
+        </div>
+
+        <!-- 管理者メニュー（ポップアップ） -->
+        <div class="modal-overlay" id="adminMenuModalOverlay" role="dialog" aria-modal="true" aria-labelledby="adminMenuModalTitle">
+            <div class="modal modal-lg admin-menu-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="adminMenuModalTitle">📋 管理者メニュー</h2>
+                    <button class="modal-close" id="adminMenuModalClose" type="button" aria-label="閉じる">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="admin-tabs" id="adminMenuTabs">
+                        <button class="admin-tab" data-tab="userApproval">👤 ユーザー承認</button>
+                        <button class="admin-tab active" data-tab="shiftChanges">シフト変更</button>
+                        <button class="admin-tab" data-tab="shiftSwaps">シフト交換</button>
+                        <button class="admin-tab" data-tab="leaveRequests">有給申請</button>
+                        <button class="admin-tab" data-tab="holidayRequests">休日申請</button>
+                        <button class="admin-tab" data-tab="specialEvents">⚡ 臨時シフト管理</button>
+                        <button class="admin-tab" data-tab="fixedShiftManage">🔁 固定シフト管理</button>
+                        <button class="admin-tab" data-tab="dailyEvents">📅 店舗スケジュール</button>
+                        <button class="admin-tab" data-tab="nonDailyAdvice">📈 非デイリー参考情報</button>
+                        <button class="admin-tab" data-tab="feedbackStats">📊 フィードバック集計</button>
+                        <button class="admin-tab" data-tab="productCategories">📂 商品分類管理</button>
+                        <button class="admin-tab" data-tab="trendReports">📊 コンビニ3社 新商品ヒット予測レポート</button>
+                        <button class="admin-tab" data-tab="newProductReport">🆕 週次インテリジェンス（マクロ環境）</button>
+                        <button class="admin-tab" data-tab="productResearch">🔍 新規商品調査レポート</button>
+                        <button class="admin-tab" data-tab="usageStats">📈 利用統計</button>
+                        <button class="admin-tab" data-tab="history">📜 履歴</button>
+                        <button class="admin-tab" data-tab="employees">従業員管理</button>
+                        <button class="admin-tab" data-tab="broadcast">全員へ通知</button>
+                        <button class="admin-tab" data-tab="settings">設定</button>
+                    </div>
+                </div>
             </div>
         </div>
 

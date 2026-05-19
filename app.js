@@ -3415,6 +3415,9 @@ function updateAdminBadges() {
         }
     });
 
+    // トリガーボタンの合計バッジ（承認待ちユーザー分は除いた小計を一旦反映）
+    updateAdminMenuTriggerBadge(changeCount + swapCount + leaveCount + holidayCount);
+
     // 承認待ちユーザー数を非同期で取得してバッジ更新
     database.ref('users').orderByChild('status').equalTo('pending').once('value')
         .then((snapshot) => {
@@ -3431,10 +3434,54 @@ function updateAdminBadges() {
                 badge.textContent = userApprovalCount;
                 tab.appendChild(badge);
             }
+
+            // トリガーボタンの合計バッジを最終確定
+            updateAdminMenuTriggerBadge(changeCount + swapCount + leaveCount + holidayCount + userApprovalCount);
         })
         .catch((error) => {
             console.error('承認待ちユーザー数取得エラー:', error);
         });
+}
+
+// 管理者メニュー ポップアップの開閉
+function openAdminMenuModal() {
+    const overlay = document.getElementById('adminMenuModalOverlay');
+    const trigger = document.getElementById('adminMenuTrigger');
+    if (!overlay) return;
+    overlay.classList.add('active');
+    if (trigger) trigger.setAttribute('aria-expanded', 'true');
+}
+
+function closeAdminMenuModal() {
+    const overlay = document.getElementById('adminMenuModalOverlay');
+    const trigger = document.getElementById('adminMenuTrigger');
+    if (!overlay) return;
+    overlay.classList.remove('active');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+
+// トリガーボタンに「現在表示中のタブ名」を表示
+function updateAdminMenuTriggerLabel() {
+    const currentEl = document.getElementById('adminMenuCurrent');
+    if (!currentEl) return;
+    const activeTab = document.querySelector('.admin-tab[data-tab="' + state.activeAdminTab + '"]');
+    if (!activeTab) return;
+    // バッジ要素のテキストは除いてラベルを抽出
+    const clone = activeTab.cloneNode(true);
+    clone.querySelectorAll('.tab-badge').forEach(b => b.remove());
+    currentEl.textContent = clone.textContent.trim();
+}
+
+// トリガーボタンの合計バッジを更新
+function updateAdminMenuTriggerBadge(total) {
+    const badge = document.getElementById('adminMenuTriggerBadge');
+    if (!badge) return;
+    if (total > 0) {
+        badge.textContent = total;
+        badge.style.display = '';
+    } else {
+        badge.style.display = 'none';
+    }
 }
 
 // 固定シフト管理画面をレンダリング
@@ -4249,7 +4296,17 @@ function initEventListeners() {
     document.getElementById('prevWeek').onclick = goToPrevWeek;
     document.getElementById('nextWeek').onclick = goToNextWeek;
     document.getElementById('roleToggle').onclick = toggleRole;
-    document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); state.activeAdminTab = t.dataset.tab; renderAdminPanel(); });
+    document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); state.activeAdminTab = t.dataset.tab; updateAdminMenuTriggerLabel(); closeAdminMenuModal(); renderAdminPanel(); });
+
+    // 管理者メニュー（ポップアップ）開閉
+    const adminMenuTrigger = document.getElementById('adminMenuTrigger');
+    const adminMenuModalOverlay = document.getElementById('adminMenuModalOverlay');
+    const adminMenuModalClose = document.getElementById('adminMenuModalClose');
+    if (adminMenuTrigger) adminMenuTrigger.onclick = openAdminMenuModal;
+    if (adminMenuModalClose) adminMenuModalClose.onclick = closeAdminMenuModal;
+    if (adminMenuModalOverlay) adminMenuModalOverlay.onclick = (e) => { if (e.target === adminMenuModalOverlay) closeAdminMenuModal(); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && adminMenuModalOverlay && adminMenuModalOverlay.classList.contains('active')) closeAdminMenuModal(); });
+    updateAdminMenuTriggerLabel();
 
     document.getElementById('addShiftBtn').onclick = () => {
         state.editingShiftId = null;
