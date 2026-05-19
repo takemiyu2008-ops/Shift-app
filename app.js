@@ -26,6 +26,9 @@ auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 // 現在のユーザー情報を保持
 let currentUser = null;
 
+// ログイン後に自動で管理者モードで開始する従業員番号のリスト
+const AUTO_ADMIN_STAFF_IDS = ['392'];
+
 // 従業員番号をメールアドレスに変換
 function staffIdToEmail(staffId) {
     return staffId + '@staff.local';
@@ -130,6 +133,12 @@ auth.onAuthStateChanged((user) => {
                 if (typeof initApp === 'function') {
                     initApp();
                 }
+
+                // 特定の従業員番号は自動で管理者モードで開始（PIN入力不要）
+                const loginStaffId = userData.staffId || user.email.split('@')[0];
+                if (AUTO_ADMIN_STAFF_IDS.includes(loginStaffId) && typeof switchToAdmin === 'function') {
+                    switchToAdmin();
+                }
             } else if (status === 'pending') {
                 // 承認待ち → 待機画面
                 showPendingScreen('pending');
@@ -153,10 +162,65 @@ auth.onAuthStateChanged((user) => {
     } else {
         // 未ログイン
         currentUser = null;
+        clearAutoLogoutTimer();
         console.log('未ログイン');
 
         hideAllScreens();
         document.getElementById('authContainer').classList.add('show');
+
+        // ブラウザ自動入力対策：ログイン画面を出すたびにパスワード欄をクリア
+        const loginPwEl = document.getElementById('loginPassword');
+        const registerPwEl = document.getElementById('registerPassword');
+        if (loginPwEl) loginPwEl.value = '';
+        if (registerPwEl) registerPwEl.value = '';
+    }
+});
+
+// ==========================================
+// 自動ログアウト（バックグラウンド経過時間ベース）
+// ==========================================
+const AUTO_LOGOUT_MS = 5 * 60 * 1000; // 5分以上アプリを離れたらログアウト
+let autoLogoutTimerId = null;
+let hiddenAt = null;
+
+function clearAutoLogoutTimer() {
+    if (autoLogoutTimerId) {
+        clearTimeout(autoLogoutTimerId);
+        autoLogoutTimerId = null;
+    }
+    hiddenAt = null;
+}
+
+function handleVisibilityChange() {
+    // 未ログイン時は何もしない
+    if (!currentUser) {
+        clearAutoLogoutTimer();
+        return;
+    }
+    if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+        if (autoLogoutTimerId) clearTimeout(autoLogoutTimerId);
+        // フォアグラウンドで動き続けるブラウザ向けのフォールバック
+        autoLogoutTimerId = setTimeout(() => {
+            console.log('自動ログアウト（バックグラウンド経過タイマー）');
+            auth.signOut();
+        }, AUTO_LOGOUT_MS);
+    } else if (document.visibilityState === 'visible') {
+        // 復帰時は実時刻で経過チェック（モバイルでタイマーが停止していてもOK）
+        const elapsed = hiddenAt ? Date.now() - hiddenAt : 0;
+        clearAutoLogoutTimer();
+        if (elapsed >= AUTO_LOGOUT_MS) {
+            console.log('自動ログアウト（復帰時に経過時間オーバー）:', Math.round(elapsed / 1000), '秒');
+            auth.signOut();
+        }
+    }
+}
+
+document.addEventListener('visibilitychange', handleVisibilityChange);
+// iOS/Android向け：pagehide でも経過開始の起点を取る
+window.addEventListener('pagehide', () => {
+    if (currentUser && !hiddenAt) {
+        hiddenAt = Date.now();
     }
 });
 
@@ -467,6 +531,7 @@ const USAGE_FEATURES = {
     // 管理者機能
     'admin_approve': { name: '申請承認', category: '管理者', icon: '✅' },
     'admin_reject': { name: '申請却下', category: '管理者', icon: '❌' },
+    'admin_cancel_leave': { name: '有給承認取り消し', category: '管理者', icon: '↩️' },
     'manage_employees': { name: '従業員管理', category: '管理者', icon: '👥' },
     'view_feedback_stats': { name: 'フィードバック集計閲覧', category: '管理者', icon: '📊' },
     'manage_product_categories': { name: '商品分類管理', category: '管理者', icon: '📂' },
@@ -1160,9 +1225,28 @@ function renderGanttBody() {
             // シフト時間情報がない場合は全幅で表示（従来の動作）
             
             bar.textContent = `🏖️ ${l.name} 有給${timeText}`;
+            bar.dataset.leaveId = l.id;
+
+            // 管理者のみクリック/タップで取り消し可能
+            if (state.isAdmin) {
+                bar.style.cursor = 'pointer';
+                bar.title = 'クリックで有給を取り消し';
+                const handleCancelLeave = () => {
+                    if (confirm(`${l.name}さんの有給（${l.startDate}${l.startDate !== l.endDate ? `〜${l.endDate}` : ''}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
+                        cancelLeaveRequest(l.id);
+                    }
+                };
+                bar.addEventListener('click', handleCancelLeave);
+                bar.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCancelLeave();
+                }, { passive: false });
+            }
+
             timeline.appendChild(bar);
         });
-        
+
         // 夜勤の有給の翌日分を表示
         const overnightLeaves = state.leaveRequests.filter(l => {
             if (l.status !== 'approved' || !l.shiftTimes) return false;
@@ -1196,6 +1280,25 @@ function renderGanttBody() {
             bar.style.width = `${widthPercent}%`;
             
             bar.textContent = `🏖️ ${l.name} 有給 0:00-${formatTime(end)}`;
+            bar.dataset.leaveId = l.id;
+
+            // 管理者のみクリック/タップで取り消し可能（夜勤継続分も同じ申請を取り消す）
+            if (state.isAdmin) {
+                bar.style.cursor = 'pointer';
+                bar.title = 'クリックで有給を取り消し';
+                const handleCancelLeave = () => {
+                    if (confirm(`${l.name}さんの有給（${l.startDate}${l.startDate !== l.endDate ? `〜${l.endDate}` : ''}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
+                        cancelLeaveRequest(l.id);
+                    }
+                };
+                bar.addEventListener('click', handleCancelLeave);
+                bar.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCancelLeave();
+                }, { passive: false });
+            }
+
             timeline.appendChild(bar);
         });
         barCount += overnightLeaves.length;
@@ -2857,36 +2960,40 @@ function approveRequest(type, id) {
             r.status = 'approved';
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
-            
+            // 取り消し時の復元用バックアップ
+            r.deletedShifts = [];
+            r.addedOverrideShiftIds = [];
+
             console.log('有給承認処理:', { name: r.name, startDate: r.startDate, endDate: r.endDate, selectedShifts: r.selectedShifts });
-            
+
             // 選択シフト形式かどうかで処理を分岐
             if (r.selectedShifts && r.selectedShifts.length > 0) {
                 // 新形式：選択されたシフトのみを処理
                 r.shiftTimes = {};
-                
+
                 r.selectedShifts.forEach(shiftInfo => {
                     const dateStr = shiftInfo.date;
-                    
+
                     // シフト時間情報を保存（ガントチャート表示用）
                     r.shiftTimes[dateStr] = {
                         startHour: shiftInfo.startHour,
                         endHour: shiftInfo.endHour,
                         overnight: shiftInfo.overnight || false
                     };
-                    
+
                     if (shiftInfo.isFixed && shiftInfo.fixedShiftId) {
                         // 固定シフトの場合：上書きシフトを追加
-                        const existingOverride = state.shifts.find(s => 
-                            s.date === dateStr && 
+                        const existingOverride = state.shifts.find(s =>
+                            s.date === dateStr &&
                             s.fixedShiftOverride === shiftInfo.fixedShiftId
                         );
-                        
+
                         if (!existingOverride) {
                             const fixed = state.fixedShifts.find(f => f.id === shiftInfo.fixedShiftId);
                             if (fixed) {
+                                const overrideId = 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                                 state.shifts.push({
-                                    id: 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                                    id: overrideId,
                                     date: dateStr,
                                     name: r.name,
                                     startHour: fixed.startHour,
@@ -2896,14 +3003,18 @@ function approveRequest(type, id) {
                                     isLeaveOverride: true,
                                     hidden: true
                                 });
+                                r.addedOverrideShiftIds.push(overrideId);
                                 console.log('固定シフト上書き追加:', dateStr);
                             }
                         }
                     } else {
-                        // 通常シフトの場合：該当シフトを削除
+                        // 通常シフトの場合：該当シフトを削除（取り消し用にバックアップ）
                         state.shifts = state.shifts.filter(s => {
                             const isTarget = s.date === dateStr && s.name === r.name;
-                            if (isTarget) console.log('削除対象シフト:', s);
+                            if (isTarget) {
+                                console.log('削除対象シフト:', s);
+                                r.deletedShifts.push({ ...s });
+                            }
                             return !isTarget;
                         });
                     }
@@ -2912,14 +3023,14 @@ function approveRequest(type, id) {
                 // 従来形式：期間内の全シフトを処理
                 const startDate = new Date(r.startDate);
                 const endDate = new Date(r.endDate);
-                
+
                 // 各日のシフト時間情報を保存（ガントチャート表示用）
                 r.shiftTimes = {};
                 const currentDateForShift = new Date(startDate);
                 while (currentDateForShift <= endDate) {
                     const dateStr = formatDate(currentDateForShift);
                     const dayOfWeek = currentDateForShift.getDay();
-                    
+
                     // その日の通常シフトを探す
                     const normalShift = state.shifts.find(s => s.date === dateStr && s.name === r.name);
                     if (normalShift) {
@@ -2941,8 +3052,8 @@ function approveRequest(type, id) {
                     }
                     currentDateForShift.setDate(currentDateForShift.getDate() + 1);
                 }
-                
-                // 通常シフトから該当者・該当期間のシフトを削除
+
+                // 通常シフトから該当者・該当期間のシフトを削除（取り消し用にバックアップ）
                 const beforeCount = state.shifts.length;
                 state.shifts = state.shifts.filter(s => {
                     const shiftDate = new Date(s.date);
@@ -2950,31 +3061,33 @@ function approveRequest(type, id) {
                     const isSamePerson = s.name === r.name;
                     if (isInRange && isSamePerson) {
                         console.log('削除対象シフト:', s);
+                        r.deletedShifts.push({ ...s });
                     }
                     return !(isInRange && isSamePerson);
                 });
                 console.log('通常シフト削除:', beforeCount, '->', state.shifts.length);
-                
+
                 // 固定シフトの場合：該当日に「削除」マークのシフトを追加して上書き
                 const fixedShiftsToOverride = state.fixedShifts.filter(f => f.name === r.name);
                 console.log('固定シフト対象:', fixedShiftsToOverride);
-                
+
                 if (fixedShiftsToOverride.length > 0) {
                     const currentDate = new Date(startDate);
                     while (currentDate <= endDate) {
                         const dateStr = formatDate(currentDate);
                         const dayOfWeek = currentDate.getDay();
-                        
+
                         fixedShiftsToOverride.forEach(fixed => {
                             if (fixed.dayOfWeek === dayOfWeek) {
-                                const existingOverride = state.shifts.find(s => 
-                                    s.date === dateStr && 
+                                const existingOverride = state.shifts.find(s =>
+                                    s.date === dateStr &&
                                     s.fixedShiftOverride === fixed.id
                                 );
-                                
+
                                 if (!existingOverride) {
+                                    const overrideId = 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                                     state.shifts.push({
-                                        id: 'leave-override-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                                        id: overrideId,
                                         date: dateStr,
                                         name: r.name,
                                         startHour: fixed.startHour,
@@ -2984,16 +3097,17 @@ function approveRequest(type, id) {
                                         isLeaveOverride: true,
                                         hidden: true
                                     });
+                                    r.addedOverrideShiftIds.push(overrideId);
                                     console.log('固定シフト上書き追加:', dateStr, fixed.name);
                                 }
                             }
                         });
-                        
+
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
                 }
             }
-            
+
             saveToFirebase('shifts', state.shifts);
             saveToFirebase('leaveRequests', state.leaveRequests);
         }
@@ -3084,6 +3198,101 @@ function approveRequest(type, id) {
     }
     render(); renderAdminPanel(); updateMessageBar();
 }
+// 承認済み有給の取り消し（管理者のみ）
+function cancelLeaveRequest(id) {
+    if (!state.isAdmin) {
+        alert('有給の取り消しは管理者のみ可能です。');
+        return;
+    }
+    const r = state.leaveRequests.find(x => x.id === id);
+    if (!r || r.status !== 'approved') {
+        alert('対象の有給申請が見つからないか、承認済みではありません。');
+        return;
+    }
+    trackUsage('admin_cancel_leave', '管理者');
+
+    // 1. 承認時に追加した有給上書きシフトを削除
+    if (Array.isArray(r.addedOverrideShiftIds) && r.addedOverrideShiftIds.length > 0) {
+        const removeIds = new Set(r.addedOverrideShiftIds);
+        state.shifts = state.shifts.filter(s => !removeIds.has(s.id));
+    } else {
+        // 旧データ用フォールバック：name と期間で leave-override を掃除
+        state.shifts = state.shifts.filter(s => {
+            if (!s.isLeaveOverride || s.name !== r.name) return true;
+            return !(s.date >= r.startDate && s.date <= r.endDate);
+        });
+    }
+
+    let restoredCount = 0;
+    let bestEffortCount = 0;
+
+    // 2. 承認時に削除した通常シフトを復元（新データ：完全復元）
+    if (Array.isArray(r.deletedShifts) && r.deletedShifts.length > 0) {
+        r.deletedShifts.forEach(s => {
+            if (!state.shifts.some(x => x.id === s.id)) {
+                state.shifts.push({ ...s });
+                restoredCount++;
+            }
+        });
+    } else if (r.shiftTimes && Object.keys(r.shiftTimes).length > 0) {
+        // 旧データ用ベストエフォート復元：shiftTimes から通常シフトのみ再構築
+        // 固定シフトは override 削除で自然に復活するため再構築不要
+        const personColor = [...state.shifts, ...state.fixedShifts]
+            .find(s => s.name === r.name && s.color)?.color || null;
+
+        Object.entries(r.shiftTimes).forEach(([dateStr, t]) => {
+            const dayOfWeek = new Date(dateStr).getDay();
+
+            // その曜日に固定シフトが存在し、かつ時刻が一致 → 固定シフト由来と判定（再構築不要）
+            const matchingFixed = state.fixedShifts.find(f =>
+                f.name === r.name &&
+                f.dayOfWeek === dayOfWeek &&
+                f.startHour === t.startHour &&
+                f.endHour === t.endHour
+            );
+            if (matchingFixed) return;
+
+            // 既に同じ日・人・時刻のシフトがあるならスキップ（重複防止）
+            const exists = state.shifts.some(s =>
+                s.date === dateStr &&
+                s.name === r.name &&
+                s.startHour === t.startHour &&
+                s.endHour === t.endHour &&
+                !s.isLeaveOverride
+            );
+            if (exists) return;
+
+            // 通常シフトとして再構築
+            const newShift = {
+                id: 'leave-cancel-restore-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                date: dateStr,
+                name: r.name,
+                startHour: t.startHour,
+                endHour: t.endHour,
+                overnight: !!t.overnight,
+                restoredFromLeaveCancel: true
+            };
+            if (personColor) newShift.color = personColor;
+            state.shifts.push(newShift);
+            bestEffortCount++;
+        });
+    }
+
+    // 3. 有給申請レコードを削除
+    state.leaveRequests = state.leaveRequests.filter(x => x.id !== id);
+
+    saveToFirebase('shifts', state.shifts);
+    saveToFirebase('leaveRequests', state.leaveRequests);
+
+    render();
+    renderAdminPanel();
+    updateMessageBar();
+
+    if (bestEffortCount > 0) {
+        alert(`有給を取り消しました。\n旧データのため ${bestEffortCount} 件の通常シフトをベストエフォートで復元しました（色やメモなど一部情報は失われている場合があります）。`);
+    }
+}
+
 function rejectRequest(type, id) {
     const processedAt = new Date().toISOString();
     const processedBy = '管理者';

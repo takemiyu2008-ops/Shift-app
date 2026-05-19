@@ -303,8 +303,9 @@
                 </div>
                 <div class="auth-input-group">
                     <label class="auth-label">パスワード（4桁の数字）</label>
-                    <input type="password" class="auth-input password-input" id="loginPassword" 
-                           required placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
+                    <input type="password" class="auth-input password-input" id="loginPassword"
+                           required placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
+                           autocomplete="new-password" data-lpignore="true" data-1p-ignore data-form-type="other">
                     <p class="auth-hint">4桁の数字を入力してください</p>
                 </div>
                 <button type="submit" class="auth-button">ログイン</button>
@@ -326,8 +327,9 @@
                 </div>
                 <div class="auth-input-group">
                     <label class="auth-label">パスワード（4桁の数字）</label>
-                    <input type="password" class="auth-input password-input" id="registerPassword" 
-                           required placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
+                    <input type="password" class="auth-input password-input" id="registerPassword"
+                           required placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
+                           autocomplete="new-password" data-lpignore="true" data-1p-ignore data-form-type="other">
                     <p class="auth-hint">覚えやすい4桁の数字を設定してください</p>
                 </div>
                 <button type="submit" class="auth-button">新規登録</button>
