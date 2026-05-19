@@ -1547,10 +1547,18 @@ function createShiftBar(s, lvl) {
         bar.innerHTML = `<span class="shift-name">🏖️ ${s.name} 休日</span>`;
         bar.title = 'この日のみ休日（単日変更）';
 
-        // タップ・クリックでポップオーバーを表示
-        bar.addEventListener('click', (e) => { e.stopPropagation(); showShiftPopover(s, bar, e); });
+        // タップ・クリックでポップオーバーを表示（管理者のみ）
+        bar.addEventListener('click', (e) => {
+            if (!state.isAdmin) return;
+            e.stopPropagation();
+            showShiftPopover(s, bar, e);
+        });
         bar.addEventListener('touchend', (e) => {
-            if (!touchMoved) { e.preventDefault(); e.stopPropagation(); showShiftPopover(s, bar, e); }
+            if (!touchMoved && state.isAdmin) {
+                e.preventDefault();
+                e.stopPropagation();
+                showShiftPopover(s, bar, e);
+            }
         }, { passive: false });
         bar.addEventListener('touchstart', () => { touchMoved = false; }, { passive: true });
         bar.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
@@ -1666,7 +1674,8 @@ function createShiftBar(s, lvl) {
 
     // クリックイベント（デスクトップ用）
     bar.addEventListener('click', e => {
-        // 確認ダイアログを表示してからポップオーバーを表示
+        // シフト変更操作は管理者のみ
+        if (!state.isAdmin) return;
         if (confirm('シフト内容を変更しますか？')) {
             showShiftPopover(s, e, bar);
         }
@@ -1700,10 +1709,12 @@ function createShiftBar(s, lvl) {
         const touchDuration = Date.now() - touchStartTime;
         if (touchMoved || touchDuration > 500) return;
 
+        // シフト変更操作は管理者のみ
+        if (!state.isAdmin) return;
+
         e.preventDefault();
         e.stopPropagation();
 
-        // 確認ダイアログを表示してからポップオーバーを表示
         if (confirm('シフト内容を変更しますか？')) {
             showShiftPopover(s, {
                 clientX: touchStartX,
