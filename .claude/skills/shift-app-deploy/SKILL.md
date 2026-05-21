@@ -77,6 +77,11 @@ Firebase Hosting のデフォルトURL（Firebase Console で確認可能）
 3. **デプロイ対象の確認**: `firebase.json` の `public` が `.` になっているか確認
 4. **時間待ち**: CDN への反映に数分かかることがある（過去事例 #S220）
 
+> **対策済み**: `firebase.json` に `headers`（`Cache-Control: no-cache`）を設定済みのため、
+> 以降のデプロイは HTML/JS/CSS が全ブラウザで自動再取得される。
+> 過去にデスクトップで「修正が全く反映されない」事象が起きたのは、この設定が無くブラウザが
+> 古い `app.js`/`styles.css`/`index.html` を使い回していたのが原因（モバイルはキャッシュが空で最新版が見えていた）。
+
 ### セキュリティルールが反映されない
 
 - GitHub Actions は **Hosting のみ** デプロイ
