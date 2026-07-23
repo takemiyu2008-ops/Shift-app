@@ -746,6 +746,15 @@ function formatDate(date) {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
+// 夜勤明けの継続バーはシフト起点日（前日）を返す
+function resolveShiftOriginDate(s) {
+    if (s.isOvernightContinuation) {
+        const d = new Date(s.date);
+        d.setDate(d.getDate() - 1);
+        return formatDate(d);
+    }
+    return s.date;
+}
 function formatDateTime(str) {
     const d = new Date(str);
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -1115,11 +1124,14 @@ function renderGanttBody() {
             // 前日がイベント日の場合は固定夜勤継続も停止
             const prevSpecialEvent = getSpecialEvent(prevStr);
             if (prevSpecialEvent && prevSpecialEvent.suppressFixed !== false) return false;
-            if (f.dayOfWeek !== prevDow || !f.overnight) return false;
+            if (f.dayOfWeek !== prevDow) return false;
             // 有効期間チェック（前日の日付でチェック）
             if (f.startDate && prevStr < f.startDate) return false;
             if (f.endDate && prevStr > f.endDate) return false;
-            return true;
+            // 単日上書きを考慮した実効の夜勤フラグで判定
+            // （上書きで夜勤化した日は継続を出し、夜勤解除・休日化した日は出さない）
+            const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
+            return override ? (!override.isDayOff && !!override.overnight) : !!f.overnight;
         }).map(f => {
             // 単日上書きがあるか確認
             const override = prevDayOverrides.find(o => o.fixedShiftId === f.id);
@@ -1145,7 +1157,17 @@ function renderGanttBody() {
         }).filter(f => {
             if (!f) return false;
             const originalId = f.id.split('-')[1];
-            return !leaveOverrideFixedIdsForOvernight.includes(originalId);
+            if (leaveOverrideFixedIdsForOvernight.includes(originalId)) return false;
+            // 前日に交代済みの通常シフトがある場合は旧担当の継続バーを出さない
+            const orig = state.fixedShifts.find(x => x.id === originalId);
+            const swappedPrev = orig && state.shifts.some(s =>
+                s.date === prevStr &&
+                s.swapHistory &&
+                s.swapHistory.previousName === orig.name &&
+                s.startHour === orig.startHour &&
+                s.endHour === orig.endHour
+            );
+            return !swappedPrev;
         });
 
         // 通常シフトからhiddenフラグのものを除外
@@ -1415,9 +1437,7 @@ function renderGanttBody() {
             const handleDeleteHoliday = () => {
                 const typeLabel = h.halfDayType === 'morning' ? '午前半休' : (h.halfDayType === 'afternoon' ? '午後半休' : '休日');
                 if (confirm(`${h.name}さんの${typeLabel}（${h.startDate}）を取り消しますか？`)) {
-                    state.holidayRequests = state.holidayRequests.filter(x => x.id !== h.id);
-                    saveToFirebase('holidayRequests', state.holidayRequests);
-                    render();
+                    cancelHolidayRequest(h.id);
                 }
             };
 
@@ -2868,7 +2888,7 @@ function createHalfDayOff(s, halfDayType) {
         const fixed = state.fixedShifts.find(f => f.id === originalId);
         if (fixed) {
             name = fixed.name;
-            date = s.date;
+            date = resolveShiftOriginDate(s);
             startHour = fixed.startHour;
             endHour = fixed.endHour;
             overnight = fixed.overnight || false;
@@ -3034,13 +3054,18 @@ function approveRequest(type, id) {
                         }
                     } else {
                         // 通常シフトの場合：該当シフトを削除（取り消し用にバックアップ）
+                        // 同日に複数シフトがある場合に他のシフトを巻き込まないよう、
+                        // まず時刻の完全一致で探し、無ければ従来の日付・担当者一致で削除
+                        const hasExactMatch = state.shifts.some(s =>
+                            s.date === dateStr && s.name === r.name &&
+                            s.startHour === shiftInfo.startHour && s.endHour === shiftInfo.endHour
+                        );
                         state.shifts = state.shifts.filter(s => {
-                            const isTarget = s.date === dateStr && s.name === r.name;
-                            if (isTarget) {
-                                console.log('削除対象シフト:', s);
-                                r.deletedShifts.push({ ...s });
-                            }
-                            return !isTarget;
+                            if (s.date !== dateStr || s.name !== r.name) return true;
+                            if (hasExactMatch && (s.startHour !== shiftInfo.startHour || s.endHour !== shiftInfo.endHour)) return true;
+                            console.log('削除対象シフト:', s);
+                            r.deletedShifts.push({ ...s });
+                            return false;
                         });
                     }
                 });
@@ -3224,6 +3249,26 @@ function approveRequest(type, id) {
     render(); renderAdminPanel(); updateMessageBar();
 }
 // 承認済み有給の取り消し（管理者のみ）
+// 休日を取り消し、休みボタンで削除されていたシフトを復元する
+function cancelHolidayRequest(id) {
+    const h = state.holidayRequests.find(x => x.id === id);
+    if (!h) return;
+
+    // 休みボタンで削除された通常シフトを復元
+    if (Array.isArray(h.deletedShifts) && h.deletedShifts.length > 0) {
+        h.deletedShifts.forEach(ds => {
+            if (!state.shifts.some(s => s.id === ds.id)) {
+                state.shifts.push({ ...ds });
+            }
+        });
+        saveToFirebase('shifts', state.shifts);
+    }
+
+    state.holidayRequests = state.holidayRequests.filter(x => x.id !== id);
+    saveToFirebase('holidayRequests', state.holidayRequests);
+    render();
+}
+
 function cancelLeaveRequest(id) {
     if (!state.isAdmin) {
         alert('有給の取り消しは管理者のみ可能です。');
@@ -4205,8 +4250,8 @@ function updateChangeShiftOptions(applicantName) {
         return;
     }
 
-    // 通常シフトを追加（申請者のみ）
-    state.shifts.filter(s => s.name === applicantName).forEach(s => {
+    // 通常シフトを追加（申請者のみ・有給処理用の隠しシフトは除外）
+    state.shifts.filter(s => s.name === applicantName && !s.hidden && !s.isLeaveOverride).forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
         o.textContent = `${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
@@ -4249,8 +4294,8 @@ function updateSwapShiftOptions(applicantName) {
         return;
     }
 
-    // 通常シフトを追加（申請者のみ）
-    state.shifts.filter(s => s.name === applicantName).forEach(s => {
+    // 通常シフトを追加（申請者のみ・有給処理用の隠しシフトは除外）
+    state.shifts.filter(s => s.name === applicantName && !s.hidden && !s.isLeaveOverride).forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
         o.textContent = `${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
@@ -4939,7 +4984,8 @@ function openShiftOverrideModal(shift) {
     // 固定シフトのIDを取得
     const parts = shift.id.split('-');
     const fixedShiftId = parts[1];
-    const dateStr = shift.date;
+    // 夜勤明けの継続バーから開いた場合はシフト起点日（前日）を対象にする
+    const dateStr = resolveShiftOriginDate(shift);
     
     // 元の固定シフトを取得
     const fixedShift = state.fixedShifts.find(f => f.id === fixedShiftId);
@@ -5192,7 +5238,7 @@ function initPopoverEvents() {
                         const fixed = state.fixedShifts.find(f => f.id === originalId);
                         if (fixed) {
                             name = fixed.name;
-                            date = s.date;
+                            date = resolveShiftOriginDate(s);
                         }
                     } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
                         const originalId = s.id.replace('on-', '');
@@ -5232,6 +5278,19 @@ function initPopoverEvents() {
                             overnight = s.overnight || false;
                         }
 
+                        // 削除対象のシフトを特定（取り消し時の復元用にバックアップ）
+                        let deleteTargetId = null;
+                        if (s.isFixed) {
+                            // 固定シフトの場合は削除しない（休日バーだけ表示）
+                        } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
+                            deleteTargetId = s.id.replace('on-', '');
+                        } else {
+                            deleteTargetId = s.id;
+                        }
+                        const deletedShifts = deleteTargetId
+                            ? state.shifts.filter(x => x.id === deleteTargetId).map(x => ({ ...x }))
+                            : [];
+
                         // 承認済みの休日リクエストを直接追加（管理者による即時承認）
                         const holidayRequest = {
                             id: Date.now().toString(),
@@ -5247,22 +5306,15 @@ function initPopoverEvents() {
                             status: 'approved',
                             createdAt: new Date().toISOString(),
                             approvedAt: new Date().toISOString(),
-                            processedBy: '管理者（即時承認）'
+                            processedBy: '管理者（即時承認）',
+                            deletedShifts: deletedShifts
                         };
                         state.holidayRequests.push(holidayRequest);
                         saveToFirebase('holidayRequests', state.holidayRequests);
 
                         // シフトを削除
-                        if (s.isFixed) {
-                            // 固定シフトの場合は削除しない（休日バーだけ表示）
-                            // 必要に応じて固定シフトを削除する場合はコメントアウトを解除
-                            // const parts = s.id.split('-');
-                            // deleteFixedShift(parts[1]);
-                        } else if (s.isOvernightContinuation && s.id.startsWith('on-')) {
-                            const originalId = s.id.replace('on-', '');
-                            deleteShift(originalId);
-                        } else {
-                            deleteShift(s.id);
+                        if (deleteTargetId) {
+                            deleteShift(deleteTargetId);
                         }
 
                         alert('休みに変更しました。');
@@ -5302,7 +5354,7 @@ function initPopoverEvents() {
                 const fixed = state.fixedShifts.find(f => f.id === originalId);
                 if (fixed) {
                     name = fixed.name;
-                    date = s.date;
+                    date = resolveShiftOriginDate(s);
                     startHour = fixed.startHour;
                     endHour = fixed.endHour;
                     overnight = fixed.overnight || false;
