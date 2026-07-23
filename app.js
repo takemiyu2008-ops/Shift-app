@@ -1154,35 +1154,34 @@ function renderGanttBody() {
 
         const all = [...visibleDayShifts, ...visibleOvernight, ...fixed, ...fixedOvernight];
 
-        // 承認済みの休日（全日休み）がある担当者のシフトを除外
-        const approvedHolidays = state.holidayRequests.filter(h => {
-            if (h.status !== 'approved') return false;
-            if (!(dateStr >= h.startDate && dateStr <= h.endDate)) return false;
-            if (h.halfDayType) return false; // 半休は除外対象外
-            
-            // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
-            if (h.shiftTimes && Object.keys(h.shiftTimes).length > 0) {
-                return !!h.shiftTimes[dateStr];
-            }
-            // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
-            if (h.selectedShifts && h.selectedShifts.length > 0) {
-                return h.selectedShifts.some(s => s.date === dateStr);
-            }
-            // どちらもない場合は従来の期間ベースの除外
-            return true;
-        });
-        const holidayNames = approvedHolidays.map(h => h.name);
+        // 指定日を起点とする承認済みの休日・有給があるか判定
+        const isOffOnDate = (name, d) => {
+            const covers = (r) => {
+                if (r.status !== 'approved') return false;
+                if (r.name !== name) return false;
+                if (r.halfDayType) return false; // 半休は除外対象外
+                if (!(d >= r.startDate && d <= r.endDate)) return false;
 
-        // 承認済みの有給がある担当者のシフトも除外
-        const approvedLeaves = state.leaveRequests.filter(l =>
-            l.status === 'approved' &&
-            dateStr >= l.startDate &&
-            dateStr <= l.endDate
-        );
-        const leaveNames = approvedLeaves.map(l => l.name);
+                // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
+                if (r.shiftTimes && Object.keys(r.shiftTimes).length > 0) {
+                    return !!r.shiftTimes[d];
+                }
+                // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
+                if (r.selectedShifts && r.selectedShifts.length > 0) {
+                    return r.selectedShifts.some(s => s.date === d);
+                }
+                // どちらもない場合は従来の期間ベースの除外
+                return true;
+            };
+            return state.holidayRequests.some(covers) || state.leaveRequests.some(covers);
+        };
 
         // 全日休み・有給の担当者のシフトを除外したリスト
-        const filteredAll = all.filter(s => !holidayNames.includes(s.name) && !leaveNames.includes(s.name));
+        // 夜勤の翌日継続バーは前日開始のシフトなので、前日を起点日として判定する
+        const filteredAll = all.filter(s => {
+            const originDate = s.isOvernightContinuation ? prevStr : dateStr;
+            return !isOffOnDate(s.name, originDate);
+        });
 
         const levels = calculateShiftLevels(filteredAll);
         const maxLvl = Math.max(0, ...Object.values(levels));
