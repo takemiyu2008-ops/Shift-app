@@ -139,6 +139,11 @@ auth.onAuthStateChanged((user) => {
                 if (AUTO_ADMIN_STAFF_IDS.includes(loginStaffId) && typeof switchToAdmin === 'function') {
                     switchToAdmin();
                 }
+
+                // プッシュ通知許可済みならFCMトークンを再取得（ローテーション追従）
+                if (typeof refreshFcmTokenIfGranted === 'function') {
+                    refreshFcmTokenIfGranted();
+                }
             } else if (status === 'pending') {
                 // 承認待ち → 待機画面
                 showPendingScreen('pending');
@@ -3434,6 +3439,16 @@ function updateAdminBadges() {
     const leaveCount = state.leaveRequests.filter(r => r.status === 'pending').length;
     const holidayCount = state.holidayRequests.filter(r => r.status === 'pending').length;
 
+    // PWAアイコンバッジ（店長のiPhone用）: プッシュ通知の対象＝有給+休日のpending件数と揃える
+    if ('setAppBadge' in navigator) {
+        const appBadgeTotal = leaveCount + holidayCount;
+        if (appBadgeTotal > 0) {
+            navigator.setAppBadge(appBadgeTotal).catch(() => {});
+        } else {
+            navigator.clearAppBadge().catch(() => {});
+        }
+    }
+
     // 同期的にバッジを更新（state から取得できるもの）
     const badgeCounts = {
         shiftChanges: changeCount,
@@ -3841,7 +3856,7 @@ function renderAdminPanel() {
     } else if (state.activeAdminTab === 'broadcast') {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
     } else if (state.activeAdminTab === 'settings') {
-        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button></div>`;
+        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button>${getPushSettingsHtml()}</div>`;
     } else if (state.activeAdminTab === 'dailyEvents') {
         // 店舗スケジュール管理
         const icons = getEventTypeIcons();
@@ -10968,3 +10983,107 @@ if (orderAdviceBtnMobile) {
 // 初期化時にフィードバックデータを読み込み
 loadOrderFeedback();
 
+
+// ==========================================
+// プッシュ通知（店長用）
+// アプリを閉じていても有給・休日申請をiPhoneに通知するための仕組み。
+// 通知を受け取れるのは AUTO_ADMIN_STAFF_IDS のユーザーのみ。
+// ==========================================
+
+// FirebaseコンソールのWeb Push証明書（公開鍵）。未設定の間は有効化ボタンがエラー案内を出す
+const PUSH_VAPID_KEY = '';
+
+let swRegistration = null;
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+        .then(reg => { swRegistration = reg; })
+        .catch(err => console.error('Service Worker 登録失敗:', err));
+}
+
+function getCurrentStaffId() {
+    return (currentUser && currentUser.email) ? currentUser.email.split('@')[0] : null;
+}
+
+// FCMトークンは RTDB のキーにするため、キー禁止文字を無害化する
+function sanitizeTokenKey(token) {
+    return token.replace(/[.#$\[\]\/]/g, '_');
+}
+
+// PWAとして起動しているか（iOSではこれが真でないと通知APIが存在しない）
+function isStandaloneMode() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+}
+
+function isPushEligible() {
+    return AUTO_ADMIN_STAFF_IDS.includes(getCurrentStaffId() || '')
+        && 'serviceWorker' in navigator
+        && 'Notification' in window;
+}
+
+// 必ずボタンのonclick（ユーザー操作）から呼ぶこと。iOSは操作起点でないと許可ダイアログが出ない
+async function enablePushNotifications() {
+    try {
+        if (!PUSH_VAPID_KEY) {
+            alert('プッシュ通知の設定（VAPIDキー）がまだ登録されていません。管理者に連絡してください。');
+            return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            alert('通知が許可されませんでした。iPhoneの「設定 > 通知 > シフト管理」から許可してください。');
+            return;
+        }
+        await registerFcmToken();
+        alert('プッシュ通知を有効化しました。申請が届くと通知されます。');
+        renderAdminPanel();
+    } catch (err) {
+        console.error('プッシュ通知の有効化に失敗:', err);
+        alert('プッシュ通知の有効化に失敗しました: ' + err.message);
+    }
+}
+
+async function registerFcmToken() {
+    const reg = swRegistration || await navigator.serviceWorker.ready;
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({
+        vapidKey: PUSH_VAPID_KEY,
+        serviceWorkerRegistration: reg
+    });
+    if (!token) throw new Error('通知トークンを取得できませんでした');
+    const staffId = getCurrentStaffId();
+    await database.ref('fcmTokens/' + staffId + '/' + sanitizeTokenKey(token)).set({
+        token: token,
+        updatedAt: new Date().toISOString(),
+        ua: navigator.userAgent.slice(0, 120)
+    });
+}
+
+// ログイン時に呼ばれる。許可済みならトークンをサイレント再取得して保存し直す
+// （トークンローテーションへの追従。未許可なら何もしない）
+function refreshFcmTokenIfGranted() {
+    if (isPushEligible() && Notification.permission === 'granted' && PUSH_VAPID_KEY) {
+        registerFcmToken().catch(err => console.error('FCMトークン再取得失敗:', err));
+    }
+}
+
+// 管理者「設定」タブに出すプッシュ通知の状態表示・有効化ボタン
+function getPushSettingsHtml() {
+    // 店長（AUTO_ADMIN_STAFF_IDS）でログインしている時だけ表示する
+    if (!AUTO_ADMIN_STAFF_IDS.includes(getCurrentStaffId() || '')) return '';
+
+    let inner;
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        // iOSのSafariタブ内では通知APIが存在しない。PWAとして起動する案内を出す
+        inner = isStandaloneMode()
+            ? `<p style="color:var(--text-secondary);font-size:0.85em">この端末はプッシュ通知に対応していません</p>`
+            : `<p style="color:var(--text-secondary);font-size:0.85em">Safariの共有メニューから「ホーム画面に追加」し、<br>そのアイコンから開くとプッシュ通知を設定できます</p>`;
+    } else if (Notification.permission === 'granted') {
+        inner = `<p style="color:var(--text-secondary);font-size:0.9em">✅ プッシュ通知: 有効</p>`;
+    } else if (Notification.permission === 'denied') {
+        inner = `<p style="color:var(--text-secondary);font-size:0.85em">通知がブロックされています。<br>iPhoneの「設定 &gt; 通知 &gt; シフト管理」から許可してください</p>`;
+    } else {
+        inner = `<button class="btn btn-primary" onclick="enablePushNotifications()">🔔 プッシュ通知を有効化</button>`;
+    }
+    return `<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border-color, #eee)"><p style="margin-bottom:12px;color:var(--text-secondary)">申請のプッシュ通知（店長のみ）</p>${inner}</div>`;
+}

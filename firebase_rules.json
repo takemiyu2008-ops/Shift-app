@@ -88,6 +88,12 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "fcmTokens": {
+      "$staffId": {
+        ".read": "auth != null && auth.token.email === $staffId + '@staff.local'",
+        ".write": "auth != null && auth.token.email === $staffId + '@staff.local'"
+      }
+    },
     "$other": {
       ".read": false,
       ".write": false

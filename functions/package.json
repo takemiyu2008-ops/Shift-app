@@ -1,0 +1,12 @@
+{
+  "name": "shift-app-functions",
+  "version": "1.0.0",
+  "description": "有給・休日申請の店長向けプッシュ通知",
+  "engines": { "node": "20" },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "private": true
+}
