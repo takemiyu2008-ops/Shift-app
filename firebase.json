@@ -11,8 +11,16 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      "**/.*/**",
+      ".git/**",
+      ".firebase/**",
+      ".github/**",
+      ".claude/**",
       "**/node_modules/**",
-      "functions/**"
+      "functions/**",
+      "order-advisor/**",
+      "firebase_rules.json",
+      "**/*.md"
     ],
     "headers": [
       {

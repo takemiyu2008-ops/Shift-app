@@ -41,6 +41,7 @@ function convertPassword(password) {
 
 // 承認状態リスナーの参照を保持
 let pendingStatusListener = null;
+let pendingStatusListenerRef = null;
 
 // データリスナーが設定済みかどうか
 let dataListenersAttached = false;
@@ -75,11 +76,12 @@ function showPendingScreen(status) {
 
 // 認証状態の監視
 auth.onAuthStateChanged((user) => {
-    // 前回のリスナーを解除
-    if (pendingStatusListener) {
-        pendingStatusListener();
-        pendingStatusListener = null;
+    // 前回のリスナーを解除（compat SDK の on() はコールバック自身を返すため off() で解除する）
+    if (pendingStatusListener && pendingStatusListenerRef) {
+        pendingStatusListenerRef.off('value', pendingStatusListener);
     }
+    pendingStatusListener = null;
+    pendingStatusListenerRef = null;
 
     if (user) {
         // ログイン済み
@@ -100,11 +102,13 @@ auth.onAuthStateChanged((user) => {
                 });
                 showPendingScreen('pending');
                 // リアルタイムで承認状態を監視
-                pendingStatusListener = userRef.child('status').on('value', (snap) => {
+                pendingStatusListenerRef = userRef.child('status');
+                pendingStatusListener = pendingStatusListenerRef.on('value', (snap) => {
                     const newStatus = snap.val();
                     if (newStatus === 'approved') {
-                        pendingStatusListener = null;
                         userRef.child('status').off('value');
+                        pendingStatusListener = null;
+                        pendingStatusListenerRef = null;
                         location.reload();
                     } else if (newStatus === 'rejected') {
                         showPendingScreen('rejected');
@@ -148,11 +152,13 @@ auth.onAuthStateChanged((user) => {
                 // 承認待ち → 待機画面
                 showPendingScreen('pending');
                 // リアルタイムで承認状態を監視
-                pendingStatusListener = userRef.child('status').on('value', (snap) => {
+                pendingStatusListenerRef = userRef.child('status');
+                pendingStatusListener = pendingStatusListenerRef.on('value', (snap) => {
                     const newStatus = snap.val();
                     if (newStatus === 'approved') {
-                        pendingStatusListener = null;
                         userRef.child('status').off('value');
+                        pendingStatusListener = null;
+                        pendingStatusListenerRef = null;
                         location.reload();
                     } else if (newStatus === 'rejected') {
                         showPendingScreen('rejected');
@@ -184,7 +190,7 @@ auth.onAuthStateChanged((user) => {
 // ==========================================
 // 自動ログアウト（バックグラウンド経過時間ベース）
 // ==========================================
-const AUTO_LOGOUT_MS = 5 * 60 * 1000; // 5分以上アプリを離れたらログアウト
+const AUTO_LOGOUT_MS = 30 * 60 * 1000; // 30分以上アプリを離れたらログアウト
 let autoLogoutTimerId = null;
 let hiddenAt = null;
 
@@ -792,8 +798,30 @@ function updateShiftDateDay() {
     }
 }
 
-// データリスナーで監視しているrefキー一覧
-const dataRefKeys = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'nonDailyAdvice', 'trendReports', 'categoryMemos', 'productCategories', 'newProductReports', 'specialEvents', 'productResearchReports'];
+// 常時購読するrefキー一覧（シフト表・申請・運用に必要なもの）
+const dataRefKeys = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'categoryMemos', 'productCategories', 'specialEvents'];
+
+// レポート系はBase64ファイル等を含み重いため常時購読せず、画面を開いた時に取得する
+const onDemandRefKeys = ['nonDailyAdvice', 'trendReports', 'newProductReports', 'productResearchReports'];
+const onDemandLoaded = {};
+
+// 再描画予約: 1フレーム内に複数のデータ着信があっても実描画を1回に集約する
+const renderQueue = { main: false, adminPanel: false, messageBar: false, advisor: false };
+let renderScheduled = false;
+function scheduleRender(parts) {
+    parts.forEach(p => { renderQueue[p] = true; });
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+        renderScheduled = false;
+        const q = Object.assign({}, renderQueue);
+        Object.keys(renderQueue).forEach(k => { renderQueue[k] = false; });
+        if (q.main) render();
+        else if (q.messageBar) updateMessageBar(); // render() 内でも呼ばれるため main 時は不要
+        if (q.advisor) renderOrderAdvisorExtended();
+        if (q.adminPanel && state.isAdmin) renderAdminPanel();
+    });
+}
 
 // Firebase データリスナーを解除
 function detachDataListeners() {
@@ -801,44 +829,77 @@ function detachDataListeners() {
         database.ref(key).off('value');
     });
     database.ref('dailyChecklist').off('value');
-    database.ref('usageStats').off('value');
     dataListenersAttached = false;
 }
 
 // Firebase からデータを読み込み
 function loadData() {
-    const refs = dataRefKeys;
+    // 呼び出し経路が複数あるため、二重登録を防いでから張り直す
+    if (dataListenersAttached) detachDataListeners();
     dataListenersAttached = true;
-    refs.forEach(key => {
+    dataRefKeys.forEach(key => {
         database.ref(key).on('value', snap => {
             const data = snap.val();
             state[key] = data ? Object.values(data) : [];
             if (key === 'employees') updateEmployeeSelects();
-            if (key === 'nonDailyAdvice') renderNonDailyAdvisor();
-            if (key === 'newProductReports') renderNewProductReport();
-            if (key === 'trendReports') renderTrendReports();
-            if (key === 'productResearchReports') renderProductResearch();
-            render();
-            if (state.isAdmin) renderAdminPanel();
-            updateMessageBar();
+            // キーに応じて必要な画面だけ再描画を予約する
+            if (key === 'messages') {
+                scheduleRender(['messageBar', 'adminPanel']);
+            } else if (key === 'categoryMemos' || key === 'productCategories') {
+                scheduleRender(['advisor', 'adminPanel']);
+            } else {
+                scheduleRender(['main', 'adminPanel']);
+            }
         });
     });
     // dailyChecklistはオブジェクト形式で管理
     database.ref('dailyChecklist').on('value', snap => {
         state.dailyChecklist = snap.val() || {};
     });
-    // 利用統計（管理者用）
-    database.ref('usageStats').on('value', snap => {
+}
+
+// レポート系データを必要になった時点で取得する（取得済みなら即解決）
+function loadReportDataOnce(keys) {
+    const targets = keys.filter(k => !onDemandLoaded[k]);
+    if (targets.length === 0) return Promise.resolve();
+    return Promise.all(targets.map(key =>
+        database.ref(key).once('value').then(snap => {
+            const data = snap.val();
+            state[key] = data ? Object.values(data) : [];
+            onDemandLoaded[key] = true;
+        })
+    ));
+}
+
+// 発注・スケジュール情報グループを開いた時にレポート系をまとめて取得・描画する
+function refreshReportSections() {
+    return loadReportDataOnce(onDemandRefKeys).then(() => {
+        renderNonDailyAdvisor();
+        renderTrendReports();
+        renderNewProductReport();
+        renderProductResearch();
+    });
+}
+
+// 利用統計は統計タブを開いた時に直近分のみ取得する（IDが時系列キーのため limitToLast で新しい順に取れる）
+let usageStatsLoaded = false;
+function loadUsageStatsOnce() {
+    if (usageStatsLoaded) return Promise.resolve();
+    return database.ref('usageStats').limitToLast(3000).once('value').then(snap => {
         const data = snap.val();
         state.usageStats = data ? Object.values(data) : [];
-        if (state.isAdmin && state.activeAdminTab === 'usageStats') {
-            renderAdminPanel();
-        }
+        usageStatsLoaded = true;
     });
 }
 
 // Firebase にデータを保存
 function saveToFirebase(key, data) {
+    // オンデマンドキーは取得前に保存するとノード全体を上書きして消すため、ここで防ぐ
+    if (onDemandRefKeys.includes(key) && !onDemandLoaded[key]) {
+        console.warn(`${key} が未読み込みのため保存を中止しました`);
+        alert('データの読み込みが完了していないため保存できませんでした。もう一度お試しください。');
+        return;
+    }
     const ref = database.ref(key);
     ref.set(data.reduce((acc, item) => { acc[item.id] = item; return acc; }, {}));
 }
@@ -895,16 +956,6 @@ function calculateShiftLevels(shifts) {
         return String(a.id).localeCompare(String(b.id));
     });
 
-    // デバッグ用ログ
-    console.log('Calculating levels for shifts:', sorted.map(s => ({
-        id: s.id,
-        name: s.name,
-        start: s.startHour,
-        end: s.endHour,
-        displayEnd: getDisplayEndHour(s),
-        overnight: s.overnight
-    })));
-
     sorted.forEach(s => {
         let lvl = 0;
         const sStart = s.startHour;
@@ -924,13 +975,129 @@ function calculateShiftLevels(shifts) {
         levels[s.id] = lvl;
     });
 
-    console.log('Calculated levels:', levels);
     return levels;
+}
+
+// ガント上のバー類・アイコンのイベントは、バー1本ごとに登録せず ganttBody への委譲1式で処理する
+// （再描画のたびに数百個のリスナーを張り直すコストと、モバイルのタップ遅延を避ける）
+const ganttTouch = { moved: false, startX: 0, startY: 0, startTime: 0 };
+
+function initGanttDelegation() {
+    const body = document.getElementById('ganttBody');
+    if (!body || body.dataset.delegated) return;
+    body.dataset.delegated = '1';
+
+    body.addEventListener('click', (e) => {
+        const eventIcon = e.target.closest('.event-icon');
+        if (eventIcon) {
+            e.stopPropagation();
+            showEventPopover(eventIcon.dataset.date, e);
+            return;
+        }
+        const leaveBar = e.target.closest('.leave-bar');
+        if (leaveBar) {
+            if (leaveBar._cancelLeave) leaveBar._cancelLeave();
+            return;
+        }
+        const holidayBar = e.target.closest('.holiday-bar');
+        if (holidayBar) {
+            if (holidayBar._deleteHoliday) holidayBar._deleteHoliday();
+            return;
+        }
+        const dayOffBar = e.target.closest('.day-off-bar');
+        if (dayOffBar && dayOffBar._shiftData) {
+            if (!state.isAdmin) return;
+            e.stopPropagation();
+            showShiftPopover(dayOffBar._shiftData, dayOffBar, e);
+            return;
+        }
+        const shiftBar = e.target.closest('.shift-bar');
+        if (shiftBar && shiftBar._shiftData) {
+            if (!state.isAdmin) return;
+            if (confirm('シフト内容を変更しますか？')) {
+                showShiftPopover(shiftBar._shiftData, e, shiftBar);
+            }
+        }
+    });
+
+    body.addEventListener('touchstart', (e) => {
+        ganttTouch.moved = false;
+        ganttTouch.startTime = Date.now();
+        if (e.touches.length === 1) {
+            ganttTouch.startX = e.touches[0].clientX;
+            ganttTouch.startY = e.touches[0].clientY;
+        }
+        // シフトバー上ではピンチズームとの競合を防ぐため伝播を止める（従来挙動を踏襲）
+        if (e.target.closest('.shift-bar')) e.stopPropagation();
+    }, { passive: true });
+
+    body.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+            const dX = Math.abs(e.touches[0].clientX - ganttTouch.startX);
+            const dY = Math.abs(e.touches[0].clientY - ganttTouch.startY);
+            if (dX > 10 || dY > 10) ganttTouch.moved = true;
+        } else {
+            ganttTouch.moved = true;
+        }
+    }, { passive: true });
+
+    body.addEventListener('touchend', (e) => {
+        const eventIcon = e.target.closest('.event-icon');
+        if (eventIcon) {
+            e.preventDefault();
+            e.stopPropagation();
+            showEventPopover(eventIcon.dataset.date, e);
+            return;
+        }
+        const leaveBar = e.target.closest('.leave-bar');
+        if (leaveBar) {
+            if (!ganttTouch.moved && leaveBar._cancelLeave) {
+                e.preventDefault();
+                e.stopPropagation();
+                leaveBar._cancelLeave();
+            }
+            return;
+        }
+        const holidayBar = e.target.closest('.holiday-bar');
+        if (holidayBar) {
+            if (!ganttTouch.moved && holidayBar._deleteHoliday) {
+                e.preventDefault();
+                e.stopPropagation();
+                holidayBar._deleteHoliday();
+            }
+            return;
+        }
+        const dayOffBar = e.target.closest('.day-off-bar');
+        if (dayOffBar && dayOffBar._shiftData) {
+            if (!ganttTouch.moved && state.isAdmin) {
+                e.preventDefault();
+                e.stopPropagation();
+                showShiftPopover(dayOffBar._shiftData, dayOffBar, e);
+            }
+            return;
+        }
+        const shiftBar = e.target.closest('.shift-bar');
+        if (shiftBar && shiftBar._shiftData) {
+            const duration = Date.now() - ganttTouch.startTime;
+            if (ganttTouch.moved || duration > 500) return;
+            if (!state.isAdmin) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm('シフト内容を変更しますか？')) {
+                showShiftPopover(shiftBar._shiftData, {
+                    clientX: ganttTouch.startX,
+                    clientY: ganttTouch.startY,
+                    target: shiftBar
+                }, shiftBar);
+            }
+        }
+    }, { passive: false });
 }
 
 // ガントチャート
 function renderGanttBody() {
     const body = document.getElementById('ganttBody');
+    initGanttDelegation();
     body.innerHTML = '';
     for (let i = 0; i < 7; i++) {
         const date = new Date(state.currentWeekStart);
@@ -1013,19 +1180,7 @@ function renderGanttBody() {
         }
 
         label.innerHTML = labelHTML;
-
-        // イベントアイコンにクリックイベントを追加
-        label.querySelectorAll('.event-icon').forEach(icon => {
-            icon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showEventPopover(dateStr, e);
-            });
-            icon.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                showEventPopover(dateStr, e);
-            }, { passive: false });
-        });
+        // イベントアイコンのクリック/タップは ganttBody への委譲で処理（data-date を参照）
 
         row.appendChild(label);
 
@@ -1257,17 +1412,12 @@ function renderGanttBody() {
             if (state.isAdmin) {
                 bar.style.cursor = 'pointer';
                 bar.title = 'クリックで有給を取り消し';
-                const handleCancelLeave = () => {
+                // クリック/タップは ganttBody への委譲で処理
+                bar._cancelLeave = () => {
                     if (confirm(`${l.name}さんの有給（${l.startDate}${l.startDate !== l.endDate ? `〜${l.endDate}` : ''}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
                         cancelLeaveRequest(l.id);
                     }
                 };
-                bar.addEventListener('click', handleCancelLeave);
-                bar.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleCancelLeave();
-                }, { passive: false });
             }
 
             timeline.appendChild(bar);
@@ -1312,17 +1462,12 @@ function renderGanttBody() {
             if (state.isAdmin) {
                 bar.style.cursor = 'pointer';
                 bar.title = 'クリックで有給を取り消し';
-                const handleCancelLeave = () => {
+                // クリック/タップは ganttBody への委譲で処理
+                bar._cancelLeave = () => {
                     if (confirm(`${l.name}さんの有給（${l.startDate}${l.startDate !== l.endDate ? `〜${l.endDate}` : ''}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
                         cancelLeaveRequest(l.id);
                     }
                 };
-                bar.addEventListener('click', handleCancelLeave);
-                bar.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleCancelLeave();
-                }, { passive: false });
             }
 
             timeline.appendChild(bar);
@@ -1336,18 +1481,13 @@ function renderGanttBody() {
             
             // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
             if (h.shiftTimes && Object.keys(h.shiftTimes).length > 0) {
-                const hasTime = !!h.shiftTimes[dateStr];
-                console.log(`[休日デバッグ] ${h.name} ${dateStr}: shiftTimes存在, 該当日=${hasTime}`, h.shiftTimes);
-                return hasTime;
+                return !!h.shiftTimes[dateStr];
             }
             // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
             if (h.selectedShifts && h.selectedShifts.length > 0) {
-                const hasShift = h.selectedShifts.some(s => s.date === dateStr);
-                console.log(`[休日デバッグ] ${h.name} ${dateStr}: selectedShifts存在, 該当日=${hasShift}`, h.selectedShifts);
-                return hasShift;
+                return h.selectedShifts.some(s => s.date === dateStr);
             }
             // どちらもない場合は従来の期間ベースの表示
-            console.log(`[休日デバッグ] ${h.name} ${dateStr}: shiftTimes/selectedShifts無し、期間ベース表示`);
             return true;
         });
         
@@ -1370,7 +1510,6 @@ function renderGanttBody() {
             // 1. shiftTimes から日付ごとの時間情報を取得
             if (h.shiftTimes && h.shiftTimes[dateStr]) {
                 shiftTimeInfo = h.shiftTimes[dateStr];
-                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: shiftTimesから取得`, shiftTimeInfo);
             }
             // 2. selectedShifts から該当日の時間情報を取得
             else if (h.selectedShifts && h.selectedShifts.length > 0) {
@@ -1381,7 +1520,6 @@ function renderGanttBody() {
                         endHour: selectedShift.endHour,
                         overnight: selectedShift.overnight || false
                     };
-                    console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: selectedShiftsから取得`, shiftTimeInfo);
                 }
             }
             // 3. 直接プロパティから取得（従来の形式）
@@ -1391,9 +1529,6 @@ function renderGanttBody() {
                     endHour: h.endHour,
                     overnight: h.overnight || false
                 };
-                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: 直接プロパティから取得`, shiftTimeInfo);
-            } else {
-                console.log(`[休日時間デバッグ] ${h.name} ${dateStr}: 時間情報なし`, h);
             }
 
             // シフト時間情報がある場合は、その時間に合わせて表示
@@ -1439,19 +1574,13 @@ function renderGanttBody() {
             const deleteLabel = h.halfDayType ? '半休' : '休日';
             bar.title = `クリックで${deleteLabel}を取り消し`;
 
-            const handleDeleteHoliday = () => {
+            // クリック/タップは ganttBody への委譲で処理
+            bar._deleteHoliday = () => {
                 const typeLabel = h.halfDayType === 'morning' ? '午前半休' : (h.halfDayType === 'afternoon' ? '午後半休' : '休日');
                 if (confirm(`${h.name}さんの${typeLabel}（${h.startDate}）を取り消しますか？`)) {
                     cancelHolidayRequest(h.id);
                 }
             };
-
-            bar.addEventListener('click', handleDeleteHoliday);
-            bar.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDeleteHoliday();
-            }, { passive: false });
 
             timeline.appendChild(bar);
         });
@@ -1571,21 +1700,8 @@ function createShiftBar(s, lvl) {
         bar.innerHTML = `<span class="shift-name">🏖️ ${s.name} 休日</span>`;
         bar.title = 'この日のみ休日（単日変更）';
 
-        // タップ・クリックでポップオーバーを表示（管理者のみ）
-        bar.addEventListener('click', (e) => {
-            if (!state.isAdmin) return;
-            e.stopPropagation();
-            showShiftPopover(s, bar, e);
-        });
-        bar.addEventListener('touchend', (e) => {
-            if (!touchMoved && state.isAdmin) {
-                e.preventDefault();
-                e.stopPropagation();
-                showShiftPopover(s, bar, e);
-            }
-        }, { passive: false });
-        bar.addEventListener('touchstart', () => { touchMoved = false; }, { passive: true });
-        bar.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
+        // タップ・クリックの処理は ganttBody への委譲で行う（管理者のみ）
+        bar._shiftData = s;
 
         return bar;
     }
@@ -1691,62 +1807,8 @@ function createShiftBar(s, lvl) {
         bar.innerHTML = icons + '<span class="shift-name">' + s.name + '</span><span class="shift-time">' + time + '</span>';
     }
 
-    // タッチ位置を保存するための変数
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
-
-    // クリックイベント（デスクトップ用）
-    bar.addEventListener('click', e => {
-        // シフト変更操作は管理者のみ
-        if (!state.isAdmin) return;
-        if (confirm('シフト内容を変更しますか？')) {
-            showShiftPopover(s, e, bar);
-        }
-    });
-
-    // タッチイベント（モバイル用）
-    bar.addEventListener('touchstart', (e) => {
-        touchMoved = false;
-        touchStartTime = Date.now();
-        if (e.touches.length === 1) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }
-        // イベントの伝播を停止してピンチズームとの競合を防ぐ
-        e.stopPropagation();
-    }, { passive: true });
-
-    bar.addEventListener('touchmove', (e) => {
-        // 少しでも動いたらスクロールとみなす
-        if (e.touches.length === 1) {
-            const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
-            const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
-            if (deltaX > 10 || deltaY > 10) {
-                touchMoved = true;
-            }
-        }
-    }, { passive: true });
-
-    bar.addEventListener('touchend', (e) => {
-        // タップ判定：動きが少なく、短い時間
-        const touchDuration = Date.now() - touchStartTime;
-        if (touchMoved || touchDuration > 500) return;
-
-        // シフト変更操作は管理者のみ
-        if (!state.isAdmin) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (confirm('シフト内容を変更しますか？')) {
-            showShiftPopover(s, {
-                clientX: touchStartX,
-                clientY: touchStartY,
-                target: bar
-            }, bar);
-        }
-    }, { passive: false });
+    // クリック・タップの処理は ganttBody への委譲で行う（管理者のみ）
+    bar._shiftData = s;
 
     return bar;
 }
@@ -3251,7 +3313,7 @@ function approveRequest(type, id) {
             alert('休日申請を承認しました。');
         }
     }
-    render(); renderAdminPanel(); updateMessageBar();
+    // 再描画は saveToFirebase のリスナー経由（rAF集約）で行われる
 }
 // 承認済み有給の取り消し（管理者のみ）
 // 休日を取り消し、休みボタンで削除されていたシフトを復元する
@@ -3271,7 +3333,6 @@ function cancelHolidayRequest(id) {
 
     state.holidayRequests = state.holidayRequests.filter(x => x.id !== id);
     saveToFirebase('holidayRequests', state.holidayRequests);
-    render();
 }
 
 function cancelLeaveRequest(id) {
@@ -3359,10 +3420,6 @@ function cancelLeaveRequest(id) {
     saveToFirebase('shifts', state.shifts);
     saveToFirebase('leaveRequests', state.leaveRequests);
 
-    render();
-    renderAdminPanel();
-    updateMessageBar();
-
     if (bestEffortCount > 0) {
         alert(`有給を取り消しました。\n旧データのため ${bestEffortCount} 件の通常シフトをベストエフォートで復元しました（色やメモなど一部情報は失われている場合があります）。`);
     }
@@ -3414,6 +3471,7 @@ function approveUser(uid) {
     if (!confirm('このユーザーを承認しますか？')) return;
     database.ref('users/' + uid).update({ status: 'approved' }).then(() => {
         alert('ユーザーを承認しました');
+        invalidatePendingUserCount();
         renderAdminPanel();
     }).catch(err => {
         console.error('承認エラー:', err);
@@ -3426,11 +3484,24 @@ function rejectUser(uid) {
     if (!confirm('このユーザーの登録を却下しますか？')) return;
     database.ref('users/' + uid).update({ status: 'rejected' }).then(() => {
         alert('ユーザーを却下しました');
+        invalidatePendingUserCount();
         renderAdminPanel();
     }).catch(err => {
         console.error('却下エラー:', err);
         alert('却下に失敗しました');
     });
+}
+
+// 承認待ちユーザー数のキャッシュ（renderAdminPanel のたびに同じクエリが飛ぶのを防ぐ）
+let pendingUserCountCache = null;
+function invalidatePendingUserCount() { pendingUserCountCache = null; }
+function fetchPendingUserCount() {
+    if (pendingUserCountCache !== null) return Promise.resolve(pendingUserCountCache);
+    return database.ref('users').orderByChild('status').equalTo('pending').once('value')
+        .then(snapshot => {
+            pendingUserCountCache = snapshot.numChildren();
+            return pendingUserCountCache;
+        });
 }
 
 function updateAdminBadges() {
@@ -3477,10 +3548,9 @@ function updateAdminBadges() {
     // トリガーボタンの合計バッジ（承認待ちユーザー分は除いた小計を一旦反映）
     updateAdminMenuTriggerBadge(changeCount + swapCount + leaveCount + holidayCount);
 
-    // 承認待ちユーザー数を非同期で取得してバッジ更新
-    database.ref('users').orderByChild('status').equalTo('pending').once('value')
-        .then((snapshot) => {
-            const userApprovalCount = snapshot.numChildren();
+    // 承認待ちユーザー数を取得してバッジ更新（キャッシュ済みなら即時）
+    fetchPendingUserCount()
+        .then((userApprovalCount) => {
             const tab = document.querySelector('.admin-tab[data-tab="userApproval"]');
             if (!tab) return;
 
@@ -3719,6 +3789,8 @@ function renderAdminPanel() {
                 snapshot.forEach(child => {
                     pendingUsers.push({ uid: child.key, ...child.val() });
                 });
+                // 最新の件数が取れたのでバッジ用キャッシュも更新しておく
+                pendingUserCountCache = pendingUsers.length;
                 if (!pendingUsers.length) {
                     c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちユーザーなし</p>';
                     return;
@@ -3932,8 +4004,10 @@ function renderAdminPanel() {
             });
         }
     } else if (state.activeAdminTab === 'nonDailyAdvice') {
-        // 非デイリーアドバイス管理
-        renderNonDailyAdminPanel(c);
+        // 非デイリーアドバイス管理（データはタブを開いた時に取得）
+        loadReportDataOnce(['nonDailyAdvice']).then(() => {
+            if (state.activeAdminTab === 'nonDailyAdvice') renderNonDailyAdminPanel(c);
+        });
     } else if (state.activeAdminTab === 'feedbackStats') {
         // フィードバック集計
         renderFeedbackStats(c);
@@ -3941,17 +4015,25 @@ function renderAdminPanel() {
         // 商品分類管理
         renderProductCategoriesPanel(c);
     } else if (state.activeAdminTab === 'trendReports') {
-        // コンビニ3社 新商品ヒット予測レポート管理
-        renderTrendReportsAdmin(c);
+        // コンビニ3社 新商品ヒット予測レポート管理（データはタブを開いた時に取得）
+        loadReportDataOnce(['trendReports']).then(() => {
+            if (state.activeAdminTab === 'trendReports') renderTrendReportsAdmin(c);
+        });
     } else if (state.activeAdminTab === 'newProductReport') {
-        // 週次インテリジェンス（マクロ環境）管理
-        renderNewProductReportAdmin(c);
+        // 週次インテリジェンス（マクロ環境）管理（データはタブを開いた時に取得）
+        loadReportDataOnce(['newProductReports']).then(() => {
+            if (state.activeAdminTab === 'newProductReport') renderNewProductReportAdmin(c);
+        });
     } else if (state.activeAdminTab === 'productResearch') {
-        // 新規商品調査レポート管理
-        renderProductResearchAdmin(c);
+        // 新規商品調査レポート管理（データはタブを開いた時に取得）
+        loadReportDataOnce(['productResearchReports']).then(() => {
+            if (state.activeAdminTab === 'productResearch') renderProductResearchAdmin(c);
+        });
     } else if (state.activeAdminTab === 'usageStats') {
-        // 利用統計
-        renderUsageStats(c);
+        // 利用統計（直近分のみタブを開いた時に取得）
+        loadUsageStatsOnce().then(() => {
+            if (state.activeAdminTab === 'usageStats') renderUsageStats(c);
+        });
     } else if (state.activeAdminTab === 'history') {
         renderRequestHistory(c);
     }
@@ -4164,7 +4246,17 @@ function clearAllMessages() {
     }
 }
 
-function render() { renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList(); }
+function render() {
+    // 再描画でスクロール位置が飛ばないよう保存・復元する（ズームはCSS変数で自動保持）
+    const ganttContainer = document.querySelector('.gantt-container');
+    const scrollLeft = ganttContainer ? ganttContainer.scrollLeft : 0;
+    const scrollTop = ganttContainer ? ganttContainer.scrollTop : 0;
+    renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList();
+    if (ganttContainer) {
+        ganttContainer.scrollLeft = scrollLeft;
+        ganttContainer.scrollTop = scrollTop;
+    }
+}
 
 // モーダル操作
 function openModal(o) { o.classList.add('active'); }
@@ -4804,31 +4896,14 @@ function applyZoom() {
     if (!ganttContainer) return;
 
     const scale = state.zoomLevel / 100;
-
-    // ガントチャートのセル幅を調整
-    const timeCells = document.querySelectorAll('.time-cell');
-    const hourCells = document.querySelectorAll('.hour-cell');
-
     const baseWidth = window.innerWidth <= 768 ? 38 : 50;
     const newWidth = Math.round(baseWidth * scale);
-
-    timeCells.forEach(cell => {
-        cell.style.minWidth = `${newWidth}px`;
-    });
-
-    hourCells.forEach(cell => {
-        cell.style.minWidth = `${newWidth}px`;
-    });
-
-    // ヘッダーと行の最小幅を更新
     const minWidth = Math.round((window.innerWidth <= 768 ? 60 : 120) + (newWidth * 24));
-    const ganttHeader = document.querySelector('.gantt-header');
-    const ganttRows = document.querySelectorAll('.gantt-row');
 
-    if (ganttHeader) ganttHeader.style.minWidth = `${minWidth}px`;
-    ganttRows.forEach(row => {
-        row.style.minWidth = `${minWidth}px`;
-    });
+    // CSS変数2つの更新だけで全セル・全行に反映される（ピンチ中の全セル書き込みを避ける）
+    // コンテナに設定するため、ガント再描画後もズームが保持される
+    ganttContainer.style.setProperty('--cell-w', `${newWidth}px`);
+    ganttContainer.style.setProperty('--gantt-min-w', `${minWidth}px`);
 }
 
 function initZoomControls() {
@@ -4905,6 +4980,25 @@ function initZoomControls() {
 // ========================================
 // PDF出力・印刷機能
 // ========================================
+// html2pdf（約800KB）は初期ロードに含めず、PDF出力の初回利用時に動的ロードする
+let html2pdfLoadPromise = null;
+function loadHtml2pdf() {
+    if (window.html2pdf) return Promise.resolve();
+    if (!html2pdfLoadPromise) {
+        html2pdfLoadPromise = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            s.onload = resolve;
+            s.onerror = () => {
+                html2pdfLoadPromise = null;
+                reject(new Error('html2pdf の読み込みに失敗しました'));
+            };
+            document.head.appendChild(s);
+        });
+    }
+    return html2pdfLoadPromise;
+}
+
 function exportToPdf() {
     trackUsage('export_pdf', state.isAdmin ? '管理者' : '匿名');
     const element = document.querySelector('.app-container');
@@ -4960,8 +5054,8 @@ function exportToPdf() {
         pagebreak: { mode: 'avoid-all' }
     };
 
-    // PDF生成
-    html2pdf().set(opt).from(element).save().then(() => {
+    // PDF生成（ライブラリ未ロードならここで取得）
+    loadHtml2pdf().then(() => html2pdf().set(opt).from(element).save()).then(() => {
         // クラスを削除
         document.body.classList.remove('pdf-export-mode');
         // ローディング削除
@@ -5823,6 +5917,20 @@ document.addEventListener('DOMContentLoaded', init);
 // 日本の祝日関連の関数
 // ========================================
 
+// 固定祝日表（描画のたびに再生成しないようモジュールスコープの定数にする）
+const FIXED_HOLIDAYS = {
+    '1/1': '元日',
+    '2/11': '建国記念の日',
+    '2/23': '天皇誕生日',
+    '4/29': '昭和の日',
+    '5/3': '憲法記念日',
+    '5/4': 'みどりの日',
+    '5/5': 'こどもの日',
+    '8/11': '山の日',
+    '11/3': '文化の日',
+    '11/23': '勤労感謝の日'
+};
+
 // 日本の祝日を取得（2024年〜2030年対応）
 function getJapaneseHoliday(date) {
     const d = new Date(date);
@@ -5830,24 +5938,10 @@ function getJapaneseHoliday(date) {
     const month = d.getMonth() + 1;
     const day = d.getDate();
     const dateStr = `${month}/${day}`;
-    
-    // 固定祝日
-    const fixedHolidays = {
-        '1/1': '元日',
-        '2/11': '建国記念の日',
-        '2/23': '天皇誕生日',
-        '4/29': '昭和の日',
-        '5/3': '憲法記念日',
-        '5/4': 'みどりの日',
-        '5/5': 'こどもの日',
-        '8/11': '山の日',
-        '11/3': '文化の日',
-        '11/23': '勤労感謝の日'
-    };
-    
+
     // 固定祝日チェック
-    if (fixedHolidays[dateStr]) {
-        return fixedHolidays[dateStr];
+    if (FIXED_HOLIDAYS[dateStr]) {
+        return FIXED_HOLIDAYS[dateStr];
     }
     
     // ハッピーマンデー（第n月曜日）
@@ -5907,21 +6001,8 @@ function getHolidayName(date) {
     const month = d.getMonth() + 1;
     const day = d.getDate();
     const dateStr = `${month}/${day}`;
-    
-    const fixedHolidays = {
-        '1/1': '元日',
-        '2/11': '建国記念の日',
-        '2/23': '天皇誕生日',
-        '4/29': '昭和の日',
-        '5/3': '憲法記念日',
-        '5/4': 'みどりの日',
-        '5/5': 'こどもの日',
-        '8/11': '山の日',
-        '11/3': '文化の日',
-        '11/23': '勤労感謝の日'
-    };
-    
-    if (fixedHolidays[dateStr]) return fixedHolidays[dateStr];
+
+    if (FIXED_HOLIDAYS[dateStr]) return FIXED_HOLIDAYS[dateStr];
     
     // ハッピーマンデー
     const dayOfWeek = d.getDay();
@@ -6101,6 +6182,10 @@ function getWeatherInfo(weatherCode) {
 }
 
 // 週間天気予報を取得（今年＋昨年比較）
+// 週ごとの天気キャッシュと進行中リクエストの中断用
+const weatherCache = {};
+let weatherAbortController = null;
+
 async function fetchWeatherData() {
     try {
         // 表示している週の日付範囲を計算
@@ -6108,6 +6193,19 @@ async function fetchWeatherData() {
         const endDate = new Date(state.currentWeekStart);
         endDate.setDate(endDate.getDate() + 6);
         const endDateStr = formatDate(endDate);
+
+        // 同じ週を再表示した時はキャッシュから即反映（APIを叩かない）
+        if (weatherCache[startDate]) {
+            state.weatherData = weatherCache[startDate];
+            render();
+            renderOrderAdvisorExtended();
+            return;
+        }
+
+        // 週送り連打時は前のリクエストを中断し、古いレスポンスでの巻き戻りを防ぐ
+        if (weatherAbortController) weatherAbortController.abort();
+        weatherAbortController = new AbortController();
+        const signal = weatherAbortController.signal;
 
         // 昨年の同じ期間を計算
         const lastYearStart = new Date(state.currentWeekStart);
@@ -6125,8 +6223,8 @@ async function fetchWeatherData() {
 
         // 両方のAPIを並列で呼び出し
         const [forecastRes, archiveRes] = await Promise.all([
-            fetch(forecastUrl),
-            fetch(archiveUrl)
+            fetch(forecastUrl, { signal }),
+            fetch(archiveUrl, { signal })
         ]);
 
         if (!forecastRes.ok) throw new Error('天気データの取得に失敗しました');
@@ -6170,12 +6268,16 @@ async function fetchWeatherData() {
             });
         }
 
+        // 取得結果を週単位でキャッシュ
+        weatherCache[startDate] = state.weatherData;
+
         // 天気データが更新されたら再描画
         render();
         // 拡張版発注アドバイザーを更新
         renderOrderAdvisorExtended();
-        console.log('天気データを取得しました:', state.weatherData);
     } catch (error) {
+        // 週送り連打による中断は正常系なので握りつぶす
+        if (error.name === 'AbortError') return;
         console.error('天気データ取得エラー:', error);
     }
 }
@@ -6799,9 +6901,13 @@ function initAdvisorGroupToggle() {
         groupHeader.onclick = () => {
             groupToggle.classList.toggle('collapsed');
             groupContent.classList.toggle('collapsed');
+            // グループを開いた時にレポート系データを取得（取得済みなら即描画）
+            if (!groupContent.classList.contains('collapsed')) {
+                refreshReportSections();
+            }
         };
     }
-    
+
     // 印刷画面グループのトグルも初期化
     initPrintGroupToggle();
 }
@@ -7680,7 +7786,6 @@ function renderProductResearch() {
             const dateStr = `${createdDate.getFullYear()}/${createdDate.getMonth() + 1}/${createdDate.getDate()}`;
 
             // Markdownコンテンツから### 見出しでセクション分割
-            const renderedContent = renderMarkdown(report.content);
             const sections = extractReportSections(report.content);
             const reportId = `report-${reportIdx}`;
 
@@ -7710,12 +7815,12 @@ function renderProductResearch() {
                 `;
             }
 
-            // セクション分割されたHTMLを生成
+            // セクション分割されたHTMLを生成（全文parseはセクション分割しない場合のみ行う）
             let sectionContentHtml;
             if (sections.length >= 2) {
                 sectionContentHtml = buildSectionedReportHtml(report.content, sections, reportId);
             } else {
-                sectionContentHtml = renderedContent;
+                sectionContentHtml = renderMarkdown(report.content);
             }
 
             html += `
