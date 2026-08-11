@@ -747,8 +747,9 @@ body {
    ガントチャート
    ======================================== */
 .gantt-container {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
+    /* スクロールコンテナへの backdrop-filter は iOS Safari でスクロールがカクつくため、
+       不透明背景に置き換えている（見た目はほぼ同等） */
+    background: rgb(30, 41, 59);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
@@ -767,7 +768,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 200;
-    min-width: fit-content;
+    min-width: var(--gantt-min-w, fit-content);
 }
 
 .gantt-label-header {
@@ -792,7 +793,7 @@ body {
 }
 
 .time-cell {
-    min-width: 50px;
+    min-width: var(--cell-w, 50px);
     flex: 1;
     padding: 12px 4px;
     text-align: center;
@@ -816,6 +817,7 @@ body {
     display: flex;
     border-bottom: 1px solid var(--border-color);
     transition: background var(--transition-fast);
+    min-width: var(--gantt-min-w, auto);
 }
 
 .gantt-row:hover {
@@ -874,7 +876,7 @@ body {
 }
 
 .hour-cell {
-    min-width: 50px;
+    min-width: var(--cell-w, 50px);
     flex: 1;
     border-right: 1px solid var(--border-color);
     position: relative;
@@ -948,44 +950,34 @@ body {
 }
 
 /* 変更履歴があるシフト */
+/* box-shadow のアニメーションは毎フレーム再ペイントが走り発熱・電池消費の原因になるため、
+   GPU合成で済む opacity の点滅に置き換えている */
 .shift-bar.changed {
     border: 2px solid rgba(59, 130, 246, 0.8);
-    animation: changedPulse 2s infinite;
+    animation: barPulse 2s infinite;
 }
 
-@keyframes changedPulse {
+@keyframes barPulse {
 
     0%,
     100% {
-        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+        opacity: 1;
     }
 
     50% {
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0);
+        opacity: 0.75;
     }
 }
 
 /* 交代履歴があるシフト */
 .shift-bar.swapped {
     border: 2px solid rgba(16, 185, 129, 0.8);
-    animation: swappedPulse 2s infinite;
+    animation: barPulse 2s infinite;
 }
 
 .shift-bar .swap-icon {
     margin-right: 4px;
     font-size: 0.7rem;
-}
-
-@keyframes swappedPulse {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-    }
-
-    50% {
-        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
-    }
 }
 
 /* 有給バー */
@@ -1517,11 +1509,11 @@ body {
     }
 
     .gantt-header {
-        min-width: 1000px;
+        min-width: var(--gantt-min-w, 1000px);
     }
 
     .gantt-row {
-        min-width: 1000px;
+        min-width: var(--gantt-min-w, 1000px);
     }
 
     .gantt-label-header,
@@ -1544,7 +1536,7 @@ body {
 
     .time-cell,
     .hour-cell {
-        min-width: 38px;
+        min-width: var(--cell-w, 38px);
     }
 
     .time-cell {
