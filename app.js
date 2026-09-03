@@ -1373,7 +1373,24 @@ function renderGanttBody() {
         filteredAll.forEach(s => timeline.appendChild(createShiftBar(s, levels[s.id])));
 
         // 有給
-        const leaves = state.leaveRequests.filter(l => l.status === 'approved' && dateStr >= l.startDate && dateStr <= l.endDate);
+        // 複数シフト選択式の申請は startDate〜endDate が「選択した日の最小〜最大」なので、
+        // 期間だけで判定すると離れた日を選んだときに間の日にもバーが出てしまう。
+        // 休日申請（下記）と同じく、shiftTimes / selectedShifts に該当日があるかで判定する。
+        const leaves = state.leaveRequests.filter(l => {
+            if (l.status !== 'approved') return false;
+            if (!(dateStr >= l.startDate && dateStr <= l.endDate)) return false;
+
+            // shiftTimesがある場合は、該当日のデータが存在するかチェック（最優先）
+            if (l.shiftTimes && Object.keys(l.shiftTimes).length > 0) {
+                return !!l.shiftTimes[dateStr];
+            }
+            // selectedShiftsがある場合は、該当日のシフトが存在するかチェック
+            if (l.selectedShifts && l.selectedShifts.length > 0) {
+                return l.selectedShifts.some(s => s.date === dateStr);
+            }
+            // どちらもない旧データは従来の期間ベースの表示
+            return true;
+        });
         let barCount = leaves.length;
         leaves.forEach((l, idx) => {
             const bar = document.createElement('div');
@@ -1414,7 +1431,7 @@ function renderGanttBody() {
                 bar.title = 'クリックで有給を取り消し';
                 // クリック/タップは ganttBody への委譲で処理
                 bar._cancelLeave = () => {
-                    if (confirm(`${l.name}さんの有給（${l.startDate}${l.startDate !== l.endDate ? `〜${l.endDate}` : ''}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
+                    if (confirm(`${l.name}さんの有給（${formatLeaveDates(l)}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
                         cancelLeaveRequest(l.id);
                     }
                 };
@@ -1464,7 +1481,7 @@ function renderGanttBody() {
                 bar.title = 'クリックで有給を取り消し';
                 // クリック/タップは ganttBody への委譲で処理
                 bar._cancelLeave = () => {
-                    if (confirm(`${l.name}さんの有給（${l.startDate}${l.startDate !== l.endDate ? `〜${l.endDate}` : ''}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
+                    if (confirm(`${l.name}さんの有給（${formatLeaveDates(l)}）を取り消しますか？\n\n※承認時に削除/上書きされたシフトを元に戻します。`)) {
                         cancelLeaveRequest(l.id);
                     }
                 };
@@ -3333,6 +3350,23 @@ function cancelHolidayRequest(id) {
 
     state.holidayRequests = state.holidayRequests.filter(x => x.id !== id);
     saveToFirebase('holidayRequests', state.holidayRequests);
+}
+
+// 有給申請の対象日を表示用に整形する
+// 複数シフト選択式は選択日が飛び飛びのことがあるため、期間（startDate〜endDate）ではなく実際の対象日を列挙する
+function formatLeaveDates(r) {
+    let dates = [];
+    if (r.shiftTimes && Object.keys(r.shiftTimes).length > 0) {
+        dates = Object.keys(r.shiftTimes);
+    } else if (r.selectedShifts && r.selectedShifts.length > 0) {
+        dates = r.selectedShifts.map(s => s.date);
+    }
+    dates = [...new Set(dates)].sort();
+    if (dates.length === 0) {
+        // 旧データ（期間ベース）
+        return r.startDate !== r.endDate ? `${r.startDate}〜${r.endDate}` : r.startDate;
+    }
+    return dates.join('、');
 }
 
 function cancelLeaveRequest(id) {
