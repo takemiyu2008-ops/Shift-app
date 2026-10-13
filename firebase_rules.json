@@ -1,92 +1,96 @@
 {
   "rules": {
     "shifts": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "fixedShifts": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "shiftOverrides": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "changeRequests": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "leaveRequests": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "holidayRequests": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "employees": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "messages": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "swapRequests": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "dailyEvents": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "dailyChecklist": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "nonDailyAdvice": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "trendReports": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "newProductReports": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "categoryMemos": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "productCategories": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "specialEvents": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "productResearchReports": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "usageStats": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
+    },
+    "orderFeedback": {
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "users": {
-      ".read": "auth != null",
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
       ".indexOn": ["status"],
       "$uid": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null && (auth.uid === $uid || root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+        ".write": "auth != null && ((auth.uid === $uid && newData.child('status').val() === 'pending' && auth.token.email === newData.child('staffId').val() + '@staff.local' && (!data.exists() || data.child('status').val() === 'pending')) || root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
       }
     },
     "settings": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
     "fcmTokens": {
       "$staffId": {

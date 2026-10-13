@@ -84,6 +84,14 @@ auth.onAuthStateChanged((user) => {
     pendingStatusListenerRef = null;
 
     if (user) {
+        // セッション復元（リロード・PWA再起動・タブ復元）時も最終操作からの経過を検査する
+        if (isSessionExpired()) {
+            console.log('自動ログアウト（セッション復元時に経過時間オーバー）');
+            clearLastActive();
+            auth.signOut();
+            return;
+        }
+
         // ログイン済み
         currentUser = user;
         console.log('ログイン済み:', user.email);
@@ -134,12 +142,18 @@ auth.onAuthStateChanged((user) => {
                 loadData();
                 render();
 
+                // 無操作・離席の自動ログアウト監視を開始
+                startAutoLogoutWatch();
+
+                // アプリ閲覧をログイン名で記録（認証確定前に記録すると「未ログイン」になるためここで行う）
+                const loginStaffId = userData.staffId || user.email.split('@')[0];
+                trackUsage('app_view', userData.displayName || loginStaffId);
+
                 if (typeof initApp === 'function') {
                     initApp();
                 }
 
                 // 特定の従業員番号は自動で管理者モードで開始（PIN入力不要）
-                const loginStaffId = userData.staffId || user.email.split('@')[0];
                 if (AUTO_ADMIN_STAFF_IDS.includes(loginStaffId) && typeof switchToAdmin === 'function') {
                     switchToAdmin();
                 }
@@ -173,8 +187,16 @@ auth.onAuthStateChanged((user) => {
     } else {
         // 未ログイン
         currentUser = null;
-        clearAutoLogoutTimer();
+        stopAutoLogoutWatch();
+        clearLastActive();
         console.log('未ログイン');
+
+        // ログアウト後の後始末: 管理者モード・データ購読・メモリ上のデータを残さない
+        if (typeof state !== 'undefined') {
+            if (state.isAdmin && typeof switchToStaff === 'function') switchToStaff();
+            if (typeof dataRefKeys !== 'undefined') dataRefKeys.forEach(key => { state[key] = []; });
+        }
+        if (dataListenersAttached && typeof detachDataListeners === 'function') detachDataListeners();
 
         hideAllScreens();
         document.getElementById('authContainer').classList.add('show');
@@ -188,51 +210,79 @@ auth.onAuthStateChanged((user) => {
 });
 
 // ==========================================
-// 自動ログアウト（バックグラウンド経過時間ベース）
+// 自動ログアウト（最終操作時刻ベース・sessionStorage に永続化）
 // ==========================================
-const AUTO_LOGOUT_MS = 30 * 60 * 1000; // 30分以上アプリを離れたらログアウト
-let autoLogoutTimerId = null;
-let hiddenAt = null;
+// 最終操作時刻を sessionStorage に持つことで、リロード・PWA再起動・タブ復元でも
+// 経過時間を検査できる。画面を開いたまま放置した場合も60秒ごとの監視で検出する。
+const AUTO_LOGOUT_MS = 30 * 60 * 1000; // 30分以上操作が無ければログアウト
+const LAST_ACTIVE_KEY = 'shiftApp.lastActiveAt';
+const ACTIVITY_THROTTLE_MS = 1000; // 操作イベントの書き込み間引き
+let autoLogoutIntervalId = null;
+let lastActivityWrite = 0;
 
-function clearAutoLogoutTimer() {
-    if (autoLogoutTimerId) {
-        clearTimeout(autoLogoutTimerId);
-        autoLogoutTimerId = null;
+function readLastActive() {
+    try {
+        const v = parseInt(sessionStorage.getItem(LAST_ACTIVE_KEY), 10);
+        return Number.isFinite(v) ? v : null;
+    } catch (e) {
+        return null;
     }
-    hiddenAt = null;
+}
+
+function touchActivity(force) {
+    const now = Date.now();
+    if (!force && now - lastActivityWrite < ACTIVITY_THROTTLE_MS) return;
+    lastActivityWrite = now;
+    try { sessionStorage.setItem(LAST_ACTIVE_KEY, String(now)); } catch (e) { /* プライベートモード等 */ }
+}
+
+function clearLastActive() {
+    lastActivityWrite = 0;
+    try { sessionStorage.removeItem(LAST_ACTIVE_KEY); } catch (e) { /* noop */ }
+}
+
+// 記録が無い（新規ログイン直後など）場合は期限切れ扱いにしない
+function isSessionExpired() {
+    const last = readLastActive();
+    return last !== null && Date.now() - last >= AUTO_LOGOUT_MS;
+}
+
+function checkAutoLogout(reason) {
+    if (!currentUser) return false;
+    if (isSessionExpired()) {
+        console.log('自動ログアウト（' + reason + '）');
+        auth.signOut();
+        return true;
+    }
+    return false;
+}
+
+function startAutoLogoutWatch() {
+    stopAutoLogoutWatch();
+    touchActivity(true);
+    autoLogoutIntervalId = setInterval(() => checkAutoLogout('無操作タイマー'), 60 * 1000);
+}
+
+function stopAutoLogoutWatch() {
+    if (autoLogoutIntervalId) {
+        clearInterval(autoLogoutIntervalId);
+        autoLogoutIntervalId = null;
+    }
 }
 
 function handleVisibilityChange() {
-    // 未ログイン時は何もしない
-    if (!currentUser) {
-        clearAutoLogoutTimer();
-        return;
-    }
-    if (document.visibilityState === 'hidden') {
-        hiddenAt = Date.now();
-        if (autoLogoutTimerId) clearTimeout(autoLogoutTimerId);
-        // フォアグラウンドで動き続けるブラウザ向けのフォールバック
-        autoLogoutTimerId = setTimeout(() => {
-            console.log('自動ログアウト（バックグラウンド経過タイマー）');
-            auth.signOut();
-        }, AUTO_LOGOUT_MS);
-    } else if (document.visibilityState === 'visible') {
+    if (!currentUser) return;
+    if (document.visibilityState === 'visible') {
         // 復帰時は実時刻で経過チェック（モバイルでタイマーが停止していてもOK）
-        const elapsed = hiddenAt ? Date.now() - hiddenAt : 0;
-        clearAutoLogoutTimer();
-        if (elapsed >= AUTO_LOGOUT_MS) {
-            console.log('自動ログアウト（復帰時に経過時間オーバー）:', Math.round(elapsed / 1000), '秒');
-            auth.signOut();
-        }
+        checkAutoLogout('復帰時に経過時間オーバー');
     }
 }
 
 document.addEventListener('visibilitychange', handleVisibilityChange);
-// iOS/Android向け：pagehide でも経過開始の起点を取る
-window.addEventListener('pagehide', () => {
-    if (currentUser && !hiddenAt) {
-        hiddenAt = Date.now();
-    }
+
+// ユーザー操作を最終操作時刻として記録
+['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(ev => {
+    document.addEventListener(ev, () => { if (currentUser) touchActivity(false); }, { passive: true });
 });
 
 // エラーメッセージを表示
@@ -692,6 +742,8 @@ function toggleMarkdownPreview(formGroup, mode) {
 function trackUsage(featureId, targetName = null) {
     const feature = USAGE_FEATURES[featureId];
     if (!feature) return;
+    // 認証確定前の記録は「未ログイン」として残り誤解を招くため行わない
+    if (!currentUser) return;
 
     // ログインユーザー情報を自動取得
     const user = currentUser;
@@ -5665,9 +5717,7 @@ function initPopoverEvents() {
 
 // 初期化
 function init() {
-    // アプリ閲覧をトラッキング
-    trackUsage('app_view', '匿名');
-    
+    // アプリ閲覧の記録は onAuthStateChanged（承認済み分岐）で行う
     initTimeSelects();
     initEventListeners();
     initZoomControls();
