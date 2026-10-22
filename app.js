@@ -990,6 +990,10 @@ function renderTimeHeader() {
     }
 }
 
+// バー配置の幾何は inline style で書くため JS 側で一元管理する（CSS に同値を書かない）
+// barH/pitch の差（6px）がバー同士の隙間。スマホの .shift-bar に min-height を付けると上書きされるので注意
+const GANTT_GEO = { barTop: 8, barH: 26, barHTasks: 30, pitch: 32, minH: 80, bottomPad: 8 };
+
 // シフトレベル計算（重なるシフトを縦に並べる）
 function calculateShiftLevels(shifts) {
     const levels = {};
@@ -1147,7 +1151,7 @@ function initGanttDelegation() {
 }
 
 // ガントチャート
-function renderGanttBody() {
+function renderGanttBody(todayStr = formatDate(new Date())) {
     const body = document.getElementById('ganttBody');
     initGanttDelegation();
     body.innerHTML = '';
@@ -1167,12 +1171,19 @@ function renderGanttBody() {
         if (dayOfWeek === 0 || holidayName) dayClass += ' sunday'; // 祝日も赤色に
         else if (dayOfWeek === 6) dayClass += ' saturday';
 
+        // 行全体（タイムライン含む）の色分け用クラス
+        const isToday = dateStr === todayStr;
+        if (dayOfWeek === 6) row.classList.add('is-saturday');
+        if (dayOfWeek === 0 || holidayName) row.classList.add('is-sunday');
+        if (isToday) row.classList.add('is-today');
+
         const label = document.createElement('div');
         label.className = 'gantt-date-label';
         if (holidayName) label.classList.add('is-holiday');
 
         // 基本の日付表示
         let labelHTML = `<span class="date-number${holidayName ? ' holiday' : ''}">${day}</span><span class="${dayClass}">${getDayName(dayOfWeek)}</span>`;
+        if (isToday) labelHTML += '<span class="today-badge">今日</span>';
 
         // 天気予報を追加
         const weather = state.weatherData[dateStr];
@@ -1242,6 +1253,16 @@ function renderGanttBody() {
             const cell = document.createElement('div');
             cell.className = 'hour-cell';
             timeline.appendChild(cell);
+        }
+
+        // 現在時刻の縦線（今日の行のみ）。位置は毎分 updateNowLine() が style.left だけ更新する
+        if (isToday) {
+            const nowLine = document.createElement('div');
+            nowLine.className = 'now-line';
+            nowLine.id = 'ganttNowLine';
+            nowLine.dataset.date = todayStr;
+            nowLine.style.left = nowLeftPercent();
+            timeline.appendChild(nowLine);
         }
 
         // シフト収集
@@ -1419,8 +1440,9 @@ function renderGanttBody() {
 
         const levels = calculateShiftLevels(filteredAll);
         const maxLvl = Math.max(0, ...Object.values(levels));
-        const baseH = 80, perLvl = 28;
-        timeline.style.minHeight = `${baseH + maxLvl * perLvl}px`;
+        const { pitch } = GANTT_GEO;
+        // 有給・休日バーは最後のシフト段の直下から並べる（以前は baseH=80 分の空白が空いていた）
+        const extraTop = GANTT_GEO.barTop + (maxLvl + 1) * pitch;
 
         filteredAll.forEach(s => timeline.appendChild(createShiftBar(s, levels[s.id])));
 
@@ -1447,8 +1469,8 @@ function renderGanttBody() {
         leaves.forEach((l, idx) => {
             const bar = document.createElement('div');
             bar.className = 'leave-bar';
-            bar.style.top = `${baseH + (maxLvl + 1 + idx) * perLvl}px`;
-            bar.style.height = `${perLvl - 4}px`;
+            bar.style.top = `${extraTop + idx * pitch}px`;
+            bar.style.height = `${pitch - 6}px`;
             
             // シフト時間情報がある場合は、その時間に合わせて表示
             let timeText = '';
@@ -1514,8 +1536,8 @@ function renderGanttBody() {
             
             const bar = document.createElement('div');
             bar.className = 'leave-bar overnight-continuation';
-            bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
-            bar.style.height = `${perLvl - 4}px`;
+            bar.style.top = `${extraTop + (barCount + idx) * pitch}px`;
+            bar.style.height = `${pitch - 6}px`;
             
             // 0時から終了時刻まで表示
             const end = shiftTime.endHour;
@@ -1614,8 +1636,8 @@ function renderGanttBody() {
             }
             // シフト時間情報がない場合は全幅で表示（従来の動作）
 
-            bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
-            bar.style.height = `${perLvl - 4}px`;
+            bar.style.top = `${extraTop + (barCount + idx) * pitch}px`;
+            bar.style.height = `${pitch - 6}px`;
 
             // 時間表示を追加
             let timeText = '';
@@ -1712,8 +1734,8 @@ function renderGanttBody() {
             
             const bar = document.createElement('div');
             bar.className = 'holiday-bar overnight-continuation';
-            bar.style.top = `${baseH + (maxLvl + 1 + barCount + idx) * perLvl}px`;
-            bar.style.height = `${perLvl - 4}px`;
+            bar.style.top = `${extraTop + (barCount + idx) * pitch}px`;
+            bar.style.height = `${pitch - 6}px`;
             
             // 0時から終了時刻まで表示
             const end = prevShiftTime.endHour;
@@ -1727,11 +1749,48 @@ function renderGanttBody() {
         });
         barCount += overnightHolidays.length;
 
-        timeline.style.minHeight = `${baseH + (maxLvl + 1 + barCount) * perLvl}px`;
+        timeline.style.minHeight = `${Math.max(GANTT_GEO.minH, extraTop + barCount * pitch + GANTT_GEO.bottomPad)}px`;
 
         row.appendChild(timeline);
         body.appendChild(row);
     }
+}
+
+// 現在時刻のタイムライン上の位置（0〜100%）
+function nowLeftPercent() {
+    const d = new Date();
+    return `${((d.getHours() + d.getMinutes() / 60) / 24 * 100).toFixed(3)}%`;
+}
+
+// 現在時刻線を更新。通常は style.left の1プロパティだけ触り、日付が変わった時だけフル再描画する
+function updateNowLine() {
+    const el = document.getElementById('ganttNowLine');
+    if (!el) return; // 今日が表示中の週に無い
+    if (el.dataset.date !== formatDate(new Date())) { render(); return; }
+    el.style.left = nowLeftPercent();
+}
+
+let nowLineTimer = null;
+function startNowLineTimer() {
+    if (nowLineTimer) return;
+    nowLineTimer = setInterval(updateNowLine, 60 * 1000);
+    // iOS はバックグラウンドでタイマーが止まるため、復帰時に再同期する
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') updateNowLine();
+    });
+}
+
+// 表示中の週が今週か
+function isCurrentWeekShown() {
+    return formatDate(state.currentWeekStart) === formatDate(getWeekStart(new Date()));
+}
+
+// 今週表示時、現在の時間帯が見えるよう横スクロールする（横スクロール不要な PC では何もしない）
+function scrollGanttToNow() {
+    const c = document.querySelector('.gantt-container');
+    if (!c || !isCurrentWeekShown() || c.scrollWidth <= c.clientWidth) return;
+    // 日付ラベルは sticky なので (現在時 - 1) セル分で現在時刻がラベルの右隣に来る
+    c.scrollLeft = Math.max(0, (new Date().getHours() - 1) * getCellWidth());
 }
 
 // セルの実際の幅を取得する関数
@@ -1762,8 +1821,8 @@ function createShiftBar(s, lvl) {
         const widthPercent = ((end - start) / 24) * 100;
         bar.style.left = `${leftPercent}%`;
         bar.style.width = `${widthPercent}%`;
-        bar.style.top = `${8 + lvl * 28}px`;
-        bar.style.height = '24px';
+        bar.style.top = `${GANTT_GEO.barTop + lvl * GANTT_GEO.pitch}px`;
+        bar.style.height = `${GANTT_GEO.barH}px`;
         bar.style.background = 'linear-gradient(135deg, #9ca3af, #6b7280)';
         bar.style.opacity = '0.8';
         bar.innerHTML = `<span class="shift-name">🏖️ ${s.name} 休日</span>`;
@@ -1790,11 +1849,11 @@ function createShiftBar(s, lvl) {
 
     bar.style.left = `${leftPercent}%`;
     bar.style.width = `${widthPercent}%`;
-    bar.style.top = `${8 + lvl * 28}px`;
-    bar.style.height = '24px';
+    bar.style.top = `${GANTT_GEO.barTop + lvl * GANTT_GEO.pitch}px`;
+    bar.style.height = `${GANTT_GEO.barH}px`;
     // 色が正しく設定されているか確認し、不正な場合はデフォルト色を使用
     const shiftColor = (s.color && s.color.startsWith('#') && s.color.length >= 4) ? s.color : '#6366f1';
-    bar.style.background = `linear-gradient(135deg, ${shiftColor}, ${adjustColor(shiftColor, -20)})`;
+    bar.style.background = `linear-gradient(135deg, ${shiftColor}, ${adjustColor(shiftColor, -35)})`;
 
     let icons = '';
     if (s.changeHistory) icons += '<span class="change-icon" title="シフト変更あり">📝</span>';
@@ -1805,7 +1864,7 @@ function createShiftBar(s, lvl) {
     if (s.isOvernightContinuation) icons += '<span class="overnight-icon">→</span>';
     // 臨時シフト判定（イベント日のシフトにバッジを付ける）
     if (!s.isFixed && s.date && isSpecialEventDate(s.date)) {
-        icons += '<span class="temporary-icon" title="臨時シフト">⚡</span>';
+        icons += '<span class="temporary-badge" title="臨時シフト">臨時</span>';
         bar.classList.add('temporary-shift');
     }
 
@@ -1848,7 +1907,7 @@ function createShiftBar(s, lvl) {
 
     if (tasks.length > 0) {
         bar.classList.add('has-tasks');
-        bar.style.height = '28px';
+        bar.style.height = `${GANTT_GEO.barHTasks}px`;
         var shiftDuration = end - start;
         var headerHTML = '<div class="shift-bar-header">' + icons + '<span class="shift-name">' + s.name + '</span><span class="shift-time">' + time + '</span></div>';
         var tasksHTML = '<div class="shift-bar-tasks">';
@@ -2092,11 +2151,17 @@ function renderLegend() {
 
 // 期間表示
 function updatePeriodDisplay() {
-    const el = document.getElementById('currentPeriod');
     const s = new Date(state.currentWeekStart), e = new Date(s);
     e.setDate(e.getDate() + 6);
     const sm = s.getMonth() + 1, sd = s.getDate(), em = e.getMonth() + 1, ed = e.getDate();
-    el.textContent = sm === em ? `${s.getFullYear()}年${sm}月${sd}日 〜 ${ed}日` : `${s.getFullYear()}年${sm}月${sd}日 〜 ${em}月${ed}日`;
+    const text = sm === em ? `${s.getFullYear()}年${sm}月${sd}日 〜 ${ed}日` : `${s.getFullYear()}年${sm}月${sd}日 〜 ${em}月${ed}日`;
+    // 期間表示は表の上下にあるので両方更新する（#currentPeriod は PDF タイトル用に上側へ残してある）
+    document.querySelectorAll('.current-period').forEach(el => { el.textContent = text; });
+    const cur = isCurrentWeekShown();
+    document.querySelectorAll('[data-week-nav="today"]').forEach(b => {
+        b.disabled = cur;
+        b.classList.toggle('is-current', cur);
+    });
 }
 
 // メッセージバー
@@ -3543,6 +3608,7 @@ function rejectRequest(type, id) {
 // ナビ
 function goToPrevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); render(); fetchWeatherData(); }
 function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); render(); fetchWeatherData(); }
+function goToThisWeek() { state.currentWeekStart = getWeekStart(new Date()); render(); fetchWeatherData(); scrollGanttToNow(); }
 
 // 認証
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
@@ -4337,12 +4403,18 @@ function render() {
     const ganttContainer = document.querySelector('.gantt-container');
     const scrollLeft = ganttContainer ? ganttContainer.scrollLeft : 0;
     const scrollTop = ganttContainer ? ganttContainer.scrollTop : 0;
-    renderTimeHeader(); renderGanttBody(); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList();
+    renderTimeHeader(); renderGanttBody(formatDate(new Date())); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList();
     if (ganttContainer) {
         ganttContainer.scrollLeft = scrollLeft;
         ganttContainer.scrollTop = scrollTop;
     }
+    // 初回描画のときだけ現在の時間帯へ横スクロール（以降はユーザーのスクロール位置を復元するだけ）
+    if (!ganttInitialScrollDone) {
+        ganttInitialScrollDone = true;
+        scrollGanttToNow();
+    }
 }
+let ganttInitialScrollDone = false;
 
 // モーダル操作
 function openModal(o) { o.classList.add('active'); }
@@ -4530,8 +4602,9 @@ function initTimeSelects() {
 
 // イベント設定
 function initEventListeners() {
-    document.getElementById('prevWeek').onclick = goToPrevWeek;
-    document.getElementById('nextWeek').onclick = goToNextWeek;
+    // 週ナビは表の上下に2組あるので data-week-nav でまとめて束ねる
+    const navHandlers = { prev: goToPrevWeek, next: goToNextWeek, today: goToThisWeek };
+    document.querySelectorAll('[data-week-nav]').forEach(b => { b.onclick = navHandlers[b.dataset.weekNav]; });
     document.getElementById('roleToggle').onclick = toggleRole;
     document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); state.activeAdminTab = t.dataset.tab; updateAdminMenuTriggerLabel(); closeAdminMenuModal(); renderAdminPanel(); });
 
@@ -5731,6 +5804,7 @@ function init() {
     initProductResearchToggle(); // 新規商品調査レポートのトグルを初期化
     loadData();
     render();
+    startNowLineTimer();
 
     // 天気データを取得
     fetchWeatherData();

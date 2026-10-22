@@ -599,13 +599,14 @@
         </div>
 
         <!-- 日付ナビゲーション -->
-        <div class="date-nav">
-            <button id="prevWeek" class="nav-btn">
+        <div class="date-nav" id="dateNavTop">
+            <button id="prevWeek" class="nav-btn" data-week-nav="prev">
                 <span>◀</span>
                 前週
             </button>
+            <button class="nav-btn nav-today" data-week-nav="today">今週</button>
             <div class="current-period" id="currentPeriod">2026年1月12日 〜 1月18日</div>
-            <button id="nextWeek" class="nav-btn">
+            <button id="nextWeek" class="nav-btn" data-week-nav="next">
                 次週
                 <span>▶</span>
             </button>
@@ -621,6 +622,39 @@
             <div class="gantt-body" id="ganttBody">
             </div>
         </div>
+
+        <!-- 日付ナビゲーション（表の下。上と同じハンドラに data-week-nav で束ねる。id は付けない） -->
+        <div class="date-nav date-nav-bottom">
+            <button class="nav-btn" data-week-nav="prev">
+                <span>◀</span>
+                前週
+            </button>
+            <button class="nav-btn nav-today" data-week-nav="today">今週</button>
+            <div class="current-period"></div>
+            <button class="nav-btn" data-week-nav="next">
+                次週
+                <span>▶</span>
+            </button>
+        </div>
+
+        <!-- 凡例（マークの意味） -->
+        <details class="gantt-legend" id="ganttLegend">
+            <summary>凡例（マークの意味）</summary>
+            <div class="gantt-legend-items">
+                <span class="lg"><i class="lg-sw lg-fixed"></i>🔁 固定シフト</span>
+                <span class="lg"><i class="lg-sw lg-overnight"></i>🌙 夜勤 ／ → 夜勤明け</span>
+                <span class="lg"><i class="lg-sw lg-changed"></i>📝 変更あり</span>
+                <span class="lg"><i class="lg-sw lg-swapped"></i>🤝 交代あり</span>
+                <span class="lg">✏️ この日のみ変更</span>
+                <span class="lg"><i class="lg-sw lg-temp"></i>臨時（イベント日）</span>
+                <span class="lg"><i class="lg-sw lg-leave"></i>🏖️ 有給</span>
+                <span class="lg"><i class="lg-sw lg-holiday"></i>🏠 休日</span>
+                <span class="lg"><i class="lg-sw lg-dayoff"></i>単日休日</span>
+                <span class="lg"><i class="lg-sw lg-now"></i>現在時刻</span>
+                <span class="lg"><i class="lg-sw lg-night"></i>深夜帯（22〜5時）</span>
+                <span class="lg"><i class="lg-sw lg-sat"></i>土 <i class="lg-sw lg-sun"></i>日・祝 <i class="lg-sw lg-today"></i>今日</span>
+            </div>
+        </details>
 
         <!-- 凡例（非表示） -->
         <div class="legend" style="display: none;">

@@ -735,6 +735,23 @@ body {
     background: var(--accent-primary);
 }
 
+.nav-btn.nav-today {
+    background: var(--accent-primary);
+}
+
+/* 今週を表示中は「今週」ボタンを薄くして押せなくする */
+.nav-btn.nav-today.is-current,
+.nav-btn.nav-today:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* 表の下のナビ（下まで見た後に上へ戻らなくて済むように） */
+.date-nav-bottom {
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
 .current-period {
     font-size: 1.1rem;
     font-weight: 600;
@@ -886,6 +903,90 @@ body {
     border-right: none;
 }
 
+/* 深夜帯 22〜5時を暗くする。.hour-cell / .time-cell はそれぞれ親の先頭24子要素なので nth-child で判定できる
+   （バーは .shift-bar 等で .hour-cell ではないため複合セレクタに一致しない） */
+.hour-cell:nth-child(-n+5),
+.hour-cell:nth-child(n+23) {
+    background: rgba(2, 6, 23, 0.38);
+}
+
+.time-cell:nth-child(-n+5),
+.time-cell:nth-child(n+23) {
+    color: var(--text-muted);
+    background: #182236;
+}
+
+/* 5時と22時の境界線を少し強くする */
+.hour-cell:nth-child(5),
+.time-cell:nth-child(5),
+.hour-cell:nth-child(22),
+.time-cell:nth-child(22) {
+    border-right-color: rgba(148, 163, 184, 0.45);
+}
+
+/* 土・日祝・今日の行色（タイムライン全体）。ラベル側は .is-special-event の !important border-left と
+   衝突しないよう inset box-shadow で左帯を付ける */
+.gantt-row.is-saturday .gantt-timeline {
+    background: rgba(59, 130, 246, 0.07);
+}
+
+.gantt-row.is-sunday .gantt-timeline {
+    background: rgba(239, 68, 68, 0.07);
+}
+
+.gantt-row.is-saturday .gantt-date-label {
+    box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.gantt-row.is-sunday .gantt-date-label {
+    box-shadow: inset 3px 0 0 #ef4444;
+}
+
+/* 今日は後勝ちで土日祝より優先 */
+.gantt-row.is-today .gantt-timeline {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.gantt-row.is-today .gantt-date-label {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(99, 102, 241, 0.08)), var(--bg-secondary);
+    box-shadow: inset 3px 0 0 var(--accent-primary);
+}
+
+.today-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent-primary);
+    border-radius: 999px;
+    padding: 1px 6px;
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* 現在時刻の縦線。バーより上に描くが pointer-events:none なのでタップは下のバーに通る */
+.now-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--danger);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.8);
+    z-index: 7;
+    pointer-events: none;
+}
+
+.now-line::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--danger);
+}
+
 /* シフトバー */
 .shift-bar {
     position: absolute;
@@ -893,9 +994,12 @@ body {
     display: flex;
     align-items: center;
     padding: 0 8px;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
+    line-height: 1;
     font-weight: 500;
     color: white;
+    /* 明るい色（橙・緑・青緑）のバーでも白文字が読めるよう影を付ける */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
     cursor: pointer;
     transition: all var(--transition-fast);
     box-shadow: var(--shadow-sm);
@@ -933,10 +1037,10 @@ body {
 .shift-bar .shift-time {
     margin-left: auto;
     padding-left: 6px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     opacity: 1;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 3px;
     padding: 1px 5px;
     white-space: nowrap;
@@ -954,7 +1058,8 @@ body {
    GPU合成で済む opacity の点滅に置き換えている */
 .shift-bar.changed {
     border: 2px solid rgba(59, 130, 246, 0.8);
-    animation: barPulse 2s infinite;
+    /* 無限に点滅すると目障りなので3回で止める。色付きボーダーが恒久の目印 */
+    animation: barPulse 2s 3;
 }
 
 @keyframes barPulse {
@@ -972,7 +1077,14 @@ body {
 /* 交代履歴があるシフト */
 .shift-bar.swapped {
     border: 2px solid rgba(16, 185, 129, 0.8);
-    animation: barPulse 2s infinite;
+    animation: barPulse 2s 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shift-bar.changed,
+    .shift-bar.swapped {
+        animation: none;
+    }
 }
 
 .shift-bar .swap-icon {
@@ -993,6 +1105,7 @@ body {
     font-size: 0.8rem;
     font-weight: 500;
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
     background: repeating-linear-gradient(45deg,
             rgba(16, 185, 129, 0.3),
             rgba(16, 185, 129, 0.3) 10px,
@@ -1042,6 +1155,7 @@ body {
     font-size: 0.8rem;
     font-weight: 500;
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
     background: repeating-linear-gradient(45deg,
             rgba(239, 68, 68, 0.4),
             rgba(239, 68, 68, 0.4) 10px,
@@ -1140,6 +1254,71 @@ body {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
 }
+
+/* 凡例（マークの意味）。旧 .legend は !important で隠されているため別クラスにしている */
+.gantt-legend {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+}
+
+.gantt-legend summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-weight: 600;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.gantt-legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    padding: 4px 12px 10px;
+}
+
+.gantt-legend .lg {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.lg-sw {
+    display: inline-block;
+    width: 22px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 4px;
+    background: #6366f1;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.lg-fixed { border: 2px dashed rgba(255, 255, 255, 0.5); }
+.lg-overnight { border-left: 3px solid var(--warning); }
+.lg-changed { border: 2px solid rgba(59, 130, 246, 0.8); }
+.lg-swapped { border: 2px solid rgba(16, 185, 129, 0.8); }
+.lg-temp { border: 1.5px solid rgba(245, 158, 11, 0.8); }
+.lg-leave {
+    background: repeating-linear-gradient(45deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.3) 4px, rgba(16, 185, 129, 0.5) 4px, rgba(16, 185, 129, 0.5) 8px);
+    border: 1px dashed var(--success);
+}
+.lg-holiday {
+    background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.4) 4px, rgba(239, 68, 68, 0.6) 4px, rgba(239, 68, 68, 0.6) 8px);
+    border: 1px dashed var(--danger);
+}
+.lg-dayoff {
+    background: repeating-linear-gradient(45deg, rgba(107, 114, 128, 0.3), rgba(107, 114, 128, 0.3) 4px, rgba(107, 114, 128, 0.5) 4px, rgba(107, 114, 128, 0.5) 8px);
+    border: 1px dashed #6b7280;
+}
+.lg-now { width: 3px; background: var(--danger); box-shadow: 0 0 4px rgba(239, 68, 68, 0.8); }
+.lg-night { background: rgba(2, 6, 23, 0.6); border: 1px solid var(--border-color); }
+.lg-sat { background: rgba(59, 130, 246, 0.35); }
+.lg-sun { background: rgba(239, 68, 68, 0.35); }
+.lg-today { background: rgba(99, 102, 241, 0.5); }
 
 .legend-title {
     font-size: 0.9rem;
@@ -1545,9 +1724,9 @@ body {
     }
 
     .shift-bar {
-        font-size: 1rem;
+        font-size: 0.8rem;
         padding: 0 6px;
-        min-height: 28px;
+        /* min-height は付けない（JS の inline height=26px/pitch=32px が隙間を作るのを上書きしてしまう） */
         touch-action: manipulation;
         cursor: pointer;
         -webkit-tap-highlight-color: rgba(99, 102, 241, 0.3);
@@ -1560,7 +1739,7 @@ body {
 
     .shift-bar .shift-time {
         display: inline-block;
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         padding: 1px 3px;
     }
 
@@ -1923,8 +2102,35 @@ body {
     .message-bar,
     .shift-popover,
     .modal-overlay,
-    .legend {
+    .legend,
+    .now-line,
+    .date-nav-bottom,
+    .gantt-legend,
+    .today-badge {
         display: none !important;
+    }
+
+    /* 画面用の行色・深夜帯は紙では消すか薄灰にする */
+    .gantt-row.is-today .gantt-timeline,
+    .gantt-row.is-saturday .gantt-timeline,
+    .gantt-row.is-sunday .gantt-timeline {
+        background: transparent !important;
+    }
+
+    .hour-cell:nth-child(-n+5),
+    .hour-cell:nth-child(n+23) {
+        background: #f3f4f6 !important;
+    }
+
+    .time-cell:nth-child(-n+5),
+    .time-cell:nth-child(n+23) {
+        background: #fff !important;
+    }
+
+    .shift-bar,
+    .leave-bar,
+    .holiday-bar {
+        text-shadow: none !important;
     }
 
     .header {
@@ -2018,7 +2224,11 @@ body {
 .pdf-export-mode .date-nav .nav-btn,
 .pdf-export-mode .zoom-controls,
 .pdf-export-mode .admin-panel,
-.pdf-export-mode .message-bar {
+.pdf-export-mode .message-bar,
+.pdf-export-mode .now-line,
+.pdf-export-mode .date-nav-bottom,
+.pdf-export-mode .gantt-legend,
+.pdf-export-mode .today-badge {
     display: none !important;
 }
 
@@ -7076,28 +7286,20 @@ body {
     box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
 }
 
-.shift-bar.temporary-shift::after {
-    content: '臨時';
-    position: absolute;
-    top: -10px;
-    right: 4px;
-    font-size: 0.65rem;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #fff;
-    padding: 1px 6px;
-    border-radius: 4px;
+/* 「臨時」バッジはバー内に inline で置く（::after で上にはみ出す方式は overflow:hidden で欠けていた） */
+.temporary-badge {
+    display: inline-block;
+    font-size: 0.6rem;
     font-weight: 700;
     line-height: 1.4;
-    z-index: 2;
-    pointer-events: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    padding: 0 4px;
+    margin-right: 4px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
     letter-spacing: 0.5px;
+    text-shadow: none;
     white-space: nowrap;
-}
-
-.temporary-icon {
-    font-size: 0.7rem;
-    margin-right: 1px;
 }
 
 /* モバイル対応 */
@@ -7107,11 +7309,10 @@ body {
         padding: 0px 4px;
     }
     
-    .shift-bar.temporary-shift::after {
+    .temporary-badge {
         font-size: 0.55rem;
-        top: -9px;
-        right: 2px;
-        padding: 1px 4px;
+        padding: 0 3px;
+        margin-right: 3px;
     }
 }
 
@@ -7134,8 +7335,8 @@ body {
     display: flex;
     align-items: center;
     padding: 0 8px;
-    height: 12px;
-    min-height: 12px;
+    height: 13px;
+    min-height: 13px;
     font-size: 0.7rem;
     width: 100%;
     box-sizing: border-box;
