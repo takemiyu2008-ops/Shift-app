@@ -1196,7 +1196,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
                 const diffMax = weather.tempMax - weather.lastYearTempMax;
                 const diffSign = diffMax >= 0 ? '+' : '';
                 const diffClass = diffMax >= 0 ? 'temp-diff-plus' : 'temp-diff-minus';
-                lastYearHtml = `<div class="weather-last-year">昨年 <span class="temp-max">${weather.lastYearTempMax}°</span>/<span class="temp-min">${weather.lastYearTempMin}°</span> <span class="${diffClass}">(${diffSign}${diffMax}°)</span></div>`;
+                lastYearHtml = `<div class="weather-last-year"><span class="ly-label" data-short="昨">昨年</span> <span class="temp-max">${weather.lastYearTempMax}°</span>/<span class="temp-min">${weather.lastYearTempMin}°</span> <span class="${diffClass}">${diffSign}${diffMax}°</span></div>`;
             }
 
             labelHTML += `<div class="weather-info" title="${weatherInfo.desc}">
@@ -5057,7 +5057,8 @@ function applyZoom() {
     const scale = state.zoomLevel / 100;
     const baseWidth = window.innerWidth <= 768 ? 38 : 50;
     const newWidth = Math.round(baseWidth * scale);
-    const minWidth = Math.round((window.innerWidth <= 768 ? 60 : 120) + (newWidth * 24));
+    // ラベル列の幅は CSS の .gantt-date-label と揃える（スマホ 84px / PC 120px）
+    const minWidth = Math.round((window.innerWidth <= 768 ? 84 : 120) + (newWidth * 24));
 
     // CSS変数2つの更新だけで全セル・全行に反映される（ピンチ中の全セル書き込みを避ける）
     // コンテナに設定するため、ガント再描画後もズームが保持される

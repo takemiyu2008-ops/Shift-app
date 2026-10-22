@@ -775,7 +775,8 @@ body {
     /* 縦スクロール用に overflow-y を auto に変更 */
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 600px;
+    /* 画面の高さに合わせて広げる（時間帯ヘッダと日付列はコンテナ内で sticky 固定） */
+    max-height: max(420px, calc(100vh - 160px));
 }
 
 .gantt-header {
@@ -1679,11 +1680,14 @@ body {
         font-size: 0.8rem;
     }
 
-    /* ガントチャート改善 */
+    /* ガントチャート改善
+       以前は max-height:none でページごと縦スクロールしていたが、それだと sticky の時間帯ヘッダが
+       コンテナと一緒に画面外へ流れてしまう。画面の高さに収めてコンテナ内で縦スクロールさせる */
     .gantt-container {
         overflow-x: auto;
-        overflow-y: visible;
-        max-height: none;
+        overflow-y: auto;
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
         -webkit-overflow-scrolling: touch;
     }
 
@@ -1697,19 +1701,97 @@ body {
 
     .gantt-label-header,
     .gantt-date-label {
-        width: 130px;
-        min-width: 130px;
-        padding: 6px;
+        width: 84px;
+        min-width: 84px;
+        padding: 4px 3px;
         position: sticky;
         left: 0;
         z-index: 5;
     }
 
+    .gantt-label-header {
+        font-size: 0.8rem;
+    }
+
+    /* 日付と曜日を同じ行に並べ、天気などは各1行で折り返す */
+    .gantt-date-label {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: baseline;
+        align-content: center;
+        justify-content: center;
+        gap: 0 4px;
+    }
+
+    .gantt-date-label > div {
+        flex-basis: 100%;
+        max-width: 100%;
+        margin-top: 1px;
+    }
+
+    .gantt-date-label .today-badge {
+        flex-basis: 100%;
+        max-width: fit-content;
+        margin: 1px auto 0;
+        font-size: 0.55rem;
+        padding: 0 5px;
+    }
+
     .date-number {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
 
     .date-day {
+        font-size: 0.75rem;
+    }
+
+    /* 以下は本体の定義（.weather-info 等）がこのメディアクエリより後ろにあるため、
+       .gantt-date-label を付けて詳細度を上げている */
+    .gantt-date-label .weather-info {
+        margin-top: 0;
+        padding: 0;
+        gap: 1px;
+        background: none;
+        border-radius: 0;
+    }
+
+    .gantt-date-label .weather-icon {
+        font-size: 0.85rem;
+    }
+
+    .gantt-date-label .weather-temp {
+        font-size: 0.72rem;
+    }
+
+    .gantt-date-label .weather-last-year {
+        font-size: 0.58rem;
+        margin-top: 0;
+        letter-spacing: -0.3px;
+    }
+
+    .gantt-date-label .weather-last-year .temp-max,
+    .gantt-date-label .weather-last-year .temp-min {
+        font-size: 0.58rem;
+    }
+
+    /* 「昨年」→「昨」に短縮 */
+    .gantt-date-label .weather-last-year .ly-label {
+        font-size: 0;
+    }
+
+    .gantt-date-label .weather-last-year .ly-label::before {
+        content: attr(data-short);
+        font-size: 0.58rem;
+    }
+
+    .gantt-date-label .event-icons {
+        gap: 2px;
+        margin-top: 2px;
+    }
+
+    .gantt-date-label .event-icon {
+        width: 20px;
+        height: 20px;
         font-size: 0.75rem;
     }
 
@@ -1793,20 +1875,25 @@ body {
         padding: 12px;
     }
 
-    /* 祝日マーク（モバイル） */
-    .holiday-mark {
+    /* 祝日マーク（モバイル）: 長い名前は省略記号で収める（本体定義が後ろにあるため詳細度を上げる） */
+    .gantt-date-label .holiday-mark {
         padding: 1px 4px;
         font-size: 0.6rem;
         margin-top: 2px;
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-sizing: border-box;
     }
 
     /* 給料日・年金支給日マーク（モバイル） */
-    .payday-marks {
+    .gantt-date-label .payday-marks {
         gap: 2px;
         margin-top: 2px;
     }
 
-    .payday-mark {
+    .gantt-date-label .payday-mark {
         padding: 1px 4px;
         font-size: 0.6rem;
     }
@@ -7307,6 +7394,11 @@ body {
     .special-event-mark {
         font-size: 0.6rem;
         padding: 0px 4px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        box-sizing: border-box;
     }
     
     .temporary-badge {
