@@ -128,14 +128,6 @@
         </div>
     </div>
 
-    <!-- ログアウトボタン -->
-    <div class="logout-btn-container" id="logoutBtnContainer" style="display: none;">
-        <button type="button" class="theme-toggle" id="appThemeToggle" aria-label="テーマ切替" title="ライト/ダーク切替">☀️</button>
-        <button id="logoutBtn" class="logout-btn">
-            🚪 ログアウト
-        </button>
-    </div>
-
 
     <div class="app-container hidden" id="appContainer">
         <!-- 接続状態表示 -->
@@ -169,20 +161,40 @@
                     <span class="btn-icon">+</span>
                     シフト追加
                 </button>
-                <button id="requestChangeBtn" class="btn btn-secondary">
-                    🔄 シフト変更申請
-                </button>
-                <button id="shiftSwapBtn" class="btn btn-secondary">
-                    🤝 シフト交代依頼
-                </button>
-                <button id="requestLeaveBtn" class="btn btn-secondary">
-                    🏖️ 有給申請
-                </button>
-                <button id="requestHolidayBtn" class="btn btn-secondary">
-                    🏠 休日申請
-                </button>
+                <!-- 申請メニュー（変更・交代・有給・休日をまとめる。各ボタンの id は既存の処理がそのまま使う） -->
+                <div class="request-menu" id="requestMenu">
+                    <button type="button" id="requestMenuBtn" class="btn btn-secondary request-menu-btn" aria-haspopup="menu" aria-expanded="false">
+                        📝 申請する <span class="request-menu-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="request-menu-panel" id="requestMenuPanel" role="menu" aria-label="申請の種類">
+                        <button type="button" id="requestChangeBtn" class="request-menu-item" role="menuitem">
+                            <span class="request-menu-item-icon">🔄</span>
+                            <span class="request-menu-item-text"><strong>シフト変更申請</strong><small>日時を変えたいとき</small></span>
+                        </button>
+                        <button type="button" id="shiftSwapBtn" class="request-menu-item" role="menuitem">
+                            <span class="request-menu-item-icon">🤝</span>
+                            <span class="request-menu-item-text"><strong>シフト交代依頼</strong><small>他の人に代わってもらう</small></span>
+                        </button>
+                        <button type="button" id="requestLeaveBtn" class="request-menu-item" role="menuitem">
+                            <span class="request-menu-item-icon">🏖️</span>
+                            <span class="request-menu-item-text"><strong>有給申請</strong><small>有給休暇を取る</small></span>
+                        </button>
+                        <button type="button" id="requestHolidayBtn" class="request-menu-item" role="menuitem">
+                            <span class="request-menu-item-icon">🏠</span>
+                            <span class="request-menu-item-text"><strong>休日申請</strong><small>その日を休みにする</small></span>
+                        </button>
+                    </div>
+                </div>
+                <!-- テーマ切替 + ログアウト（ログイン後のみ表示。hideAllScreens が display を切り替える） -->
+                <div class="logout-btn-container" id="logoutBtnContainer" style="display: none;">
+                    <button type="button" class="theme-toggle" id="appThemeToggle" aria-label="テーマ切替" title="ライト/ダーク切替">☀️</button>
+                    <button id="logoutBtn" class="logout-btn">🚪 ログアウト</button>
+                </div>
             </div>
         </header>
+
+        <!-- 自分のシフトカード（ログインした本人の次の出勤と今後7日間） -->
+        <section class="my-shift-card" id="myShiftCard" style="display: none;" aria-live="polite"></section>
 
         <!-- モバイル用 発注アドバイスフローティングボタン -->
         <button id="orderAdviceBtnMobile" class="order-advice-fab">

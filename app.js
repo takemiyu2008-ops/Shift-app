@@ -25,6 +25,8 @@ auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
 // 現在のユーザー情報を保持
 let currentUser = null;
+// users/{uid} の内容（displayName, staffId, employeeName）。ログイン確定時に入れ、ログアウトで消す
+let currentUserData = null;
 
 // ==========================================
 // テーマ（ライト/ダーク）。初期適用は index.html の <head> インラインスクリプトが行う
@@ -310,6 +312,14 @@ auth.onAuthStateChanged((user) => {
                 document.getElementById('appContainer').classList.remove('hidden');
                 document.getElementById('logoutBtnContainer').style.display = 'flex';
 
+                // 本人情報を保持（自分のシフトカード・申請者の自動選択に使う）
+                currentUserData = {
+                    uid: user.uid,
+                    displayName: userData.displayName || user.displayName || '',
+                    staffId: userData.staffId || user.email.split('@')[0],
+                    employeeName: userData.employeeName || null
+                };
+
                 // 最終ログインを記録し、前回ログインをヘッダーに表示
                 recordLastLogin(userRef, userData);
 
@@ -369,6 +379,7 @@ auth.onAuthStateChanged((user) => {
     } else {
         // 未ログイン
         currentUser = null;
+        currentUserData = null;
         stopAutoLogoutWatch();
         clearLastActive();
         console.log('未ログイン');
@@ -2975,9 +2986,211 @@ function updateHolidayTimeOptions() {
 }
 
 // 従業員のシフトを期間分取得
-function getEmployeeShiftsForPeriod(employeeName, weeks) {
+// ==========================================
+// 自分のシフトカード
+// ==========================================
+function normalizeEmployeeName(name) {
+    return String(name || '').replace(/[\s\u3000]+/g, '');
+}
+
+// ログイン中の本人に対応する従業員名を返す。users/{uid}/employeeName が最優先、次に登録名との一致
+function getMyEmployeeName() {
+    if (!currentUserData) return null;
+    const saved = currentUserData.employeeName;
+    if (saved && state.employees.some(e => e.name === saved)) return saved;
+    const target = normalizeEmployeeName(currentUserData.displayName);
+    if (!target) return null;
+    const hit = state.employees.find(e => normalizeEmployeeName(e.name) === target);
+    return hit ? hit.name : null;
+}
+
+// 本人が選んだ従業員名を保存（端末をまたいで効くよう Firebase に置く）
+function setMyEmployeeName(name) {
+    if (!currentUser || !currentUserData) return;
+    currentUserData.employeeName = name || null;
+    database.ref('users/' + currentUser.uid).update({ employeeName: name || null })
+        .catch(err => console.error('従業員名の保存に失敗:', err));
+    renderMyShiftCard();
+}
+
+function formatShiftHour(val) {
+    const h = Math.floor(val);
+    const m = Math.round((val - h) * 60);
+    return m ? `${h}:${String(m).padStart(2, '0')}` : `${h}:00`;
+}
+
+function renderMyShiftCard() {
+    const card = document.getElementById('myShiftCard');
+    if (!card) return;
+    if (!currentUserData) { card.style.display = 'none'; return; }
+
+    const esc = (v) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    const myName = getMyEmployeeName();
+    card.style.display = '';
+
+    // 従業員名が決まらない → 一度だけ本人に選んでもらう
+    if (!myName) {
+        if (!state.employees.length) { card.style.display = 'none'; return; }
+        const opts = state.employees.map(e => `<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
+        card.innerHTML = `
+            <div class="my-shift-head">
+                <div class="my-shift-title">👤 自分のシフト</div>
+            </div>
+            <div class="my-shift-pick">
+                <span>あなたの名前を選ぶと、次の出勤と今週の予定がここに出ます。</span>
+                <select id="myShiftPickSelect"><option value="">名前を選択</option>${opts}</select>
+            </div>`;
+        const sel = document.getElementById('myShiftPickSelect');
+        if (sel) sel.onchange = () => { if (sel.value) setMyEmployeeName(sel.value); };
+        return;
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = formatDate(todayStart);
+    const upcoming = getEmployeeShiftsForPeriod(myName, 1, todayStart); // 今日から7日分
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+    // 次の出勤: 休日上書きを除き、終業がまだ来ていない最初のシフト
+    const nowHour = now.getHours() + now.getMinutes() / 60;
+    const next = upcoming.find(s => {
+        if (s.isDayOff) return false;
+        if (s.date > todayStr) return true;
+        const end = s.overnight ? 24 : s.endHour;
+        return end > nowHour;
+    });
+
+    let nextHtml;
+    if (!next) {
+        nextHtml = `<div class="my-shift-next is-none"><span class="my-shift-next-label">次の出勤</span><span>今後7日間の出勤予定はありません</span></div>`;
+    } else {
+        const d = new Date(next.date + 'T00:00:00');
+        const dow = d.getDay();
+        const dowCls = dow === 6 ? 'dow-sat' : (dow === 0 || getJapaneseHoliday(d)) ? 'dow-sun' : '';
+        const diffDays = Math.round((d - todayStart) / 86400000);
+        const isWorking = next.date === todayStr && next.startHour <= nowHour;
+        let badge;
+        if (isWorking) badge = '勤務中';
+        else if (diffDays === 0) badge = '今日';
+        else if (diffDays === 1) badge = '明日';
+        else badge = `あと${diffDays}日`;
+        const endLabel = next.overnight ? `翌${formatShiftHour(next.endHour)}` : formatShiftHour(next.endHour);
+        nextHtml = `
+            <div class="my-shift-next${isWorking ? ' is-working' : ''}">
+                <span class="my-shift-next-label">次の出勤</span>
+                <span class="my-shift-next-date"><span class="${dowCls}">${d.getMonth() + 1}/${d.getDate()}（${dayNames[dow]}）</span></span>
+                <span class="my-shift-next-time">${formatShiftHour(next.startHour)}〜${endLabel}</span>
+                <span class="my-shift-next-badge">${badge}</span>
+            </div>`;
+    }
+
+    // 今日から7日間のストリップ
+    let weekHtml = '<div class="my-shift-week">';
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(todayStart); d.setDate(d.getDate() + i);
+        const ds = formatDate(d);
+        const dow = d.getDay();
+        const holiday = getJapaneseHoliday(d);
+        const dayShifts = upcoming.filter(s => s.date === ds);
+        const work = dayShifts.filter(s => !s.isDayOff);
+        const dayOff = dayShifts.length > 0 && work.length === 0;
+        const cls = ['my-shift-day'];
+        if (ds === todayStr) cls.push('is-today');
+        if (work.length) cls.push('has-shift');
+        if (dayOff) cls.push('is-dayoff');
+        if (dow === 6) cls.push('dow-sat');
+        if (dow === 0 || holiday) cls.push('dow-sun');
+        let timeHtml;
+        if (work.length) {
+            timeHtml = work.map(s => `${formatShiftHour(s.startHour)}<br>〜${s.overnight ? '<span class="overnight-mark">翌</span>' : ''}${formatShiftHour(s.endHour)}`).join('<br>');
+        } else if (dayOff) {
+            timeHtml = '休';
+        } else {
+            timeHtml = '－';
+        }
+        weekHtml += `<button type="button" class="${cls.join(' ')}" data-date="${ds}" title="${ds} の週を表示">
+            <span class="my-shift-day-dow">${holiday ? '祝' : dayNames[dow]}</span>
+            <span class="my-shift-day-date">${d.getDate()}</span>
+            <span class="my-shift-day-time">${timeHtml}</span>
+        </button>`;
+    }
+    weekHtml += '</div>';
+
+    card.innerHTML = `
+        <div class="my-shift-head">
+            <div class="my-shift-title">👤 ${esc(myName)}さんのシフト <span class="my-shift-title-sub">今日から7日間</span></div>
+            <button type="button" class="my-shift-change-link" id="myShiftChangeName">名前を変更</button>
+        </div>
+        ${nextHtml}
+        ${weekHtml}`;
+
+    // 日をタップ → その週のシフト表へ移動
+    card.querySelectorAll('.my-shift-day').forEach(btn => {
+        btn.onclick = () => {
+            state.currentWeekStart = getWeekStart(new Date(btn.dataset.date + 'T00:00:00'));
+            render();
+            const gantt = document.querySelector('.gantt-container');
+            if (gantt) gantt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+    });
+    const changeBtn = document.getElementById('myShiftChangeName');
+    if (changeBtn) changeBtn.onclick = () => setMyEmployeeName(null);
+}
+
+// ==========================================
+// 申請メニュー（ヘッダーの「申請する ▾」）
+// ==========================================
+function setRequestMenuOpen(open) {
+    const menu = document.getElementById('requestMenu');
+    const btn = document.getElementById('requestMenuBtn');
+    if (!menu || !btn) return;
+    menu.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function initRequestMenu() {
+    const menu = document.getElementById('requestMenu');
+    const btn = document.getElementById('requestMenuBtn');
+    const panel = document.getElementById('requestMenuPanel');
+    if (!menu || !btn || !panel) return;
+
+    btn.onclick = (e) => {
+        e.stopPropagation();
+        setRequestMenuOpen(!menu.classList.contains('open'));
+    };
+
+    // 項目を押したら閉じる。各項目の onclick（モーダルを開く既存処理）が先に動くので、
+    // その後で申請者欄に本人を自動選択する
+    const applicantSelectByItem = {
+        requestChangeBtn: 'changeApplicant',
+        shiftSwapBtn: 'swapApplicant',
+        requestLeaveBtn: 'leaveName',
+        requestHolidayBtn: 'holidayName'
+    };
+    panel.addEventListener('click', (e) => {
+        const item = e.target.closest('.request-menu-item');
+        if (!item) return;
+        setRequestMenuOpen(false);
+        const selId = applicantSelectByItem[item.id];
+        const myName = getMyEmployeeName();
+        if (!selId || !myName) return;
+        const sel = document.getElementById(selId);
+        if (!sel || !Array.from(sel.options).some(o => o.value === myName)) return;
+        sel.value = myName;
+        sel.dispatchEvent(new Event('change'));
+    });
+
+    document.addEventListener('click', (e) => {
+        if (menu.classList.contains('open') && !menu.contains(e.target)) setRequestMenuOpen(false);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setRequestMenuOpen(false);
+    });
+}
+
+function getEmployeeShiftsForPeriod(employeeName, weeks, fromDate) {
     const shifts = [];
-    const today = new Date();
+    const today = fromDate ? new Date(fromDate) : new Date();
     const endDate = new Date(today);
     endDate.setDate(endDate.getDate() + (weeks * 7));
     
@@ -4642,6 +4855,7 @@ function render() {
     const scrollLeft = ganttContainer ? ganttContainer.scrollLeft : 0;
     const scrollTop = ganttContainer ? ganttContainer.scrollTop : 0;
     renderTimeHeader(); renderGanttBody(formatDate(new Date())); renderLegend(); updatePeriodDisplay(); updateMessageBar(); renderScheduleList();
+    renderMyShiftCard();
     if (ganttContainer) {
         ganttContainer.scrollLeft = scrollLeft;
         ganttContainer.scrollTop = scrollTop;
@@ -4844,6 +5058,7 @@ function initEventListeners() {
     const navHandlers = { prev: goToPrevWeek, next: goToNextWeek, today: goToThisWeek };
     document.querySelectorAll('[data-week-nav]').forEach(b => { b.onclick = navHandlers[b.dataset.weekNav]; });
     document.getElementById('roleToggle').onclick = toggleRole;
+    initRequestMenu();
     document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); state.activeAdminTab = t.dataset.tab; updateAdminMenuTriggerLabel(); closeAdminMenuModal(); renderAdminPanel(); });
 
     // 管理者メニュー（ポップアップ）開閉
