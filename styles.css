@@ -1080,6 +1080,8 @@ body {
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
+    /* 自身の実幅で中身の表示段階を切り替える（下の @container 参照） */
+    container-type: inline-size;
 }
 
 .shift-bar:hover {
@@ -1112,6 +1114,7 @@ body {
     border-radius: 3px;
     padding: 1px 5px;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .shift-bar .fixed-icon,
@@ -7532,6 +7535,35 @@ body {
     background: none;
     padding: 0;
     border-radius: 0;
+}
+
+/* 狭いバーは名前を優先: 時刻バッジ → アイコンの順に畳む。
+   22時開始の夜勤（2h幅）などで名前が0pxに潰れるのを防ぐ。
+   開始時刻は横軸位置で読め、全文は title（ホバー）で見える。
+   ズームは --cell-w の変更だけなので、バー自身の実幅で判定する。 */
+/* ※ @container の幅は content-box（padding を除いた内側）で判定される */
+@container (max-width: 120px) {
+    .shift-bar .shift-time { display: none; }
+}
+/* 夜勤開始日の「22:00-翌6:00」は文字列が長いので一段広い幅から畳む */
+@container (max-width: 145px) {
+    .shift-bar.overnight .shift-time { display: none; }
+}
+/* 🔁は破線枠、📝🤝✏️は .changed/.swapped 等の装飾で代替できるので先に畳む */
+@container (max-width: 90px) {
+    .shift-bar .fixed-icon,
+    .shift-bar .change-icon,
+    .shift-bar .swap-icon,
+    .shift-bar .override-icon,
+    .shift-bar .temporary-badge { display: none; }
+}
+/* 🌙/→ は最小幅まで残す（左の警告色ボーダーでも夜勤は判別可） */
+@container (max-width: 56px) {
+    .shift-bar .overnight-icon { display: none; }
+}
+/* コンテナクエリ非対応ブラウザ向けフォールバック（JSが2h以下に付与） */
+@supports not (container-type: inline-size) {
+    .shift-bar.narrow .shift-time { display: none; }
 }
 
 .shift-bar-tasks {

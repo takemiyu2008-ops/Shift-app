@@ -2115,17 +2115,22 @@ function createShiftBar(s, lvl) {
     let time = s.overnight && !s.isOvernightContinuation ? `${formatTime(s.startHour)}-翌${formatTime(s.endHour)}` :
         s.isOvernightContinuation ? `〜${formatTime(s.endHour)}` : `${formatTime(s.startHour)}-${formatTime(s.endHour)}`;
 
+    // 全バーに名前＋時刻のツールチップ（狭いバーで時刻バッジが畳まれても読める）
+    bar.title = `${s.name}  ${time}`;
+    // コンテナクエリ非対応ブラウザ向け: 2h以下のバーに narrow を付与（CSS 側 @supports not で使用）
+    if (end - start <= 2) bar.classList.add('narrow');
+
     // 変更履歴がある場合はツールチップに表示
     if (s.changeHistory) {
         const h = s.changeHistory;
-        bar.title = `変更前: ${h.previousDate} ${formatTime(h.previousStartHour)}-${formatTime(h.previousEndHour)}\n理由: ${h.reason}`;
+        bar.title += `\n変更前: ${h.previousDate} ${formatTime(h.previousStartHour)}-${formatTime(h.previousEndHour)}\n理由: ${h.reason}`;
         bar.classList.add('changed');
     }
 
     // 交代履歴がある場合はツールチップに表示
     if (s.swapHistory) {
         const h = s.swapHistory;
-        bar.title = `交代前: ${h.previousName} → 交代後: ${h.newName}`;
+        bar.title += `\n交代前: ${h.previousName} → 交代後: ${h.newName}`;
         bar.classList.add('swapped');
     }
 
