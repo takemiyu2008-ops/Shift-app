@@ -149,24 +149,39 @@ body {
     position: relative;
     z-index: 20; /* backdrop-filter で生まれる重ね順の中で、申請メニューのパネルを後続カードより前に出す */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     margin-bottom: 24px;
-    padding: 20px 24px;
+    padding: 14px 24px 16px;
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
+}
+
+/* 右上の角: テーマ切替 + ログアウト */
+.header-corner {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-corner .theme-toggle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
 }
 
 .header-title {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
@@ -175,7 +190,7 @@ body {
 }
 
 .header-icon {
-    font-size: 2rem;
+    font-size: 1.7rem;
     -webkit-text-fill-color: initial;
 }
 
@@ -1686,14 +1701,19 @@ body {
     }
 
     .header {
-        flex-direction: column;
-        gap: 12px;
+        align-items: center;
+        gap: 10px;
         text-align: center;
-        padding: 16px;
+        padding: 44px 14px 14px;
     }
 
     .header-title {
         font-size: 1.3rem;
+    }
+
+    .header-corner {
+        top: 8px;
+        right: 8px;
     }
 
     .header-actions {
@@ -2231,6 +2251,7 @@ body {
     /* 印刷時に非表示にする要素 */
     .connection-status,
     .my-shift-card,
+    .header-corner,
     .header-actions,
     .role-toggle,
     .date-nav .nav-btn,
@@ -2357,6 +2378,7 @@ body {
 /* PDF出力用クラス */
 .pdf-export-mode .connection-status,
 .pdf-export-mode .my-shift-card,
+.pdf-export-mode .header-corner,
 .pdf-export-mode .header-actions,
 .pdf-export-mode .role-toggle,
 .pdf-export-mode .date-nav .nav-btn,
@@ -8251,19 +8273,13 @@ body {
     z-index: 10000;
 }
 
-/* ヘッダー右端: テーマ切替 + ログアウト */
-.logout-btn-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: 8px;
-    padding-left: 12px;
-    border-left: 1px solid var(--border-color);
-}
-
 .logout-btn {
-    padding: 8px 16px;
-    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 0.8rem;
     background: var(--danger);
     color: #fff;
     border: none;
@@ -8283,6 +8299,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    padding-right: 180px; /* 右上の角のクラスタと重ならないように */
 }
 
 .last-login-info {
@@ -8431,10 +8448,20 @@ body {
 
     .header-brand {
         align-items: center;
+        padding-right: 0;
     }
 
     .last-login-info {
         padding-left: 0;
+    }
+
+    .zoom-panel {
+        min-width: 0;
+    }
+
+    .zoom-panel .zoom-section {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .user-login-row {
@@ -8535,6 +8562,48 @@ body {
 .request-menu-item-text small {
     font-size: 0.75rem;
     color: var(--text-muted);
+}
+
+.icon-btn {
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+.zoom-menu-value {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.request-menu-btn[aria-expanded="true"] .zoom-menu-value {
+    color: #fff;
+}
+
+.zoom-panel {
+    min-width: 340px;
+    padding: 12px 14px;
+}
+
+.zoom-panel .zoom-section {
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+
+.zoom-panel .zoom-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.zoom-panel .zoom-slider {
+    flex: 1;
+    min-width: 90px;
+}
+
+/* 発注・スケジュール情報はシフト表の下へ */
+#advisorGroup {
+    margin-top: 24px;
+    scroll-margin-top: 12px;
 }
 
 /* ========================================
@@ -8743,10 +8812,18 @@ body {
 }
 
 @media (max-width: 768px) {
+    .header-actions {
+        position: relative;
+    }
+
+    .request-menu {
+        position: static;
+    }
+
     .request-menu-panel {
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
+        left: 0;
+        right: 0;
+        min-width: 0;
     }
 
     .my-shift-card {

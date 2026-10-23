@@ -3138,39 +3138,54 @@ function renderMyShiftCard() {
 }
 
 // ==========================================
-// 申請メニュー（ヘッダーの「申請する ▾」）
+// ヘッダーのドロップダウン（申請する / 印刷 / 表示サイズ）
 // ==========================================
-function setRequestMenuOpen(open) {
-    const menu = document.getElementById('requestMenu');
-    const btn = document.getElementById('requestMenuBtn');
-    if (!menu || !btn) return;
+const headerMenus = [];
+
+function setMenuOpen(menu, open) {
+    const btn = menu.querySelector('.request-menu-btn');
     menu.classList.toggle('open', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
-function initRequestMenu() {
-    const menu = document.getElementById('requestMenu');
-    const btn = document.getElementById('requestMenuBtn');
-    const panel = document.getElementById('requestMenuPanel');
-    if (!menu || !btn || !panel) return;
+function closeAllHeaderMenus(except) {
+    headerMenus.forEach(m => { if (m !== except) setMenuOpen(m, false); });
+}
+
+// menuId: .request-menu の要素。onItem: 項目(.request-menu-item)が押された後の処理（省略可）
+function initDropdownMenu(menuId, onItem) {
+    const menu = document.getElementById(menuId);
+    if (!menu) return;
+    const btn = menu.querySelector('.request-menu-btn');
+    const panel = menu.querySelector('.request-menu-panel');
+    if (!btn || !panel) return;
+    headerMenus.push(menu);
 
     btn.onclick = (e) => {
         e.stopPropagation();
-        setRequestMenuOpen(!menu.classList.contains('open'));
+        const willOpen = !menu.classList.contains('open');
+        closeAllHeaderMenus(menu);
+        setMenuOpen(menu, willOpen);
     };
 
-    // 項目を押したら閉じる。各項目の onclick（モーダルを開く既存処理）が先に動くので、
-    // その後で申請者欄に本人を自動選択する
+    // 項目を押したら閉じる。項目自身の onclick（既存処理）が先に動く
+    panel.addEventListener('click', (e) => {
+        const item = e.target.closest('.request-menu-item');
+        if (!item) return;
+        setMenuOpen(menu, false);
+        if (onItem) onItem(item);
+    });
+}
+
+function initHeaderMenus() {
+    // 申請する: 開いたモーダルの申請者欄に本人を自動選択
     const applicantSelectByItem = {
         requestChangeBtn: 'changeApplicant',
         shiftSwapBtn: 'swapApplicant',
         requestLeaveBtn: 'leaveName',
         requestHolidayBtn: 'holidayName'
     };
-    panel.addEventListener('click', (e) => {
-        const item = e.target.closest('.request-menu-item');
-        if (!item) return;
-        setRequestMenuOpen(false);
+    initDropdownMenu('requestMenu', (item) => {
         const selId = applicantSelectByItem[item.id];
         const myName = getMyEmployeeName();
         if (!selId || !myName) return;
@@ -3180,11 +3195,38 @@ function initRequestMenu() {
         sel.dispatchEvent(new Event('change'));
     });
 
+    // 印刷（PDF出力 / 印刷）
+    initDropdownMenu('printMenu');
+
+    // 表示サイズ（スライダー入りポップオーバー。中を触っても閉じない）
+    initDropdownMenu('zoomMenu');
+    const zoomValue = document.getElementById('zoomValue');
+    const zoomMenuValue = document.getElementById('zoomMenuValue');
+    if (zoomValue && zoomMenuValue && typeof MutationObserver !== 'undefined') {
+        new MutationObserver(() => { zoomMenuValue.textContent = zoomValue.textContent; })
+            .observe(zoomValue, { childList: true, characterData: true, subtree: true });
+    }
+
+    // 発注・スケジュール情報へ移動（シフト表の下にあるグループを開いてスクロール）
+    const infoBtn = document.getElementById('infoJumpBtn');
+    if (infoBtn) {
+        infoBtn.onclick = () => {
+            const group = document.getElementById('advisorGroup');
+            const header = document.getElementById('advisorGroupHeader');
+            const content = document.getElementById('advisorGroupContent');
+            if (!group) return;
+            if (header && content && content.classList.contains('collapsed')) header.click();
+            // 展開で高さが変わった後にスクロールする
+            setTimeout(() => group.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+        };
+    }
+
+    if (!headerMenus.length) return;
     document.addEventListener('click', (e) => {
-        if (menu.classList.contains('open') && !menu.contains(e.target)) setRequestMenuOpen(false);
+        if (!headerMenus.some(m => m.contains(e.target))) closeAllHeaderMenus();
     });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') setRequestMenuOpen(false);
+        if (e.key === 'Escape') closeAllHeaderMenus();
     });
 }
 
@@ -5058,7 +5100,7 @@ function initEventListeners() {
     const navHandlers = { prev: goToPrevWeek, next: goToNextWeek, today: goToThisWeek };
     document.querySelectorAll('[data-week-nav]').forEach(b => { b.onclick = navHandlers[b.dataset.weekNav]; });
     document.getElementById('roleToggle').onclick = toggleRole;
-    initRequestMenu();
+    initHeaderMenus();
     document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); state.activeAdminTab = t.dataset.tab; updateAdminMenuTriggerLabel(); closeAdminMenuModal(); renderAdminPanel(); });
 
     // 管理者メニュー（ポップアップ）開閉

@@ -128,7 +128,6 @@
         </div>
     </div>
 
-
     <div class="app-container hidden" id="appContainer">
         <!-- 接続状態表示 -->
         <div class="connection-status" id="connectionStatus">
@@ -138,6 +137,11 @@
 
         <!-- ヘッダー -->
         <header class="header">
+            <!-- 右上の角: テーマ切替 + ログアウト（ログイン後のみ表示。hideAllScreens が display を切り替える） -->
+            <div class="header-corner" id="logoutBtnContainer" style="display: none;">
+                <button type="button" class="theme-toggle" id="appThemeToggle" aria-label="テーマ切替" title="ライト/ダーク切替">☀️</button>
+                <button id="logoutBtn" class="logout-btn" title="ログアウト">🚪<span class="logout-btn-text">ログアウト</span></button>
+            </div>
             <div class="header-brand">
                 <h1 class="header-title">
                     <span class="header-icon">📅</span>
@@ -185,11 +189,40 @@
                         </button>
                     </div>
                 </div>
-                <!-- テーマ切替 + ログアウト（ログイン後のみ表示。hideAllScreens が display を切り替える） -->
-                <div class="logout-btn-container" id="logoutBtnContainer" style="display: none;">
-                    <button type="button" class="theme-toggle" id="appThemeToggle" aria-label="テーマ切替" title="ライト/ダーク切替">☀️</button>
-                    <button id="logoutBtn" class="logout-btn">🚪 ログアウト</button>
+                <!-- 印刷メニュー（PDF出力・印刷。ボタン id は既存処理のまま） -->
+                <div class="request-menu" id="printMenu">
+                    <button type="button" id="printMenuBtn" class="btn btn-secondary request-menu-btn" aria-haspopup="menu" aria-expanded="false">
+                        🖨️ 印刷 <span class="request-menu-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="request-menu-panel" id="printMenuPanel" role="menu" aria-label="印刷・PDF">
+                        <button type="button" id="exportPdfBtn" class="request-menu-item" role="menuitem">
+                            <span class="request-menu-item-icon">📄</span>
+                            <span class="request-menu-item-text"><strong>PDF出力</strong><small>この週のシフト表をPDFに</small></span>
+                        </button>
+                        <button type="button" id="printBtn" class="request-menu-item" role="menuitem">
+                            <span class="request-menu-item-icon">🖨️</span>
+                            <span class="request-menu-item-text"><strong>印刷</strong><small>ブラウザの印刷画面を開く</small></span>
+                        </button>
+                    </div>
                 </div>
+                <!-- 表示サイズ（スライダーはポップオーバー内。各 id は既存処理のまま） -->
+                <div class="request-menu" id="zoomMenu">
+                    <button type="button" id="zoomMenuBtn" class="btn btn-secondary request-menu-btn" aria-haspopup="dialog" aria-expanded="false" title="表示サイズ">
+                        🔍 <span id="zoomMenuValue" class="zoom-menu-value">100%</span>
+                    </button>
+                    <div class="request-menu-panel zoom-panel" id="zoomMenuPanel" role="dialog" aria-label="表示サイズ">
+                        <div class="zoom-section">
+                            <span class="zoom-label">表示サイズ</span>
+                            <button id="zoomOut" class="zoom-btn" type="button" aria-label="縮小">−</button>
+                            <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider" aria-label="表示サイズ">
+                            <button id="zoomIn" class="zoom-btn" type="button" aria-label="拡大">+</button>
+                            <span id="zoomValue" class="zoom-value">100%</span>
+                            <button id="zoomReset" class="btn btn-sm btn-secondary" type="button">リセット</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 発注・スケジュール情報へ移動（グループはシフト表の下にある） -->
+                <button type="button" id="infoJumpBtn" class="btn btn-secondary icon-btn" title="発注・スケジュール情報へ移動" aria-label="発注・スケジュール情報へ移動">📋</button>
             </div>
         </header>
 
@@ -259,6 +292,64 @@
             </div>
             <button id="viewMessagesBtn" class="btn btn-sm btn-primary">確認</button>
         </div>
+
+        <!-- 日付ナビゲーション -->
+        <div class="date-nav" id="dateNavTop">
+            <button id="prevWeek" class="nav-btn" data-week-nav="prev">
+                <span>◀</span>
+                前週
+            </button>
+            <button class="nav-btn nav-today" data-week-nav="today">今週</button>
+            <div class="current-period" id="currentPeriod">2026年1月12日 〜 1月18日</div>
+            <button id="nextWeek" class="nav-btn" data-week-nav="next">
+                次週
+                <span>▶</span>
+            </button>
+        </div>
+
+        <!-- ガントチャート -->
+        <div class="gantt-container">
+            <div class="gantt-header">
+                <div class="gantt-label-header">日付</div>
+                <div class="gantt-time-header" id="timeHeader">
+                </div>
+            </div>
+            <div class="gantt-body" id="ganttBody">
+            </div>
+        </div>
+
+        <!-- 日付ナビゲーション（表の下。上と同じハンドラに data-week-nav で束ねる。id は付けない） -->
+        <div class="date-nav date-nav-bottom">
+            <button class="nav-btn" data-week-nav="prev">
+                <span>◀</span>
+                前週
+            </button>
+            <button class="nav-btn nav-today" data-week-nav="today">今週</button>
+            <div class="current-period"></div>
+            <button class="nav-btn" data-week-nav="next">
+                次週
+                <span>▶</span>
+            </button>
+        </div>
+
+        <!-- 凡例（マークの意味） -->
+        <details class="gantt-legend" id="ganttLegend">
+            <summary>凡例（マークの意味）</summary>
+            <div class="gantt-legend-items">
+                <span class="lg"><i class="lg-sw lg-fixed"></i>🔁 固定シフト</span>
+                <span class="lg"><i class="lg-sw lg-overnight"></i>🌙 夜勤 ／ → 夜勤明け</span>
+                <span class="lg"><i class="lg-sw lg-changed"></i>📝 変更あり</span>
+                <span class="lg"><i class="lg-sw lg-swapped"></i>🤝 交代あり</span>
+                <span class="lg">✏️ この日のみ変更</span>
+                <span class="lg"><i class="lg-sw lg-temp"></i>臨時（イベント日）</span>
+                <span class="lg"><i class="lg-sw lg-leave"></i>🏖️ 有給</span>
+                <span class="lg"><i class="lg-sw lg-holiday"></i>🏠 休日</span>
+                <span class="lg"><i class="lg-sw lg-dayoff"></i>単日休日</span>
+                <span class="lg"><i class="lg-sw lg-now"></i>現在時刻</span>
+                <span class="lg"><i class="lg-sw lg-night"></i>深夜帯（22〜5時）</span>
+                <span class="lg"><i class="lg-sw lg-sat"></i>土 <i class="lg-sw lg-sun"></i>日・祝 <i class="lg-sw lg-today"></i>今日</span>
+            </div>
+        </details>
 
         <!-- 発注・スケジュール情報グループ -->
         <div class="advisor-group" id="advisorGroup">
@@ -339,95 +430,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- 印刷画面グループ -->
-        <div class="advisor-group print-group" id="printGroup">
-            <div class="advisor-group-header" id="printGroupHeader">
-                <span class="advisor-group-icon">🖨️</span>
-                <span class="advisor-group-title">印刷画面（PDF出力、印刷）</span>
-                <button class="advisor-group-toggle" id="printGroupToggle">▼</button>
-            </div>
-            <div class="advisor-group-content collapsed" id="printGroupContent">
-                <div class="pdf-section-inner">
-                    <button id="exportPdfBtn" class="btn btn-info">
-                        📄 PDF出力
-                    </button>
-                    <button id="printBtn" class="btn btn-secondary">
-                        🖨️ 印刷
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ズームコントロール -->
-        <div class="zoom-controls">
-            <div class="zoom-section">
-                <span class="zoom-label">🔍 表示サイズ:</span>
-                <button id="zoomOut" class="zoom-btn">−</button>
-                <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider">
-                <button id="zoomIn" class="zoom-btn">+</button>
-                <span id="zoomValue" class="zoom-value">100%</span>
-                <button id="zoomReset" class="btn btn-sm btn-secondary">リセット</button>
-            </div>
-        </div>
-
-        <!-- 日付ナビゲーション -->
-        <div class="date-nav" id="dateNavTop">
-            <button id="prevWeek" class="nav-btn" data-week-nav="prev">
-                <span>◀</span>
-                前週
-            </button>
-            <button class="nav-btn nav-today" data-week-nav="today">今週</button>
-            <div class="current-period" id="currentPeriod">2026年1月12日 〜 1月18日</div>
-            <button id="nextWeek" class="nav-btn" data-week-nav="next">
-                次週
-                <span>▶</span>
-            </button>
-        </div>
-
-        <!-- ガントチャート -->
-        <div class="gantt-container">
-            <div class="gantt-header">
-                <div class="gantt-label-header">日付</div>
-                <div class="gantt-time-header" id="timeHeader">
-                </div>
-            </div>
-            <div class="gantt-body" id="ganttBody">
-            </div>
-        </div>
-
-        <!-- 日付ナビゲーション（表の下。上と同じハンドラに data-week-nav で束ねる。id は付けない） -->
-        <div class="date-nav date-nav-bottom">
-            <button class="nav-btn" data-week-nav="prev">
-                <span>◀</span>
-                前週
-            </button>
-            <button class="nav-btn nav-today" data-week-nav="today">今週</button>
-            <div class="current-period"></div>
-            <button class="nav-btn" data-week-nav="next">
-                次週
-                <span>▶</span>
-            </button>
-        </div>
-
-        <!-- 凡例（マークの意味） -->
-        <details class="gantt-legend" id="ganttLegend">
-            <summary>凡例（マークの意味）</summary>
-            <div class="gantt-legend-items">
-                <span class="lg"><i class="lg-sw lg-fixed"></i>🔁 固定シフト</span>
-                <span class="lg"><i class="lg-sw lg-overnight"></i>🌙 夜勤 ／ → 夜勤明け</span>
-                <span class="lg"><i class="lg-sw lg-changed"></i>📝 変更あり</span>
-                <span class="lg"><i class="lg-sw lg-swapped"></i>🤝 交代あり</span>
-                <span class="lg">✏️ この日のみ変更</span>
-                <span class="lg"><i class="lg-sw lg-temp"></i>臨時（イベント日）</span>
-                <span class="lg"><i class="lg-sw lg-leave"></i>🏖️ 有給</span>
-                <span class="lg"><i class="lg-sw lg-holiday"></i>🏠 休日</span>
-                <span class="lg"><i class="lg-sw lg-dayoff"></i>単日休日</span>
-                <span class="lg"><i class="lg-sw lg-now"></i>現在時刻</span>
-                <span class="lg"><i class="lg-sw lg-night"></i>深夜帯（22〜5時）</span>
-                <span class="lg"><i class="lg-sw lg-sat"></i>土 <i class="lg-sw lg-sun"></i>日・祝 <i class="lg-sw lg-today"></i>今日</span>
-            </div>
-        </details>
 
         <!-- 凡例（非表示） -->
         <div class="legend" style="display: none;">
