@@ -769,6 +769,8 @@ body {
    日付ナビゲーション
    ======================================== */
 .date-nav {
+    position: relative;
+    z-index: 110; /* 表示サイズのポップオーバーをシフト表の固定ヘッダ(100)より前に */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -2253,6 +2255,7 @@ body {
     .my-shift-card,
     .header-corner,
     .header-actions,
+    .date-nav-zoom,
     .role-toggle,
     .date-nav .nav-btn,
     .zoom-controls,
@@ -2379,6 +2382,7 @@ body {
 .pdf-export-mode .connection-status,
 .pdf-export-mode .my-shift-card,
 .pdf-export-mode .header-corner,
+.pdf-export-mode .date-nav-zoom,
 .pdf-export-mode .header-actions,
 .pdf-export-mode .role-toggle,
 .pdf-export-mode .date-nav .nav-btn,
@@ -8459,6 +8463,15 @@ body {
         min-width: 0;
     }
 
+    .date-nav-zoom {
+        position: static;
+        transform: none;
+        order: 10;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
     .zoom-panel .zoom-section {
         flex-wrap: wrap;
         justify-content: center;
@@ -8598,6 +8611,19 @@ body {
 .zoom-panel .zoom-slider {
     flex: 1;
     min-width: 90px;
+}
+
+/* 表示サイズ: 週ナビの右端に置き、前週/今週/次週は中央のまま */
+.date-nav-zoom {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.date-nav-zoom .request-menu-btn[aria-expanded="true"] {
+    background: var(--accent-primary);
+    color: #fff;
 }
 
 /* 発注・スケジュール情報はシフト表の下へ */

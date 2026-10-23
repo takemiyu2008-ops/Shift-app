@@ -205,24 +205,8 @@
                         </button>
                     </div>
                 </div>
-                <!-- 表示サイズ（スライダーはポップオーバー内。各 id は既存処理のまま） -->
-                <div class="request-menu" id="zoomMenu">
-                    <button type="button" id="zoomMenuBtn" class="btn btn-secondary request-menu-btn" aria-haspopup="dialog" aria-expanded="false" title="表示サイズ">
-                        🔍 <span id="zoomMenuValue" class="zoom-menu-value">100%</span>
-                    </button>
-                    <div class="request-menu-panel zoom-panel" id="zoomMenuPanel" role="dialog" aria-label="表示サイズ">
-                        <div class="zoom-section">
-                            <span class="zoom-label">表示サイズ</span>
-                            <button id="zoomOut" class="zoom-btn" type="button" aria-label="縮小">−</button>
-                            <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider" aria-label="表示サイズ">
-                            <button id="zoomIn" class="zoom-btn" type="button" aria-label="拡大">+</button>
-                            <span id="zoomValue" class="zoom-value">100%</span>
-                            <button id="zoomReset" class="btn btn-sm btn-secondary" type="button">リセット</button>
-                        </div>
-                    </div>
-                </div>
                 <!-- 発注・スケジュール情報へ移動（グループはシフト表の下にある） -->
-                <button type="button" id="infoJumpBtn" class="btn btn-secondary icon-btn" title="発注・スケジュール情報へ移動" aria-label="発注・スケジュール情報へ移動">📋</button>
+                <button type="button" id="infoJumpBtn" class="btn btn-secondary" title="発注・スケジュール情報へ移動">📋 情報</button>
             </div>
         </header>
 
@@ -305,6 +289,22 @@
                 次週
                 <span>▶</span>
             </button>
+            <!-- 表示サイズ（週ナビの右端。スライダーはポップオーバー内、各 id は既存処理のまま） -->
+            <div class="request-menu date-nav-zoom" id="zoomMenu">
+                <button type="button" id="zoomMenuBtn" class="nav-btn request-menu-btn" aria-haspopup="dialog" aria-expanded="false" title="シフト表の表示サイズ">
+                    🔍 表示 <span class="request-menu-caret" aria-hidden="true">▾</span>
+                </button>
+                <div class="request-menu-panel zoom-panel" id="zoomMenuPanel" role="dialog" aria-label="表示サイズ">
+                    <div class="zoom-section">
+                        <span class="zoom-label">表示サイズ</span>
+                        <button id="zoomOut" class="zoom-btn" type="button" aria-label="縮小">−</button>
+                        <input type="range" id="zoomSlider" min="50" max="150" value="100" class="zoom-slider" aria-label="表示サイズ">
+                        <button id="zoomIn" class="zoom-btn" type="button" aria-label="拡大">+</button>
+                        <span id="zoomValue" class="zoom-value">100%</span>
+                        <button id="zoomReset" class="btn btn-sm btn-secondary" type="button">リセット</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ガントチャート -->

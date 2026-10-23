@@ -3198,14 +3198,8 @@ function initHeaderMenus() {
     // 印刷（PDF出力 / 印刷）
     initDropdownMenu('printMenu');
 
-    // 表示サイズ（スライダー入りポップオーバー。中を触っても閉じない）
+    // 表示サイズ（週ナビ右端のスライダー入りポップオーバー。中を触っても閉じない）
     initDropdownMenu('zoomMenu');
-    const zoomValue = document.getElementById('zoomValue');
-    const zoomMenuValue = document.getElementById('zoomMenuValue');
-    if (zoomValue && zoomMenuValue && typeof MutationObserver !== 'undefined') {
-        new MutationObserver(() => { zoomMenuValue.textContent = zoomValue.textContent; })
-            .observe(zoomValue, { childList: true, characterData: true, subtree: true });
-    }
 
     // 発注・スケジュール情報へ移動（シフト表の下にあるグループを開いてスクロール）
     const infoBtn = document.getElementById('infoJumpBtn');
