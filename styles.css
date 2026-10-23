@@ -770,7 +770,7 @@ body {
    ======================================== */
 .date-nav {
     position: relative;
-    z-index: 110; /* 表示サイズのポップオーバーをシフト表の固定ヘッダ(100)より前に */
+    z-index: 250; /* 表示サイズのポップオーバーを .gantt-header(200) より前に。モーダル(1000)より後ろ */
     display: flex;
     justify-content: center;
     align-items: center;
