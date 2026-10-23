@@ -8463,14 +8463,6 @@ body {
         min-width: 0;
     }
 
-    .date-nav-zoom {
-        position: static;
-        transform: none;
-        order: 10;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
 
     .zoom-panel .zoom-section {
         flex-wrap: wrap;
@@ -8850,6 +8842,21 @@ body {
         left: 0;
         right: 0;
         min-width: 0;
+    }
+
+    /* 週ナビの「表示」は「次週」の右隣・同じ段に（前週/今週/次週/表示 が1行に収まる幅に詰める） */
+    .date-nav-zoom {
+        position: static;
+        transform: none;
+    }
+
+    .date-nav {
+        gap: 6px;
+    }
+
+    .date-nav .nav-btn {
+        padding: 8px 10px;
+        gap: 5px;
     }
 
     .my-shift-card {
