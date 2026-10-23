@@ -13,7 +13,7 @@
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     font-size: 0.85rem;
-    z-index: 50;
+    z-index: 900; /* ガントの固定ヘッダ(100)やメニュー(200)より前、モーダル(1000)より後ろ */
 }
 
 .connection-status .status-dot {
