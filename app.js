@@ -26,6 +26,181 @@ auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 // 現在のユーザー情報を保持
 let currentUser = null;
 
+// ==========================================
+// テーマ（ライト/ダーク）。初期適用は index.html の <head> インラインスクリプトが行う
+// ==========================================
+const THEME_KEY = 'shiftApp.theme';
+const THEME_COLORS = { dark: '#0f172a', light: '#f1f5f9' };
+
+function getTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+function applyTheme(theme, persist) {
+    const t = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', THEME_COLORS[t]);
+    const label = t === 'light' ? 'ダークモードに切替' : 'ライトモードに切替';
+    document.querySelectorAll('.theme-toggle').forEach(btn => {
+        btn.textContent = t === 'light' ? '🌙' : '☀️';
+        btn.setAttribute('aria-label', label);
+        btn.title = label;
+    });
+    if (persist) {
+        try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* プライベートモード等 */ }
+    }
+}
+
+function toggleTheme() {
+    applyTheme(getTheme() === 'light' ? 'dark' : 'light', true);
+}
+
+// ==========================================
+// この端末に従業員番号だけを記憶（パスワードは記憶しない）
+// ==========================================
+const LAST_STAFF_ID_KEY = 'shiftApp.lastStaffId';
+
+function readLastStaffId() {
+    try {
+        const v = localStorage.getItem(LAST_STAFF_ID_KEY) || '';
+        return /^[0-9]{3}$/.test(v) ? v : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveLastStaffId(staffId) {
+    try { localStorage.setItem(LAST_STAFF_ID_KEY, staffId); } catch (e) { /* noop */ }
+}
+
+function clearLastStaffId() {
+    try { localStorage.removeItem(LAST_STAFF_ID_KEY); } catch (e) { /* noop */ }
+}
+
+// 記憶した番号をログイン欄に反映し、「番号を消す」リンクの表示を切り替える
+function applyRememberedStaffId() {
+    const input = document.getElementById('loginStaffId');
+    const link = document.getElementById('forgetStaffId');
+    if (!input) return;
+    const remembered = readLastStaffId();
+    if (remembered) {
+        if (!input.value) input.value = remembered;
+        if (link) link.style.display = 'inline';
+    } else if (link) {
+        link.style.display = 'none';
+    }
+}
+
+// パスワード欄の表示状態を初期（非表示）に戻す
+function resetPasswordVisibility() {
+    document.querySelectorAll('.pw-toggle').forEach(btn => {
+        const input = document.getElementById(btn.dataset.target);
+        if (input) input.type = 'password';
+        btn.textContent = '👁';
+        btn.setAttribute('aria-label', 'パスワードを表示');
+        btn.setAttribute('aria-pressed', 'false');
+    });
+}
+
+// ==========================================
+// 自動ログアウトの理由をログイン画面に表示するための受け渡し
+// ==========================================
+const LOGOUT_REASON_KEY = 'shiftApp.logoutReason';
+const LOGOUT_REASON_MESSAGES = {
+    idle: '30分以上操作がなかったため、自動的にログアウトしました。'
+};
+
+function setLogoutReason(reason) {
+    try { sessionStorage.setItem(LOGOUT_REASON_KEY, reason); } catch (e) { /* noop */ }
+}
+
+function consumeLogoutReason() {
+    try {
+        const r = sessionStorage.getItem(LOGOUT_REASON_KEY);
+        sessionStorage.removeItem(LOGOUT_REASON_KEY);
+        return r;
+    } catch (e) {
+        return null;
+    }
+}
+
+function showAuthInfo(message) {
+    const el = document.getElementById('authInfo');
+    if (!el) return;
+    if (!message) {
+        el.textContent = '';
+        el.classList.remove('show');
+        return;
+    }
+    el.textContent = message;
+    el.classList.add('show');
+}
+
+// ==========================================
+// 最終ログインの記録（users/{uid}/lastLoginAt, lastLoginPrev）
+// ==========================================
+// onAuthStateChanged はリロードでも発火するため、このタブで最初の1回だけ記録する。
+// sessionStorage はタブを閉じると消えるので、次回ログインでは再び記録される（SESSION 永続性と整合）。
+const LOGIN_RECORDED_KEY = 'shiftApp.loginRecorded';
+
+function recordLastLogin(userRef, userData) {
+    let alreadyRecorded = false;
+    try { alreadyRecorded = sessionStorage.getItem(LOGIN_RECORDED_KEY) === '1'; } catch (e) { /* noop */ }
+
+    if (alreadyRecorded) {
+        // リロード: 今回分は既に lastLoginAt に入っているので、前回分 lastLoginPrev を表示
+        renderLastLoginInfo(userData.lastLoginPrev || null);
+        return;
+    }
+
+    const prev = userData.lastLoginAt || null;
+    const payload = { lastLoginAt: new Date().toISOString() };
+    if (prev) payload.lastLoginPrev = prev;
+    userRef.update(payload)
+        .then(() => { try { sessionStorage.setItem(LOGIN_RECORDED_KEY, '1'); } catch (e) { /* noop */ } })
+        .catch(err => console.error('最終ログインの記録に失敗:', err));
+    renderLastLoginInfo(prev);
+}
+
+function clearLoginRecorded() {
+    try { sessionStorage.removeItem(LOGIN_RECORDED_KEY); } catch (e) { /* noop */ }
+}
+
+function renderLastLoginInfo(prevIso) {
+    const el = document.getElementById('lastLoginInfo');
+    if (!el) return;
+    // 機能追加前から使っている人も初回は記録が無いので「初回」とは言い切らない
+    el.textContent = '前回ログイン: ' + (prevIso ? formatDateTime(prevIso) : '記録なし');
+    el.style.display = '';
+}
+
+// 管理者向け: 登録済みユーザーの最終ログイン一覧（最終ログイン順）
+function renderUserLoginList(users) {
+    const wrap = document.createElement('div');
+    wrap.className = 'user-login-list';
+    const sorted = [...users].sort((a, b) => (b.lastLoginAt || '').localeCompare(a.lastLoginAt || ''));
+    let html = `<h4 class="user-login-list-title">👥 登録済みユーザー（最終ログイン順・${sorted.length}名）</h4>`;
+    if (!sorted.length) {
+        wrap.innerHTML = html + '<p class="user-login-empty">登録済みユーザーなし</p>';
+        return wrap;
+    }
+    const now = Date.now();
+    const esc = (v) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    html += sorted.map(u => {
+        let when = '記録なし', ago = '', cls = 'never';
+        if (u.lastLoginAt) {
+            const days = Math.floor((now - new Date(u.lastLoginAt).getTime()) / 86400000);
+            when = formatDateTime(u.lastLoginAt);
+            ago = days <= 0 ? '今日' : days === 1 ? '昨日' : `${days}日前`;
+            cls = days >= 30 ? 'stale' : days >= 7 ? 'warn' : 'recent';
+        }
+        return `<div class="user-login-row ${cls}"><span class="user-login-name">${esc(u.displayName || '不明')}</span><span class="user-login-id">#${esc(u.staffId || '---')}</span><span class="user-login-when">${when}</span><span class="user-login-ago">${ago}</span></div>`;
+    }).join('');
+    wrap.innerHTML = html;
+    return wrap;
+}
+
 // ログイン後に自動で管理者モードで開始する従業員番号のリスト
 const AUTO_ADMIN_STAFF_IDS = ['392'];
 
@@ -88,6 +263,7 @@ auth.onAuthStateChanged((user) => {
         if (isSessionExpired()) {
             console.log('自動ログアウト（セッション復元時に経過時間オーバー）');
             clearLastActive();
+            setLogoutReason('idle');
             auth.signOut();
             return;
         }
@@ -132,7 +308,13 @@ auth.onAuthStateChanged((user) => {
                 // 承認済み → アプリ表示
                 hideAllScreens();
                 document.getElementById('appContainer').classList.remove('hidden');
-                document.getElementById('logoutBtnContainer').style.display = 'block';
+                document.getElementById('logoutBtnContainer').style.display = 'flex';
+
+                // 最終ログインを記録し、前回ログインをヘッダーに表示
+                recordLastLogin(userRef, userData);
+
+                // 管理者暗証番号は承認済みユーザーだけが読めるのでここで取得
+                loadAdminPin();
 
                 // ログイン後にデータリスナーを再セットアップして描画
                 if (dataListenersAttached) {
@@ -198,14 +380,24 @@ auth.onAuthStateChanged((user) => {
         }
         if (dataListenersAttached && typeof detachDataListeners === 'function') detachDataListeners();
 
+        clearLoginRecorded();
+
         hideAllScreens();
         document.getElementById('authContainer').classList.add('show');
+
+        // 自動ログアウトで戻ってきた場合は理由を表示
+        const logoutReason = consumeLogoutReason();
+        showAuthInfo(LOGOUT_REASON_MESSAGES[logoutReason] || '');
 
         // ブラウザ自動入力対策：ログイン画面を出すたびにパスワード欄をクリア
         const loginPwEl = document.getElementById('loginPassword');
         const registerPwEl = document.getElementById('registerPassword');
         if (loginPwEl) loginPwEl.value = '';
         if (registerPwEl) registerPwEl.value = '';
+        resetPasswordVisibility();
+
+        // この端末に記憶した従業員番号を自動入力
+        applyRememberedStaffId();
     }
 });
 
@@ -251,6 +443,7 @@ function checkAutoLogout(reason) {
     if (!currentUser) return false;
     if (isSessionExpired()) {
         console.log('自動ログアウト（' + reason + '）');
+        setLogoutReason('idle');
         auth.signOut();
         return true;
     }
@@ -305,7 +498,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleText = document.getElementById('toggleText');
     const authSubtitle = document.getElementById('authSubtitle');
     const logoutBtn = document.getElementById('logoutBtn');
-    
+
+    // テーマ切替ボタン（ログイン画面・アプリ本体）
+    applyTheme(getTheme(), false);
+    document.querySelectorAll('.theme-toggle').forEach(btn => btn.addEventListener('click', toggleTheme));
+
+    // パスワードの表示/非表示切替
+    document.querySelectorAll('.pw-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.dataset.target);
+            if (!input) return;
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.textContent = show ? '🙈' : '👁';
+            btn.setAttribute('aria-label', show ? 'パスワードを隠す' : 'パスワードを表示');
+            btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+            input.focus();
+        });
+    });
+
+    // 記憶した従業員番号の自動入力と「番号を消す」リンク
+    applyRememberedStaffId();
+    const forgetLink = document.getElementById('forgetStaffId');
+    if (forgetLink) {
+        forgetLink.addEventListener('click', () => {
+            clearLastStaffId();
+            const idInput = document.getElementById('loginStaffId');
+            if (idInput) { idInput.value = ''; idInput.focus(); }
+            applyRememberedStaffId();
+        });
+    }
+    // 番号が入っている端末ではパスワード欄から始める（タッチ端末はキーボードが勝手に開くので除く）
+    if (readLastStaffId() && window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+        const pwInput = document.getElementById('loginPassword');
+        if (pwInput) pwInput.focus();
+    }
+
     // 従業員番号の入力制限（3桁の数字のみ）
     const staffIdInputs = document.querySelectorAll('.staff-id-input');
     staffIdInputs.forEach(input => {
@@ -350,8 +578,9 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleAuthMode.textContent = 'ログイン';
         }
         
-        // エラーメッセージをクリア
+        // エラー・情報メッセージをクリア
         document.getElementById('authError').classList.remove('show');
+        showAuthInfo('');
     });
     
     // ログイン処理
@@ -380,7 +609,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const fullPassword = convertPassword(password);
             
             await auth.signInWithEmailAndPassword(email, fullPassword);
-            // ログイン成功（onAuthStateChangedで処理される）
+            // ログイン成功（onAuthStateChangedで処理される）。番号だけこの端末に記憶する
+            saveLastStaffId(staffId);
+            showAuthInfo('');
             
         } catch (error) {
             console.error('ログインエラー:', error);
@@ -505,10 +736,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // 設定
 let CONFIG = { ADMIN_PIN: '1234' };
 
-// Firebaseから暗証番号を読み込み
-database.ref('settings/adminPin').once('value', snap => {
-    if (snap.val()) CONFIG.ADMIN_PIN = snap.val();
-});
+// Firebaseから暗証番号を読み込み（settings は認証・承認済みでないと読めないため、ログイン確定後に呼ぶ）
+function loadAdminPin() {
+    database.ref('settings/adminPin').once('value', snap => {
+        if (snap.val()) CONFIG.ADMIN_PIN = snap.val();
+    }, err => console.warn('暗証番号の読み込みに失敗:', err && err.message));
+}
 
 // 状態管理
 const state = {
@@ -2627,7 +2860,7 @@ function updateLeaveShiftList() {
     container.innerHTML = shifts.map(s => {
         const d = new Date(s.date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
+        const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : 'var(--text-primary)');
         const badges = [];
         if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">固定</span>');
         if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">夜勤</span>');
@@ -2637,11 +2870,11 @@ function updateLeaveShiftList() {
         const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
         
         return `
-            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #1e293b; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; width: 100%; box-sizing: border-box;">
+            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this)" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; width: 100%; box-sizing: border-box;">
                 <input type="checkbox" class="shift-selection-checkbox" style="width: 20px; height: 20px; min-width: 20px; max-width: 20px; flex-shrink: 0; padding: 0; margin: 0; cursor: pointer;">
                 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
                     <span style="font-weight: 600; font-size: 0.95rem; color: ${dayColor}; display: block;">${dateText}</span>
-                    <span style="font-size: 0.9rem; color: #94a3b8; display: block;">${timeText}</span>
+                    <span style="font-size: 0.9rem; color: var(--text-secondary); display: block;">${timeText}</span>
                 </div>
                 ${badges.join('')}
             </div>
@@ -2672,7 +2905,7 @@ function updateHolidayShiftList() {
     container.innerHTML = shifts.map(s => {
         const d = new Date(s.date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
+        const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : 'var(--text-primary)');
         const badges = [];
         if (s.isFixed) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f59e0b; color: white; flex-shrink: 0; margin-left: auto;">固定</span>');
         if (s.overnight) badges.push('<span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #6366f1; color: white; flex-shrink: 0; margin-left: auto;">夜勤</span>');
@@ -2682,11 +2915,11 @@ function updateHolidayShiftList() {
         const timeText = `${formatTime(s.startHour)} 〜 ${formatTime(s.endHour)}${s.overnight ? ' （翌日）' : ''}`;
         
         return `
-            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #1e293b; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2); cursor: pointer; width: 100%; box-sizing: border-box;">
+            <div class="shift-selection-item" data-shift-info="${shiftInfo}" onclick="toggleShiftSelection(this, 'holiday')" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; width: 100%; box-sizing: border-box;">
                 <input type="checkbox" class="shift-selection-checkbox" style="width: 20px; height: 20px; min-width: 20px; max-width: 20px; flex-shrink: 0; padding: 0; margin: 0; cursor: pointer;">
                 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
                     <span style="font-weight: 600; font-size: 0.95rem; color: ${dayColor}; display: block;">${dateText}</span>
-                    <span style="font-size: 0.9rem; color: #94a3b8; display: block;">${timeText}</span>
+                    <span style="font-size: 0.9rem; color: var(--text-secondary); display: block;">${timeText}</span>
                 </div>
                 ${badges.join('')}
             </div>
@@ -2918,10 +3151,10 @@ function renderSpecialEventManagement(container) {
     let html = `
         <div style="padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h3 style="margin: 0; color: #f8fafc;">⚡ 臨時シフト管理</h3>
+                <h3 style="margin: 0; color: var(--text-primary);">⚡ 臨時シフト管理</h3>
                 <button class="btn btn-primary btn-sm" onclick="openSpecialEventModal()">＋ イベント日を追加</button>
             </div>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 16px;">
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px;">
                 イベント日を登録すると、その日の固定シフトが自動停止され、臨時シフトのみが表示されます。<br>
                 臨時シフトは通常の「シフト追加」から登録してください（自動的に臨時マークが付きます）。
             </p>
@@ -2930,35 +3163,35 @@ function renderSpecialEventManagement(container) {
     // 今後のイベント
     html += `<h4 style="color: #f59e0b; margin-bottom: 8px;">📅 今後のイベント (${upcomingEvents.length}件)</h4>`;
     if (upcomingEvents.length === 0) {
-        html += `<p style="color: #64748b; padding: 12px; text-align: center;">予定されているイベントはありません</p>`;
+        html += `<p style="color: var(--text-muted); padding: 12px; text-align: center;">予定されているイベントはありません</p>`;
     } else {
         upcomingEvents.forEach(e => {
             const d = new Date(e.date);
-            const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : '#f8fafc');
+            const dayColor = d.getDay() === 0 ? '#ef4444' : (d.getDay() === 6 ? '#3b82f6' : 'var(--text-primary)');
             const dateDisplay = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
             
             // この日のシフト数をカウント
             const dayShiftCount = state.shifts.filter(s => s.date === e.date && !s.hidden && !s.isLeaveOverride).length;
             
             html += `
-                <div style="background: #1e293b; border: 1px solid #f59e0b40; border-radius: 8px; padding: 14px; margin-bottom: 8px;">
+                <div style="background: var(--bg-secondary); border: 1px solid #f59e0b40; border-radius: 8px; padding: 14px; margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                                 <span style="font-size: 1.2rem;">⚡</span>
                                 <span style="font-weight: 700; font-size: 1rem; color: ${dayColor};">${dateDisplay}</span>
                             </div>
-                            <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem; margin-bottom: 4px;">${e.eventName || 'イベント'}</div>
-                            ${e.description ? `<div style="color: #94a3b8; font-size: 0.85rem;">${e.description}</div>` : ''}
+                            <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 4px;">${e.eventName || 'イベント'}</div>
+                            ${e.description ? `<div style="color: var(--text-secondary); font-size: 0.85rem;">${e.description}</div>` : ''}
                             <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
                                 <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: ${e.suppressFixed !== false ? '#dc262640' : '#22c55e40'}; color: ${e.suppressFixed !== false ? '#f87171' : '#4ade80'};">
                                     固定シフト: ${e.suppressFixed !== false ? '停止' : '有効'}
                                 </span>
-                                <span style="font-size: 0.8rem; color: #64748b;">臨時シフト: ${dayShiftCount}件</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">臨時シフト: ${dayShiftCount}件</span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn btn-sm" style="background: #334155; color: #94a3b8; border: 1px solid #475569; padding: 4px 10px; font-size: 0.8rem;" onclick="openEditSpecialEventModal('${e.id}')">編集</button>
+                            <button class="btn btn-sm" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 0.8rem;" onclick="openEditSpecialEventModal('${e.id}')">編集</button>
                             <button class="btn btn-sm" style="background: #7f1d1d40; color: #f87171; border: 1px solid #7f1d1d; padding: 4px 10px; font-size: 0.8rem;" onclick="if(confirm('このイベントを削除しますか？\\n※臨時シフトは削除されません')){deleteSpecialEvent('${e.id}')}">削除</button>
                         </div>
                     </div>
@@ -2969,18 +3202,18 @@ function renderSpecialEventManagement(container) {
     
     // 過去のイベント
     if (pastEvents.length > 0) {
-        html += `<h4 style="color: #64748b; margin-top: 16px; margin-bottom: 8px;">📋 過去のイベント (${pastEvents.length}件)</h4>`;
+        html += `<h4 style="color: var(--text-muted); margin-top: 16px; margin-bottom: 8px;">📋 過去のイベント (${pastEvents.length}件)</h4>`;
         pastEvents.slice(-5).reverse().forEach(e => {
             const d = new Date(e.date);
             const dateDisplay = `${d.getMonth() + 1}/${d.getDate()}（${dayNames[d.getDay()]}）`;
             html += `
-                <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; opacity: 0.7;">
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; opacity: 0.7;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <span style="color: #64748b;">${dateDisplay}</span>
-                            <span style="color: #94a3b8; margin-left: 8px;">${e.eventName || 'イベント'}</span>
+                            <span style="color: var(--text-muted);">${dateDisplay}</span>
+                            <span style="color: var(--text-secondary); margin-left: 8px;">${e.eventName || 'イベント'}</span>
                         </div>
-                        <button class="btn btn-sm" style="background: transparent; color: #64748b; border: 1px solid #334155; padding: 2px 8px; font-size: 0.75rem;" onclick="if(confirm('削除しますか？')){deleteSpecialEvent('${e.id}')}">削除</button>
+                        <button class="btn btn-sm" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 8px; font-size: 0.75rem;" onclick="if(confirm('削除しますか？')){deleteSpecialEvent('${e.id}')}">削除</button>
                     </div>
                 </div>
             `;
@@ -3934,18 +4167,22 @@ function renderAdminPanel() {
     
     if (state.activeAdminTab === 'userApproval') {
         c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">読み込み中...</p>';
-        database.ref('users').orderByChild('status').equalTo('pending').once('value')
+        // 承認待ちと登録済み（最終ログイン一覧）を一度に取得する
+        database.ref('users').once('value')
             .then((snapshot) => {
                 c.innerHTML = '';
                 const pendingUsers = [];
+                const approvedUsers = [];
                 snapshot.forEach(child => {
-                    pendingUsers.push({ uid: child.key, ...child.val() });
+                    const u = { uid: child.key, ...child.val() };
+                    const st = u.status || 'approved'; // 既存ユーザーはapproved扱い
+                    if (st === 'pending') pendingUsers.push(u);
+                    else if (st === 'approved') approvedUsers.push(u);
                 });
                 // 最新の件数が取れたのでバッジ用キャッシュも更新しておく
                 pendingUserCountCache = pendingUsers.length;
                 if (!pendingUsers.length) {
                     c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちユーザーなし</p>';
-                    return;
                 }
                 pendingUsers.forEach(u => {
                     const card = document.createElement('div');
@@ -3954,6 +4191,7 @@ function renderAdminPanel() {
                     card.innerHTML = `<div class="request-info"><h4>👤 ユーザー登録申請</h4><p>名前: ${u.displayName || '不明'}</p><p>従業員番号: ${u.staffId || '不明'}</p><p>登録日時: ${createdAt}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveUser('${u.uid}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectUser('${u.uid}')">却下</button></div>`;
                     c.appendChild(card);
                 });
+                c.appendChild(renderUserLoginList(approvedUsers));
             })
             .catch((error) => {
                 console.error('ユーザー承認データ取得エラー:', error);
