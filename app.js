@@ -1407,6 +1407,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
 
         const row = document.createElement('div');
         row.className = 'gantt-row';
+        row.dataset.date = dateStr; // 自分のシフトカードからの移動先検索に使う
 
         // 祝日判定を先に行う
         const holidayName = getJapaneseHoliday(date);
@@ -2035,6 +2036,34 @@ function scrollGanttToNow() {
     if (!c || !isCurrentWeekShown() || c.scrollWidth <= c.clientWidth) return;
     // 日付ラベルは sticky なので (現在時 - 1) セル分で現在時刻がラベルの右隣に来る
     c.scrollLeft = Math.max(0, (new Date().getHours() - 1) * getCellWidth());
+}
+
+// 自分のシフトカードの日タップ用: その日の行と自分のバーへスクロールし、数秒強調する
+function focusGanttOnMyShift(dateStr, name) {
+    const c = document.querySelector('.gantt-container');
+    const row = document.querySelector(`#ganttBody .gantt-row[data-date="${dateStr}"]`);
+    if (!c || !row) return;
+    // 自分のバー（夜勤継続 on-/fxo- より開始日のバーを優先）
+    const mine = Array.from(row.querySelectorAll('.shift-bar')).filter(b => b._shiftData && b._shiftData.name === name);
+    const primary = mine.find(b => !b._shiftData.isOvernightContinuation) || mine[0];
+
+    // 縦: sticky ヘッダーの高さ分を引いて行が隠れないようにする
+    const header = c.querySelector('.gantt-header');
+    const top = row.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop - (header ? header.offsetHeight : 0);
+    // 横: scrollGanttToNow と同じく (開始時 - 1) セル分で、sticky な日付ラベルの右隣に来る
+    let left = c.scrollLeft;
+    if (primary && c.scrollWidth > c.clientWidth) {
+        left = Math.max(0, (Math.floor(primary._shiftData.startHour) - 1) * getCellWidth());
+    }
+    c.scrollTo({ top: Math.max(0, top), left, behavior: 'smooth' });
+
+    // 強調: 行は薄く、バーは点滅。再描画で消えるが一時的な目印なので問題ない
+    row.classList.add('focus-row');
+    mine.forEach(b => b.classList.add('focus-flash'));
+    setTimeout(() => {
+        row.classList.remove('focus-row');
+        mine.forEach(b => b.classList.remove('focus-flash'));
+    }, 3000);
 }
 
 // セルの実際の幅を取得する関数
@@ -3113,7 +3142,7 @@ function renderMyShiftCard() {
         } else {
             timeHtml = '－';
         }
-        weekHtml += `<button type="button" class="${cls.join(' ')}" data-date="${ds}" title="${ds} の週を表示">
+        weekHtml += `<button type="button" class="${cls.join(' ')}" data-date="${ds}" title="${ds} の自分のシフトへ移動">
             <span class="my-shift-day-dow">${holiday ? '祝' : dayNames[dow]}</span>
             <span class="my-shift-day-date">${d.getDate()}</span>
             <span class="my-shift-day-time">${timeHtml}</span>
@@ -3129,13 +3158,15 @@ function renderMyShiftCard() {
         ${nextHtml}
         ${weekHtml}`;
 
-    // 日をタップ → その週のシフト表へ移動
+    // 日をタップ → その週に切り替え、その日の行と自分のバーへ移動して強調
     card.querySelectorAll('.my-shift-day').forEach(btn => {
         btn.onclick = () => {
-            state.currentWeekStart = getWeekStart(new Date(btn.dataset.date + 'T00:00:00'));
-            render();
+            const ds = btn.dataset.date;
+            state.currentWeekStart = getWeekStart(new Date(ds + 'T00:00:00'));
+            render(); // 内部で scrollTop/Left を復元するので、その後に上書きする
             const gantt = document.querySelector('.gantt-container');
             if (gantt) gantt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            focusGanttOnMyShift(ds, myName);
         };
     });
     const changeBtn = document.getElementById('myShiftChangeName');

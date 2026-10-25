@@ -1158,6 +1158,35 @@ body {
     }
 }
 
+/* 自分のシフトカードの日タップで飛んできた時の一時強調（JS が3秒で外す） */
+.gantt-row.focus-row .gantt-timeline {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.shift-bar.focus-flash {
+    outline: 3px solid #fff;
+    outline-offset: 1px;
+    z-index: 7;
+    animation: barFocus 0.9s 3;
+}
+
+@keyframes barFocus {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shift-bar.focus-flash {
+        animation: none; /* 白枠だけ残す */
+    }
+}
+
 .shift-bar .swap-icon {
     margin-right: 4px;
     font-size: 0.7rem;
