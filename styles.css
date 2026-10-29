@@ -2259,11 +2259,14 @@ body {
 
 /* ========================================
    印刷用スタイル
+   ブラウザ印刷と PDF出力は同じ「印刷レイアウト」（body.print-layout）を共用する。
+   app.js が beforeprint / exportToPdf でクラスを付け、afterprint / 出力完了で外す。
+   @media print 側は用紙設定と、クラスが付かなかった場合の非表示の保険だけ。
    ======================================== */
 @media print {
     @page {
-        size: A4 landscape;
-        margin: 5mm;
+        size: A4 portrait;
+        margin: 8mm;
     }
 
     * {
@@ -2272,17 +2275,6 @@ body {
         color-adjust: exact !important;
     }
 
-    body {
-        background: white !important;
-        color: #1a1a1a !important;
-    }
-
-    .app-container {
-        max-width: 100% !important;
-        padding: 0 !important;
-    }
-
-    /* 印刷時に非表示にする要素 */
     .connection-status,
     .my-shift-card,
     .header-corner,
@@ -2299,151 +2291,226 @@ body {
     .now-line,
     .date-nav-bottom,
     .gantt-legend,
+    .advisor-group,
+    .order-advice-fab,
     .today-badge {
         display: none !important;
     }
-
-    /* 画面用の行色・深夜帯は紙では消すか薄灰にする */
-    .gantt-row.is-today .gantt-timeline,
-    .gantt-row.is-saturday .gantt-timeline,
-    .gantt-row.is-sunday .gantt-timeline {
-        background: transparent !important;
-    }
-
-    .hour-cell:nth-child(-n+5),
-    .hour-cell:nth-child(n+23) {
-        background: #f3f4f6 !important;
-    }
-
-    .time-cell:nth-child(-n+5),
-    .time-cell:nth-child(n+23) {
-        background: #fff !important;
-    }
-
-    .shift-bar,
-    .leave-bar,
-    .holiday-bar {
-        text-shadow: none !important;
-    }
-
-    .header {
-        background: white !important;
-        border: 1px solid #ddd !important;
-        margin-bottom: 6px;
-        padding: 6px !important;
-    }
-
-    .header-title {
-        color: #1a1a1a !important;
-        -webkit-text-fill-color: #1a1a1a !important;
-        font-size: 12pt !important;
-    }
-
-    .date-nav {
-        justify-content: center !important;
-        background: white !important;
-        border: 1px solid #ddd !important;
-        margin-bottom: 6px;
-        padding: 4px !important;
-    }
-
-    .current-period {
-        color: #1a1a1a !important;
-        font-size: 10pt !important;
-    }
-
-    .gantt-container {
-        background: white !important;
-        border: 1px solid #333 !important;
-        overflow: visible !important;
-        max-height: none !important;
-    }
-
-    /* 印刷時はstickyを解除 */
-    .gantt-header {
-        position: relative !important;
-    }
-
-    .gantt-label-header {
-        position: relative !important;
-    }
-
-    .gantt-body {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-
-    .gantt-date-label {
-        position: relative !important;
-        background: #f5f5f5 !important;
-        color: #1a1a1a !important;
-    }
-
-    .date-number {
-        color: #1a1a1a !important;
-    }
-
-    .date-day {
-        color: #666 !important;
-    }
-
-    .date-day.sunday {
-        color: #dc2626 !important;
-    }
-
-    .date-day.saturday {
-        color: #2563eb !important;
-    }
-
-    .time-cell,
-    .hour-cell {
-        border-color: #ccc !important;
-    }
-
-    .shift-bar {
-        border: 1px solid rgba(0, 0, 0, 0.3) !important;
-        box-shadow: none !important;
-    }
-
-    .shift-bar .shift-time {
-        display: inline !important;
-    }
 }
 
-/* PDF出力用クラス */
-.pdf-export-mode .connection-status,
-.pdf-export-mode .my-shift-card,
-.pdf-export-mode .header-corner,
-.pdf-export-mode .date-nav-zoom,
-.pdf-export-mode .header-actions,
-.pdf-export-mode .role-toggle,
-.pdf-export-mode .date-nav .nav-btn,
-.pdf-export-mode .zoom-controls,
-.pdf-export-mode .admin-panel,
-.pdf-export-mode .message-bar,
-.pdf-export-mode .now-line,
-.pdf-export-mode .date-nav-bottom,
-.pdf-export-mode .gantt-legend,
-.pdf-export-mode .today-badge {
+/* ---- 印刷レイアウト本体（ブラウザ印刷・PDF出力で共用） ----
+   A4 縦の印字幅は約 733px で、@media (max-width: 768px) のスマホ用規則が印刷時にも当たる。
+   そちらに負けないよう、幾何に関わる宣言は !important を付けている */
+body.print-layout {
+    background: #fff !important;
+    color: #1a1a1a !important;
+}
+
+body.print-layout .app-container {
+    max-width: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+body.print-layout .connection-status,
+body.print-layout .my-shift-card,
+body.print-layout .header-corner,
+body.print-layout .header-actions,
+body.print-layout .date-nav-zoom,
+body.print-layout .role-toggle,
+body.print-layout .date-nav .nav-btn,
+body.print-layout .zoom-controls,
+body.print-layout .admin-panel,
+body.print-layout .message-bar,
+body.print-layout .shift-popover,
+body.print-layout .modal-overlay,
+body.print-layout .legend,
+body.print-layout .now-line,
+body.print-layout .date-nav-bottom,
+body.print-layout .gantt-legend,
+body.print-layout .advisor-group,
+body.print-layout .order-advice-fab,
+body.print-layout .today-badge {
     display: none !important;
 }
 
-.pdf-export-mode .gantt-container {
+/* ヘッダー・期間表示は薄く小さく */
+body.print-layout .header {
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    margin-bottom: 4px !important;
+    padding: 4px 8px !important;
+}
+
+body.print-layout .header-title {
+    color: #1a1a1a !important;
+    -webkit-text-fill-color: #1a1a1a !important;
+    background: none !important; /* グラデ文字（background-clip:text）は html2canvas で塗り潰しになる */
+    font-size: 12pt !important;
+}
+
+body.print-layout .date-nav {
+    justify-content: center !important;
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin-bottom: 4px !important;
+    padding: 2px !important;
+}
+
+body.print-layout .current-period {
+    color: #1a1a1a !important;
+    font-size: 10pt !important;
+}
+
+/* ガント本体：スクロール・固定・最小幅を全部解除して紙幅に均等割り。
+   --print-zoom は app.js の fitGanttForPrint() が「1ページに収まらない週」だけ 1 未満にする */
+body.print-layout .gantt-container {
+    background: #fff !important;
+    border: 1px solid #333 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     overflow: visible !important;
+    max-height: none !important;
+    zoom: var(--print-zoom, 1);
 }
 
-.pdf-export-mode .gantt-header,
-.pdf-export-mode .gantt-row {
-    min-width: auto !important;
+body.print-layout .gantt-header,
+body.print-layout .gantt-row {
+    min-width: 0 !important;
+    width: 100% !important;
 }
 
-.pdf-export-mode .gantt-body {
+body.print-layout .gantt-header,
+body.print-layout .gantt-label-header,
+body.print-layout .gantt-date-label {
+    position: static !important;
+}
+
+body.print-layout .gantt-header {
+    background: #fff !important;
+}
+
+body.print-layout .gantt-body {
     max-height: none !important;
     overflow: visible !important;
+    min-width: 0 !important;
 }
 
-.pdf-export-mode .shift-bar .shift-time {
-    display: inline !important;
+body.print-layout .gantt-row:hover {
+    background: transparent !important;
+}
+
+body.print-layout .time-cell,
+body.print-layout .hour-cell {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    border-color: #ccc !important;
+}
+
+body.print-layout .time-cell {
+    font-size: 7pt !important;
+    padding: 3px 0 !important;
+    color: #333 !important;
+    background: #fff !important;
+}
+
+/* 深夜帯（22〜5時）は薄灰、土日祝・今日の行色は紙では消す */
+body.print-layout .hour-cell:nth-child(-n+5),
+body.print-layout .hour-cell:nth-child(n+23) {
+    background: #f3f4f6 !important;
+}
+
+body.print-layout .gantt-row.is-today .gantt-timeline,
+body.print-layout .gantt-row.is-saturday .gantt-timeline,
+body.print-layout .gantt-row.is-sunday .gantt-timeline {
+    background: transparent !important;
+}
+
+/* 日付列：日付・曜日・祝日名だけ残して幅 56px */
+body.print-layout .gantt-label-header,
+body.print-layout .gantt-date-label {
+    width: 56px !important;
+    min-width: 56px !important;
+    padding: 2px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    background: #f5f5f5 !important;
+    color: #1a1a1a !important;
+    box-shadow: none !important;
+    border-left: none !important;
+    font-size: 8pt !important;
+}
+
+body.print-layout .date-number {
+    font-size: 13pt !important;
+    color: #1a1a1a !important;
+}
+
+body.print-layout .date-day {
+    font-size: 8pt !important;
+    color: #555 !important;
+}
+
+body.print-layout .date-day.sunday {
+    color: #dc2626 !important;
+}
+
+body.print-layout .date-day.saturday {
+    color: #2563eb !important;
+}
+
+body.print-layout .holiday-mark {
+    display: block !important;
+    max-width: 100% !important;
+    font-size: 6.5pt !important;
+    line-height: 1.2 !important;
+    padding: 0 !important;
+    margin: 1px 0 0 !important;
+    background: none !important;
+    border: none !important;
+    color: #dc2626 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-align: center;
+}
+
+body.print-layout .weather-info,
+body.print-layout .weather-last-year,
+body.print-layout .payday-marks,
+body.print-layout .event-icons,
+body.print-layout .special-event-mark {
+    display: none !important;
+}
+
+/* バー：影を消して枠線で区別する。時刻やアイコンの表示/非表示はバー実幅で決める
+   既存の @container 規則に任せる（以前の display:inline !important 強制は狭いバーで溢れた） */
+body.print-layout .shift-bar,
+body.print-layout .leave-bar,
+body.print-layout .holiday-bar {
+    text-shadow: none !important;
+    box-shadow: none !important;
+    transition: none !important;
+    transform: none !important;
+    font-size: 8.5pt !important;
+    padding: 0 4px !important;
+}
+
+body.print-layout .shift-bar {
+    border: 1px solid rgba(0, 0, 0, 0.35) !important;
+}
+
+body.print-layout .shift-bar .shift-time {
+    font-size: 6.5pt !important;
+    padding: 0 3px !important;
 }
 
 /* レスポンシブ - ズームコントロール */

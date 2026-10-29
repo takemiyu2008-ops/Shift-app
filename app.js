@@ -5711,8 +5711,17 @@ function exportToPdf() {
     `;
     document.body.appendChild(loadingOverlay);
 
-    // PDF出力用のクラスを追加
-    document.body.classList.add('pdf-export-mode');
+    // 印刷レイアウト（ブラウザ印刷と共用）を適用してから高さを測り、
+    // A4 縦 1 ページに収まる描画幅を決める。html2pdf は描画した画像を紙幅にフィットさせて
+    // 縦横比で改ページするので、描画幅を広げるほど相対的に縦が縮む
+    // （html2canvas は CSS zoom を描けないのでこの方式）。行の高さは inline px なので画面幅に依らない
+    enterPrintLayout();
+    const { ganttH, otherH } = measurePrintHeights();
+    const pdfInnerW = PRINT_GEO.pageW - PRINT_GEO.pdfMargin * 2;
+    const pdfInnerH = PRINT_GEO.pageH - PRINT_GEO.pdfMargin * 2;
+    const needW = Math.ceil((ganttH + otherH) / PRINT_GEO.safety * pdfInnerW / pdfInnerH);
+    // 下限は html2pdf が素で使う紙幅（190mm ≒ 718px）。軽い週はこの幅で大きく、重い週だけ広げる
+    const renderWidth = Math.max(Math.ceil(pdfInnerW * PRINT_GEO.pxPerMm), needW);
 
     // 期間情報を取得
     const periodText = document.getElementById('currentPeriod')?.textContent || 'シフト表';
@@ -5720,7 +5729,7 @@ function exportToPdf() {
 
     // html2pdf のオプション
     const opt = {
-        margin: [10, 10, 10, 10],
+        margin: [PRINT_GEO.pdfMargin, PRINT_GEO.pdfMargin, PRINT_GEO.pdfMargin, PRINT_GEO.pdfMargin],
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -5728,33 +5737,82 @@ function exportToPdf() {
             useCORS: true,
             letterRendering: true,
             scrollX: 0,
-            scrollY: 0,
-            windowWidth: 1200
+            scrollY: 0
+            // windowWidth は指定しない。実ウィンドウ幅と違えると、html2canvas の切り出し位置が
+            // 差の半分だけずれて左端が欠ける（中央寄せコンテナの位置が元文書とクローンで変わるため）。
+            // スマホ幅でもスマホ用 CSS は body.print-layout の !important 規則で上書きされる
         },
         jsPDF: {
             unit: 'mm',
             format: 'a4',
             orientation: 'portrait'
         },
-        pagebreak: { mode: 'avoid-all' }
+        // 1 ページに収める前提なので改ページ処理は切る（avoid-all は行の前に余白を差し込んで空白を作る）
+        pagebreak: { mode: [] }
     };
 
     // PDF生成（ライブラリ未ロードならここで取得）
-    loadHtml2pdf().then(() => html2pdf().set(opt).from(element).save()).then(() => {
-        // クラスを削除
-        document.body.classList.remove('pdf-export-mode');
-        // ローディング削除
+    loadHtml2pdf().then(() => html2pdf().set(opt).from(element).toContainer().then(function () {
+        // html2pdf は描画コンテナを紙幅（190mm ≒ 718px）で作る。上で決めた幅に広げて縦横比を A4 縦に収める
+        this.prop.container.style.width = `${renderWidth}px`;
+    }).save()).then(() => {
+        exitPrintLayout();
         loadingOverlay.remove();
     }).catch(err => {
         console.error('PDF生成エラー:', err);
-        document.body.classList.remove('pdf-export-mode');
+        exitPrintLayout();
         loadingOverlay.remove();
         alert('PDFの生成に失敗しました。もう一度お試しください。');
     });
 }
 
+// ---- 印刷レイアウト（ブラウザ印刷・PDF出力で共用。CSS は body.print-layout 参照）----
+// A4 縦。mm→px は CSS の 96dpi 換算。printMargin は styles.css の @page margin、
+// pdfMargin は exportToPdf の html2pdf margin とそれぞれ一致させること
+const PRINT_GEO = {
+    pageW: 210,
+    pageH: 297,
+    printMargin: 8,
+    pdfMargin: 10,
+    pxPerMm: 96 / 25.4,
+    safety: 0.97 // 丸め・罫線分の余裕
+};
+
+function enterPrintLayout() {
+    document.body.classList.add('print-layout');
+}
+
+function exitPrintLayout() {
+    document.body.classList.remove('print-layout');
+    const gantt = document.querySelector('.gantt-container');
+    if (gantt) gantt.style.removeProperty('--print-zoom');
+}
+
+// 印刷レイアウト適用後の「ガント」と「ガント以外（ヘッダ＋期間表示）」の高さを測る。
+// 行の高さは JS が inline で決めている（GANTT_GEO）ので、画面幅が違っても紙上の高さはほぼ同じになる
+function measurePrintHeights() {
+    const gantt = document.querySelector('.gantt-container');
+    const header = document.querySelector('.header');
+    const nav = document.getElementById('dateNavTop');
+    const outer = el => el ? el.getBoundingClientRect().height + (parseFloat(getComputedStyle(el).marginBottom) || 0) : 0;
+    return { ganttH: gantt ? gantt.scrollHeight : 0, otherH: outer(header) + outer(nav) };
+}
+
+// ブラウザ印刷：1 週間分が A4 縦 1 ページに収まらない週だけ CSS zoom で縮める
+function fitGanttForPrint() {
+    const gantt = document.querySelector('.gantt-container');
+    if (!gantt) return;
+    gantt.style.removeProperty('--print-zoom'); // 前回の倍率を引きずらずに素の高さを測る
+    const { ganttH, otherH } = measurePrintHeights();
+    if (!ganttH) return;
+    const availH = (PRINT_GEO.pageH - PRINT_GEO.printMargin * 2) * PRINT_GEO.pxPerMm - otherH;
+    const zoom = Math.min(1, (availH * PRINT_GEO.safety) / ganttH);
+    gantt.style.setProperty('--print-zoom', zoom.toFixed(3));
+}
+
 function printShiftTable() {
     trackUsage('print_shift', state.isAdmin ? '管理者' : '匿名');
+    // レイアウトの出し入れは beforeprint / afterprint（Cmd+P や共有シートからの印刷でも同じ経路）
     window.print();
 }
 
@@ -5769,6 +5827,12 @@ function initPdfExport() {
     if (printBtn) {
         printBtn.onclick = printShiftTable;
     }
+
+    window.addEventListener('beforeprint', () => {
+        enterPrintLayout();
+        fitGanttForPrint();
+    });
+    window.addEventListener('afterprint', exitPrintLayout);
 }
 
 // ========================================
