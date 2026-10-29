@@ -5715,13 +5715,36 @@ function exportToPdf() {
     // A4 縦 1 ページに収まる描画幅を決める。html2pdf は描画した画像を紙幅にフィットさせて
     // 縦横比で改ページするので、描画幅を広げるほど相対的に縦が縮む
     // （html2canvas は CSS zoom を描けないのでこの方式）。行の高さは inline px なので画面幅に依らない
-    enterPrintLayout();
-    const { ganttH, otherH } = measurePrintHeights();
-    const pdfInnerW = PRINT_GEO.pageW - PRINT_GEO.pdfMargin * 2;
-    const pdfInnerH = PRINT_GEO.pageH - PRINT_GEO.pdfMargin * 2;
-    const needW = Math.ceil((ganttH + otherH) / PRINT_GEO.safety * pdfInnerW / pdfInnerH);
-    // 下限は html2pdf が素で使う紙幅（190mm ≒ 718px）。軽い週はこの幅で大きく、重い週だけ広げる
-    const renderWidth = Math.max(Math.ceil(pdfInnerW * PRINT_GEO.pxPerMm), needW);
+    // 失敗時はどこで落ちても画面を元に戻す（html2pdf の作業用オーバーレイが残ると画面全体が押せなくなる）
+    const cleanup = () => {
+        exitPrintLayout();
+        loadingOverlay.remove();
+    };
+    const fail = (err) => {
+        console.error('PDF生成エラー:', err);
+        cleanup();
+        const reason = err && err.message ? `\n（${err.message}）` : '';
+        if (confirm(`PDFの生成に失敗しました。${reason}\n代わりにブラウザの印刷画面を開きますか？（印刷画面から「PDFとして保存」できます）`)) {
+            printShiftTable();
+        }
+    };
+
+    let renderWidth, canvasScale;
+    try {
+        enterPrintLayout();
+        const { ganttH, otherH } = measurePrintHeights();
+        const pdfInnerW = PRINT_GEO.pageW - PRINT_GEO.pdfMargin * 2;
+        const pdfInnerH = PRINT_GEO.pageH - PRINT_GEO.pdfMargin * 2;
+        const needW = Math.ceil((ganttH + otherH) / PRINT_GEO.safety * pdfInnerW / pdfInnerH);
+        // 下限は html2pdf が素で使う紙幅（190mm ≒ 718px）。軽い週はこの幅で大きく、重い週だけ広げる
+        renderWidth = Math.max(Math.ceil(pdfInnerW * PRINT_GEO.pxPerMm), needW);
+        // iOS Safari はキャンバス面積に上限（約 1,677 万 px）があり超えると描画が失敗する。倍率側で収める
+        const totalH = ganttH + otherH;
+        canvasScale = Math.min(2, Math.max(1, Math.sqrt(16000000 / (renderWidth * totalH))));
+    } catch (err) {
+        fail(err);
+        return;
+    }
 
     // 期間情報を取得
     const periodText = document.getElementById('currentPeriod')?.textContent || 'シフト表';
@@ -5733,7 +5756,7 @@ function exportToPdf() {
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
-            scale: 2,
+            scale: canvasScale,
             useCORS: true,
             letterRendering: true,
             scrollX: 0,
@@ -5755,15 +5778,7 @@ function exportToPdf() {
     loadHtml2pdf().then(() => html2pdf().set(opt).from(element).toContainer().then(function () {
         // html2pdf は描画コンテナを紙幅（190mm ≒ 718px）で作る。上で決めた幅に広げて縦横比を A4 縦に収める
         this.prop.container.style.width = `${renderWidth}px`;
-    }).save()).then(() => {
-        exitPrintLayout();
-        loadingOverlay.remove();
-    }).catch(err => {
-        console.error('PDF生成エラー:', err);
-        exitPrintLayout();
-        loadingOverlay.remove();
-        alert('PDFの生成に失敗しました。もう一度お試しください。');
-    });
+    }).save()).then(cleanup).catch(fail);
 }
 
 // ---- 印刷レイアウト（ブラウザ印刷・PDF出力で共用。CSS は body.print-layout 参照）----
@@ -5786,6 +5801,8 @@ function exitPrintLayout() {
     document.body.classList.remove('print-layout');
     const gantt = document.querySelector('.gantt-container');
     if (gantt) gantt.style.removeProperty('--print-zoom');
+    // html2pdf が途中で失敗すると、全画面の透明オーバーレイ（作業用）が残って何も押せなくなる
+    document.querySelectorAll('.html2pdf__overlay').forEach(el => el.remove());
 }
 
 // 印刷レイアウト適用後の「ガント」と「ガント以外（ヘッダ＋期間表示）」の高さを測る。
@@ -5812,7 +5829,16 @@ function fitGanttForPrint() {
 
 function printShiftTable() {
     trackUsage('print_shift', state.isAdmin ? '管理者' : '匿名');
-    // レイアウトの出し入れは beforeprint / afterprint（Cmd+P や共有シートからの印刷でも同じ経路）
+    // beforeprint が来ないブラウザ（iOS Safari 等）でも効くよう、ここで同期的に適用してから印刷する。
+    // beforeprint が来る環境では fitGanttForPrint が二度走るが結果は同じ
+    enterPrintLayout();
+    fitGanttForPrint();
+    // 元に戻すのは afterprint。それが来ない環境向けに、次のタップ/クリックでも戻す
+    const restoreOnce = () => {
+        exitPrintLayout();
+        document.removeEventListener('pointerdown', restoreOnce, true);
+    };
+    setTimeout(() => document.addEventListener('pointerdown', restoreOnce, true), 0);
     window.print();
 }
 
