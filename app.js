@@ -169,6 +169,11 @@ function clearLoginRecorded() {
     try { sessionStorage.removeItem(LOGIN_RECORDED_KEY); } catch (e) { /* noop */ }
 }
 
+// このタブでまだログイン記録が無ければ「本当のログイン」（リロード・PWA復帰ではない）
+function isFreshLoginSession() {
+    try { return sessionStorage.getItem(LOGIN_RECORDED_KEY) !== '1'; } catch (e) { return true; }
+}
+
 function renderLastLoginInfo(prevIso) {
     const el = document.getElementById('lastLoginInfo');
     if (!el) return;
@@ -320,6 +325,9 @@ auth.onAuthStateChanged((user) => {
                     employeeName: userData.employeeName || null
                 };
 
+                // recordLastLogin がフラグを立てる前に「本当のログインか（リロードではないか）」を控えておく
+                const isFreshLogin = isFreshLoginSession();
+
                 // 最終ログインを記録し、前回ログインをヘッダーに表示
                 recordLastLogin(userRef, userData);
 
@@ -333,6 +341,9 @@ auth.onAuthStateChanged((user) => {
                 }
                 loadData();
                 render();
+
+                // 本当のログイン時だけ、未読のお知らせをポップアップ表示（リロードでは出さない）
+                if (isFreshLogin) showLoginAnnouncements(user.uid, userData);
 
                 // 無操作・離席の自動ログアウト監視を開始
                 startAutoLogoutWatch();
@@ -788,7 +799,8 @@ const state = {
     productCategories: [], // 商品分類データ（PMA/情報分類/小分類）
     selectedPmaId: null, // 選択中のPMA ID
     usageStats: [], // 利用統計データ
-    specialEvents: [] // 臨時シフト用イベント日
+    specialEvents: [], // 臨時シフト用イベント日
+    announcements: [] // ログイン時お知らせ（管理者投稿）
 };
 
 // 利用統計の機能カテゴリ定義
@@ -833,6 +845,7 @@ const USAGE_FEATURES = {
     // メッセージ
     'view_messages': { name: 'メッセージ確認', category: 'コミュニケーション', icon: '📩' },
     'send_broadcast': { name: '全員へ通知送信', category: 'コミュニケーション', icon: '📢' },
+    'post_announcement': { name: 'ログイン時お知らせ投稿', category: 'コミュニケーション', icon: '📣' },
     // 管理者機能
     'admin_approve': { name: '申請承認', category: '管理者', icon: '✅' },
     'admin_reject': { name: '申請却下', category: '管理者', icon: '❌' },
@@ -1095,7 +1108,7 @@ function updateShiftDateDay() {
 }
 
 // 常時購読するrefキー一覧（シフト表・申請・運用に必要なもの）
-const dataRefKeys = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'categoryMemos', 'productCategories', 'specialEvents'];
+const dataRefKeys = ['shifts', 'fixedShifts', 'shiftOverrides', 'changeRequests', 'leaveRequests', 'holidayRequests', 'employees', 'messages', 'swapRequests', 'dailyEvents', 'categoryMemos', 'productCategories', 'specialEvents', 'announcements'];
 
 // レポート系はBase64ファイル等を含み重いため常時購読せず、画面を開いた時に取得する
 const onDemandRefKeys = ['nonDailyAdvice', 'trendReports', 'newProductReports', 'productResearchReports'];
@@ -1143,6 +1156,8 @@ function loadData() {
                 scheduleRender(['messageBar', 'adminPanel']);
             } else if (key === 'categoryMemos' || key === 'productCategories') {
                 scheduleRender(['advisor', 'adminPanel']);
+            } else if (key === 'announcements') {
+                scheduleRender(['adminPanel']); // お知らせは管理者一覧だけ描き直す
             } else {
                 scheduleRender(['main', 'adminPanel']);
             }
@@ -3688,6 +3703,135 @@ function sendBroadcast(title, content) {
     saveToFirebase('messages', state.messages);
 }
 
+// ==========================================
+// ログイン時お知らせ（announcements）
+// 管理者が手で投稿し、各スタッフのログイン時に1回だけポップアップ表示する。
+// 既読は users/{uid}/seenAnnouncements/{id} に保存（端末をまたいでも二度出ない）。
+// ==========================================
+const ANNOUNCEMENT_MAX_AGE_DAYS = 30;
+const ANNOUNCEMENT_TEMPLATES = ['シフトを更新しました', 'インテリジェンス記事を更新しました', '新規商品調査レポートを更新しました'];
+let pendingAnnouncementAck = { uid: null, ids: [] };
+
+function escapeAnnouncement(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function announcementHtml(a) {
+    const body = a.body ? `<div class="announcement-body">${escapeAnnouncement(a.body).replace(/\n/g, '<br>')}</div>` : '';
+    return `<div class="announcement-item"><div class="announcement-title">${escapeAnnouncement(a.title)}</div><div class="announcement-meta">${formatDateTime(a.createdAt)}${a.createdBy ? ' ・ ' + escapeAnnouncement(a.createdBy) : ''}</div>${body}</div>`;
+}
+
+// ログイン直後: 未読 かつ 30日以内 のお知らせを新しい順に出す。0件なら何もしない。
+function showLoginAnnouncements(uid, userData) {
+    const seen = (userData && userData.seenAnnouncements) || {};
+    const cutoff = Date.now() - ANNOUNCEMENT_MAX_AGE_DAYS * 86400000;
+    database.ref('announcements').once('value').then(snap => {
+        const all = snap.val() ? Object.values(snap.val()) : [];
+        const unread = all
+            .filter(a => a && a.id && !seen[a.id] && new Date(a.createdAt).getTime() >= cutoff)
+            .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        if (unread.length === 0) return;
+        pendingAnnouncementAck = { uid, ids: unread.map(a => a.id) };
+        const list = document.getElementById('announcementViewList');
+        if (list) list.innerHTML = unread.map(announcementHtml).join('');
+        openModal(document.getElementById('announcementViewOverlay'));
+    }).catch(err => console.error('お知らせの取得に失敗:', err));
+}
+
+// 「確認しました」: 表示した分をまとめて既読にする
+function ackAnnouncements() {
+    const { uid, ids } = pendingAnnouncementAck;
+    closeModal(document.getElementById('announcementViewOverlay'));
+    if (!uid || ids.length === 0) return;
+    const payload = {};
+    ids.forEach(id => { payload[id] = true; });
+    database.ref('users/' + uid + '/seenAnnouncements').update(payload)
+        .catch(err => console.error('お知らせの既読保存に失敗:', err));
+    pendingAnnouncementAck = { uid: null, ids: [] };
+}
+
+// 管理者: 投稿モーダルを開く（定型文があれば件名に入れておく）
+function openAnnouncementModal(title) {
+    const t = document.getElementById('announcementTitle');
+    const b = document.getElementById('announcementBody');
+    if (t) t.value = title || '';
+    if (b) b.value = '';
+    openModal(document.getElementById('announcementModalOverlay'));
+    if (t) setTimeout(() => t.focus(), 50);
+}
+
+function postAnnouncement(title, body) {
+    if (!title) return;
+    const id = Date.now().toString();
+    const item = {
+        id,
+        title,
+        body: body || '',
+        createdAt: new Date().toISOString(),
+        createdBy: (currentUserData && currentUserData.displayName) || '管理者'
+    };
+    trackUsage('post_announcement', '管理者');
+    // saveToFirebase はノード全体を上書きするため、子ノードへ直接書く
+    database.ref('announcements/' + id).set(item).then(() => {
+        // 投稿者自身は既読扱い（自分で自分の投稿を見せられないように）
+        if (currentUser) database.ref('users/' + currentUser.uid + '/seenAnnouncements/' + id).set(true);
+    }).catch(err => {
+        console.error('お知らせの投稿に失敗:', err);
+        alert('お知らせの投稿に失敗しました');
+    });
+}
+
+function deleteAnnouncement(id) {
+    if (!confirm('このお知らせを削除しますか？')) return;
+    database.ref('announcements/' + id).remove().catch(err => {
+        console.error('お知らせの削除に失敗:', err);
+        alert('お知らせの削除に失敗しました');
+    });
+}
+
+// 管理者タブ「全員へ通知」内のお知らせセクション
+function renderAnnouncementAdmin(container) {
+    const wrap = document.createElement('div');
+    wrap.className = 'announcement-admin';
+    const templates = ANNOUNCEMENT_TEMPLATES.map(t =>
+        `<button class="btn btn-secondary btn-sm" onclick="openAnnouncementModal('${escapeAnnouncement(t)}')">${escapeAnnouncement(t)}</button>`
+    ).join('');
+    const sorted = [...state.announcements].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    const cutoff = Date.now() - ANNOUNCEMENT_MAX_AGE_DAYS * 86400000;
+    const rows = sorted.length === 0
+        ? '<p class="announcement-empty">投稿済みのお知らせはありません</p>'
+        : sorted.map(a => {
+            const expired = new Date(a.createdAt).getTime() < cutoff;
+            return `<div class="announcement-admin-row${expired ? ' expired' : ''}" data-ann-id="${escapeAnnouncement(a.id)}">
+                <div class="announcement-admin-main">
+                    <div class="announcement-title">${escapeAnnouncement(a.title)}</div>
+                    <div class="announcement-meta">${formatDateTime(a.createdAt)}${expired ? ' ・ 表示期間終了' : ''} ・ 既読 <span class="announcement-seen-count">…</span>人</div>
+                    ${a.body ? `<div class="announcement-body">${escapeAnnouncement(a.body).replace(/\n/g, '<br>')}</div>` : ''}
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${escapeAnnouncement(a.id)}')">削除</button>
+            </div>`;
+        }).join('');
+    wrap.innerHTML = `
+        <h3 class="announcement-admin-title">📣 ログイン時お知らせ</h3>
+        <p class="announcement-admin-desc">各スタッフがログインした時に1回だけポップアップで表示されます。定型文を選ぶか自由入力で投稿してください。</p>
+        <div class="announcement-templates">${templates}<button class="btn btn-primary btn-sm" onclick="openAnnouncementModal('')">✏️ 自由入力</button></div>
+        <div class="announcement-admin-list">${rows}</div>`;
+    container.appendChild(wrap);
+
+    // 既読人数は users/*/seenAnnouncements を数える（ユーザー数は少ないので一度の取得で足りる）
+    if (sorted.length > 0) {
+        database.ref('users').once('value').then(snap => {
+            const users = snap.val() ? Object.values(snap.val()) : [];
+            wrap.querySelectorAll('.announcement-admin-row').forEach(row => {
+                const id = row.dataset.annId;
+                const n = users.filter(u => u && u.seenAnnouncements && u.seenAnnouncements[id]).length;
+                const el = row.querySelector('.announcement-seen-count');
+                if (el) el.textContent = n;
+            });
+        }).catch(() => { /* 表示だけなので失敗は無視 */ });
+    }
+}
+
 // 承認・却下
 function approveRequest(type, id) {
     const processedAt = new Date().toISOString();
@@ -4601,7 +4745,8 @@ function renderAdminPanel() {
             list.appendChild(card);
         });
     } else if (state.activeAdminTab === 'broadcast') {
-        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
+        c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">全従業員にメッセージを送信（受信箱に届きます）</p><button class="btn btn-primary" onclick="openModal(document.getElementById('broadcastModalOverlay'))">📢 メッセージ作成</button></div>`;
+        renderAnnouncementAdmin(c);
     } else if (state.activeAdminTab === 'settings') {
         c.innerHTML = `<div style="text-align:center;padding:20px"><p style="margin-bottom:16px;color:var(--text-secondary)">管理者設定</p><button class="btn btn-primary" onclick="openModal(document.getElementById('changePinModalOverlay'))">🔑 暗証番号を変更</button>${getPushSettingsHtml()}</div>`;
     } else if (state.activeAdminTab === 'dailyEvents') {
@@ -5368,6 +5513,19 @@ function initEventListeners() {
     document.getElementById('broadcastCancelBtn').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
     document.getElementById('broadcastModalOverlay').onclick = e => { if (e.target.id === 'broadcastModalOverlay') closeModal(document.getElementById('broadcastModalOverlay')); };
     document.getElementById('broadcastForm').onsubmit = e => { e.preventDefault(); sendBroadcast(document.getElementById('broadcastTitle').value.trim(), document.getElementById('broadcastMessage').value.trim()); closeModal(document.getElementById('broadcastModalOverlay')); document.getElementById('broadcastForm').reset(); alert('全従業員にメッセージを送信しました'); };
+
+    // ログイン時お知らせ（閲覧・投稿）
+    document.getElementById('announcementViewClose').onclick = () => closeModal(document.getElementById('announcementViewOverlay'));
+    document.getElementById('announcementAckBtn').onclick = ackAnnouncements;
+    document.getElementById('announcementModalClose').onclick = () => closeModal(document.getElementById('announcementModalOverlay'));
+    document.getElementById('announcementCancelBtn').onclick = () => closeModal(document.getElementById('announcementModalOverlay'));
+    document.getElementById('announcementModalOverlay').onclick = e => { if (e.target.id === 'announcementModalOverlay') closeModal(document.getElementById('announcementModalOverlay')); };
+    document.getElementById('announcementForm').onsubmit = e => {
+        e.preventDefault();
+        postAnnouncement(document.getElementById('announcementTitle').value.trim(), document.getElementById('announcementBody').value.trim());
+        closeModal(document.getElementById('announcementModalOverlay'));
+        document.getElementById('announcementForm').reset();
+    };
 
     document.querySelectorAll('.color-option').forEach(o => o.onclick = (e) => { 
         e.preventDefault();

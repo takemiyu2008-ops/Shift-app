@@ -9013,3 +9013,105 @@ body.print-layout .shift-bar .shift-time {
         font-size: 0.62rem;
     }
 }
+
+
+/* ==========================================
+   ログイン時お知らせ（announcements）
+   ========================================== */
+.announcement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 8px;
+}
+
+.announcement-item {
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 10px);
+    background: var(--bg-primary);
+}
+
+.announcement-title {
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.announcement-meta {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.announcement-body {
+    margin-top: 8px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.announcement-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: -4px 0 12px;
+}
+
+.announcement-admin {
+    margin-top: 8px;
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.announcement-admin-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.announcement-admin-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.announcement-templates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.announcement-admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.announcement-admin-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 10px);
+    background: var(--bg-primary);
+}
+
+.announcement-admin-row.expired {
+    opacity: 0.6;
+}
+
+.announcement-admin-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.announcement-empty {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 12px 0;
+}

@@ -72,6 +72,10 @@
       ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
       ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
     },
+    "announcements": {
+      ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
+      ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"
+    },
     "usageStats": {
       ".read": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))",
       ".write": "auth != null && (root.child('users/' + auth.uid + '/status').val() === 'approved' || (root.child('users/' + auth.uid).exists() && !root.child('users/' + auth.uid + '/status').exists()))"

@@ -29,7 +29,7 @@
             document.documentElement.setAttribute('data-theme', t);
         })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261030" charset="UTF-8">
+    <link rel="stylesheet" href="styles.css?v=20261102" charset="UTF-8">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <!-- Firebase SDK（defer: 文書順に実行されるため依存順は保たれる） -->
@@ -1003,6 +1003,47 @@
         </div>
     </div>
 
+    <!-- ログイン時お知らせ（閲覧用） -->
+    <div class="modal-overlay" id="announcementViewOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">📣 お知らせ</h2>
+                <button class="modal-close" id="announcementViewClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="announcementViewList" class="announcement-list"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" id="announcementAckBtn">確認しました</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ログイン時お知らせ（管理者投稿用） -->
+    <div class="modal-overlay" id="announcementModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">📣 ログイン時お知らせを投稿</h2>
+                <button class="modal-close" id="announcementModalClose">×</button>
+            </div>
+            <form id="announcementForm" class="modal-body">
+                <div class="form-group">
+                    <label for="announcementTitle">件名</label>
+                    <input type="text" id="announcementTitle" placeholder="例：シフトを更新しました" maxlength="60" required>
+                </div>
+                <div class="form-group">
+                    <label for="announcementBody">補足（任意）</label>
+                    <textarea id="announcementBody" placeholder="例：11月第2週のシフトを確定しました。各自ご確認ください。" rows="4"></textarea>
+                </div>
+                <p class="announcement-hint">各スタッフがログインした時に1回だけポップアップで表示されます（投稿から30日間）。</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="announcementCancelBtn">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">投稿</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- イベント追加/編集モーダル -->
     <div class="modal-overlay" id="eventModalOverlay">
         <div class="modal">
@@ -1111,7 +1152,7 @@
         </div>
     </div>
 
-    <script defer src="app.js?v=20261030" charset="UTF-8"></script>
+    <script defer src="app.js?v=20261102" charset="UTF-8"></script>
 </body>
 
 </html>
