@@ -13,7 +13,7 @@
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     font-size: 0.85rem;
-    z-index: 900; /* ガントの固定ヘッダ(100)やメニュー(200)より前、モーダル(1000)より後ろ */
+    z-index: 900; /* ガントの固定ヘッダ(100)やメニュー(200)、通常モーダル(300)より前。1000番台のオーバーレイより後ろ */
 }
 
 .connection-status .status-dot {
@@ -770,7 +770,7 @@ body {
    ======================================== */
 .date-nav {
     position: relative;
-    z-index: 250; /* 表示サイズのポップオーバーを .gantt-header(200) より前に。モーダル(1000)より後ろ */
+    z-index: 250; /* 表示サイズのポップオーバーを .gantt-header(200) より前に。シフト詳細(260)・モーダル(300)より後ろ */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1460,7 +1460,7 @@ body {
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition-normal);
-    z-index: 100;
+    z-index: 300; /* 週ナビ .date-nav(250)・シフト詳細(260) より前 */
 }
 
 .modal-overlay.active {
@@ -2106,7 +2106,7 @@ body {
    ======================================== */
 .shift-popover {
     position: fixed;
-    z-index: 200;
+    z-index: 260; /* 週ナビ .date-nav(250) より前、モーダル(300)より後ろ */
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition-fast);
