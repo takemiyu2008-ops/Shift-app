@@ -122,7 +122,8 @@ body {
 }
 
 body {
-    font-family: 'Noto Sans JP', sans-serif;
+    /* 端末内蔵フォントを使う（Webフォントは転送量の約7割を占めていたため廃止） */
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-body-mid) 50%, var(--bg-primary) 100%);
     color: var(--text-primary);
     min-height: 100vh;
