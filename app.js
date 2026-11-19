@@ -2455,8 +2455,8 @@ function showChangeHistoryModal(s) {
     const h = s.changeHistory;
     const result = confirm(
         `📝 シフト変更履歴\n\n` +
-        `【変更前】\n日付: ${h.previousDate}\n時間: ${h.previousStartHour}:00〜${h.previousEndHour}:00\n\n` +
-        `【変更後（現在）】\n日付: ${s.date}\n時間: ${s.startHour}:00〜${s.endHour}:00\n\n` +
+        `【変更前】\n日付: ${h.previousDate}\n時間: ${formatTime(h.previousStartHour)}〜${formatTime(h.previousEndHour)}\n\n` +
+        `【変更後（現在）】\n日付: ${s.date}\n時間: ${formatTime(s.startHour)}〜${formatTime(s.endHour)}\n\n` +
         `理由: ${h.reason}\n\n` +
         `「OK」で編集画面を開きます`
     );
@@ -2845,7 +2845,7 @@ function addChangeRequest(d) {
     const shift = state.shifts.find(s => s.id === d.originalShiftId);
     if (shift) {
         const title = '🔄 シフト変更申請';
-        const content = `${d.applicant}さんからシフト変更申請がありました。\nシフト: ${shift.date} ${shift.startHour}:00-${shift.endHour}:00\n変更後: ${d.newDate} ${d.newStartHour}:00-${d.newEndHour}:00\n理由: ${d.reason}`;
+        const content = `${d.applicant}さんからシフト変更申請がありました。\nシフト: ${shift.date} ${formatTime(shift.startHour)}-${formatTime(shift.endHour)}\n変更後: ${d.newDate} ${formatTime(d.newStartHour)}-${formatTime(d.newEndHour)}\n理由: ${d.reason}`;
 
         // シフトの持ち主に通知（申請者と異なる場合）
         if (shift.name !== d.applicant) {
@@ -4710,7 +4710,7 @@ function renderAdminPanel() {
         reqs.forEach(r => {
             const s = state.shifts.find(x => x.id === r.originalShiftId);
             const card = document.createElement('div'); card.className = 'request-card';
-            card.innerHTML = `<div class="request-info"><h4>🔄 シフト変更申請</h4><p>申請者: ${r.applicant || '不明'}</p><p>対象シフト: ${s?.name || '不明'} - ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00</p><p>変更後: ${r.newDate} ${r.newStartHour}:00-${r.newEndHour}:00</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('change','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('change','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>🔄 シフト変更申請</h4><p>申請者: ${r.applicant || '不明'}</p><p>対象シフト: ${s?.name || '不明'} - ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00</p><p>変更後: ${r.newDate} ${formatTime(r.newStartHour)}-${formatTime(r.newEndHour)}</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('change','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('change','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'shiftSwaps') {
@@ -5023,7 +5023,7 @@ function renderHistoryItems(container, allHistory, filter) {
                 <div class="request-info">
                     <h4>🔄 シフト変更申請 ${statusBadge}</h4>
                     <p><strong>申請者:</strong> ${h.applicant || '不明'}</p>
-                    <p><strong>変更後:</strong> ${h.newDate} ${h.newStartHour}:00-${h.newEndHour}:00</p>
+                    <p><strong>変更後:</strong> ${h.newDate} ${formatTime(h.newStartHour)}-${formatTime(h.newEndHour)}</p>
                     <p><strong>理由:</strong> ${h.reason}</p>
                     <div class="history-meta">
                         <p>📅 申請日時: ${createdAtStr}</p>
