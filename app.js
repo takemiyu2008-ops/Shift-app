@@ -7038,66 +7038,31 @@ const FIXED_HOLIDAYS = {
     '11/23': '勤労感謝の日'
 };
 
-// 日本の祝日を取得（2024年〜2030年対応）
+// 日本の祝日を取得（祝日そのものは getHolidayName、振替休日と国民の休日はここで判定）
 function getJapaneseHoliday(date) {
     const d = new Date(date);
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    const dateStr = `${month}/${day}`;
 
-    // 固定祝日チェック
-    if (FIXED_HOLIDAYS[dateStr]) {
-        return FIXED_HOLIDAYS[dateStr];
+    const name = getHolidayName(d);
+    if (name) return name;
+
+    // 振替休日: 祝日が日曜に当たると、その後の最初の「祝日でない日」が休みになる。
+    // 前日へさかのぼり、祝日が途切れずに日曜の祝日まで届けば振替休日（例: 5/3が日曜の年の5/6）
+    const prev = new Date(d);
+    for (;;) {
+        prev.setDate(prev.getDate() - 1);
+        if (!getHolidayName(prev)) break;
+        if (prev.getDay() === 0) return '振替休日';
     }
-    
-    // ハッピーマンデー（第n月曜日）
-    const dayOfWeek = d.getDay();
-    if (dayOfWeek === 1) { // 月曜日のみチェック
-        const weekNum = Math.ceil(day / 7);
-        
-        // 成人の日（1月第2月曜）
-        if (month === 1 && weekNum === 2) return '成人の日';
-        // 海の日（7月第3月曜）
-        if (month === 7 && weekNum === 3) return '海の日';
-        // 敬老の日（9月第3月曜）
-        if (month === 9 && weekNum === 3) return '敬老の日';
-        // スポーツの日（10月第2月曜）
-        if (month === 10 && weekNum === 2) return 'スポーツの日';
+
+    // 国民の休日: 前日と翌日がともに祝日の平日（例: 敬老の日と秋分の日に挟まれた日）
+    if (d.getDay() !== 0) {
+        const before = new Date(d);
+        before.setDate(before.getDate() - 1);
+        const after = new Date(d);
+        after.setDate(after.getDate() + 1);
+        if (getHolidayName(before) && getHolidayName(after)) return '国民の休日';
     }
-    
-    // 春分の日（3月20日または21日）
-    if (month === 3) {
-        const vernalEquinox = calcVernalEquinox(year);
-        if (day === vernalEquinox) return '春分の日';
-    }
-    
-    // 秋分の日（9月22日または23日）
-    if (month === 9) {
-        const autumnalEquinox = calcAutumnalEquinox(year);
-        if (day === autumnalEquinox) return '秋分の日';
-    }
-    
-    // 振替休日チェック（祝日が日曜の場合、翌日が休み）
-    if (dayOfWeek === 1) { // 月曜日
-        const yesterday = new Date(d);
-        yesterday.setDate(day - 1);
-        const yesterdayHoliday = getHolidayName(yesterday);
-        if (yesterdayHoliday) {
-            return '振替休日';
-        }
-    }
-    
-    // 国民の休日（祝日に挟まれた平日）
-    if (month === 9) {
-        // 敬老の日と秋分の日に挟まれる場合
-        const keirouDay = getHappyMonday(year, 9, 3); // 9月第3月曜
-        const autumnalEquinox = calcAutumnalEquinox(year);
-        if (day > keirouDay && day < autumnalEquinox && autumnalEquinox - keirouDay === 2) {
-            return '国民の休日';
-        }
-    }
-    
+
     return null;
 }
 
