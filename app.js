@@ -4333,9 +4333,22 @@ function rejectRequest(type, id) {
 }
 
 // ナビ
-function goToPrevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); render(); fetchWeatherData(); }
-function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); render(); fetchWeatherData(); }
-function goToThisWeek() { state.currentWeekStart = getWeekStart(new Date()); render(); fetchWeatherData(); scrollGanttToNow(); }
+// 週を切り替えた後の描画。天気がキャッシュ済みなら差し替えてから1回だけ描画し、
+// 未取得なら先に描画してから取得する（取得後に fetchWeatherData が描き直す）
+function renderAfterWeekChange() {
+    const cached = weatherCache[formatDate(state.currentWeekStart)];
+    if (cached) {
+        state.weatherData = cached;
+        render();
+        renderOrderAdvisorExtended();
+    } else {
+        render();
+        fetchWeatherData();
+    }
+}
+function goToPrevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); renderAfterWeekChange(); }
+function goToNextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); renderAfterWeekChange(); }
+function goToThisWeek() { state.currentWeekStart = getWeekStart(new Date()); renderAfterWeekChange(); scrollGanttToNow(); }
 
 // 認証
 function showPinModal() { document.getElementById('adminPin').value = ''; document.getElementById('pinError').style.display = 'none'; openModal(document.getElementById('pinModalOverlay')); }
@@ -6741,10 +6754,15 @@ function init() {
     startNowLineTimer();
 
     // ウィンドウリサイズ時にシフトバーを再描画
+    // スマホではURLバーの出入りだけで resize が起きる（高さだけ変わる）。
+    // 幅が変わらない限りレイアウトは同じなので、その場合は描き直さない
     let resizeTimeout;
+    let lastResizeWidth = window.innerWidth;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
+            if (window.innerWidth === lastResizeWidth) return;
+            lastResizeWidth = window.innerWidth;
             render();
             applyZoom();
         }, 100);
