@@ -5817,7 +5817,102 @@ function initZoomControls() {
                 lastTouchDistance = 0;
             }
         }, { passive: true });
+
+        setupGanttScrollHandoff(ganttContainer);
     }
+}
+
+// シフト表の縦スクロールが端まで来たら、同じ指の動きのままページ側のスクロールへ引き継ぐ。
+// ブラウザは1回のスワイプを最初に掴んだスクロール領域に固定するため、シフト表の中から
+// スワイプを始めると、表が端に達してもページは動かない（指を離してやり直す必要がある）。
+// スマホでは表が画面のほぼ全体を占めるので、表の上や下へ抜けにくくなる。
+// ブラウザ自身がページを動かしている場合（表が最初から端にあった場合）は何もしない。
+function setupGanttScrollHandoff(container) {
+    let g = null;        // 進行中のスワイプ
+    let glideRaf = 0;
+
+    // dy > 0 は「下へスクロールしたい」（指は上へ動く）
+    const containerAtEdge = (dy) => dy > 0
+        ? container.scrollTop >= container.scrollHeight - container.clientHeight - 1
+        : container.scrollTop <= 0;
+    const pageHasRoom = (dy) => {
+        const se = document.scrollingElement || document.documentElement;
+        return dy > 0
+            ? se.scrollHeight - window.innerHeight - window.scrollY > 1
+            : window.scrollY > 0;
+    };
+    const scrollPage = (dy) => window.scrollBy({ top: dy, behavior: 'instant' });
+    const stopGlide = () => {
+        if (glideRaf) cancelAnimationFrame(glideRaf);
+        glideRaf = 0;
+    };
+
+    // シフトバー上の touchstart は伝播を止めているので、キャプチャ段階で受ける
+    const opts = { passive: true, capture: true };
+
+    document.addEventListener('touchstart', stopGlide, opts);
+
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) { g = null; return; }
+        const t = e.touches[0];
+        g = {
+            startX: t.clientX, startY: t.clientY,
+            lastY: t.clientY, lastT: e.timeStamp,
+            // スワイプ開始時点で表が端にあったか（その向きならブラウザが最初からページを動かす）
+            atTop: containerAtEdge(-1), atBottom: containerAtEdge(1),
+            axis: null,       // 'x' | 'y'
+            assist: false,    // true: 表がスワイプを掴んでいるので、端から先はこちらでページを動かす
+            vel: 0            // px/ms
+        };
+    }, opts);
+
+    container.addEventListener('touchmove', (e) => {
+        if (!g) return;
+        if (e.touches.length !== 1) { g = null; return; }
+        const t = e.touches[0];
+        if (!g.axis) {
+            const dx = Math.abs(t.clientX - g.startX);
+            const dyAbs = Math.abs(t.clientY - g.startY);
+            if (dx < 8 && dyAbs < 8) return;
+            g.axis = dyAbs > dx ? 'y' : 'x';
+            const goingDown = g.startY > t.clientY;
+            g.assist = g.axis === 'y' && !(goingDown ? g.atBottom : g.atTop);
+        }
+        const dy = g.lastY - t.clientY;
+        const dt = e.timeStamp - g.lastT;
+        g.lastY = t.clientY;
+        g.lastT = e.timeStamp;
+        if (!g.assist || !dy) return;
+
+        if (!containerAtEdge(dy) || !pageHasRoom(dy)) {
+            g.vel = 0;
+            return;
+        }
+
+        scrollPage(dy);
+        if (dt > 0) g.vel = 0.7 * (dy / dt) + 0.3 * g.vel;
+    }, opts);
+
+    const onEnd = (e) => {
+        const cur = g;
+        g = null;
+        if (!cur || !cur.assist) return;
+        if (e.type === 'touchcancel' || e.timeStamp - cur.lastT > 80) return;
+        let v = cur.vel;
+        if (Math.abs(v) < 0.3) return;
+        // 指を離したあとの惰性
+        let prev = performance.now();
+        const step = (now) => {
+            const dt = Math.min(now - prev, 32);
+            prev = now;
+            scrollPage(v * dt);
+            v *= Math.pow(0.95, dt / 16);
+            glideRaf = (Math.abs(v) > 0.05 && pageHasRoom(v)) ? requestAnimationFrame(step) : 0;
+        };
+        glideRaf = requestAnimationFrame(step);
+    };
+    container.addEventListener('touchend', onEnd, opts);
+    container.addEventListener('touchcancel', onEnd, opts);
 }
 
 // ========================================
