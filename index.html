@@ -43,8 +43,27 @@
 </head>
 
 <body>
+    <!-- 起動表示: 認証状態が確定するまで出す（ログイン画面のちらつき防止） -->
+    <div class="boot-screen" id="bootScreen" role="status" aria-live="polite">
+        <div class="boot-box">
+            <div class="boot-title"><span aria-hidden="true">📅</span> シフト管理</div>
+            <div class="boot-spinner" aria-hidden="true"></div>
+            <p class="boot-text" id="bootText">読み込み中…</p>
+            <button type="button" class="btn btn-primary boot-reload" id="bootReload" hidden onclick="location.reload()">再読み込み</button>
+        </div>
+    </div>
+    <script>
+        // 10秒たっても起動表示のままなら、通信不良の可能性を案内する
+        setTimeout(function () {
+            var b = document.getElementById('bootScreen');
+            if (!b || b.classList.contains('hide')) return;
+            document.getElementById('bootText').textContent = '接続に時間がかかっています。通信状態を確認してください。';
+            document.getElementById('bootReload').hidden = false;
+        }, 10000);
+    </script>
+
     <!-- ログイン画面 -->
-    <div class="auth-container show" id="authContainer">
+    <div class="auth-container" id="authContainer">
         <button type="button" class="theme-toggle auth-theme-toggle" id="authThemeToggle" aria-label="テーマ切替" title="ライト/ダーク切替">☀️</button>
         <div class="auth-box">
             <h1 class="auth-title"><span class="auth-title-icon">📅</span>シフト管理</h1>

@@ -230,6 +230,8 @@ let dataListenersAttached = false;
 
 // 全画面を非表示にするヘルパー
 function hideAllScreens() {
+    const boot = document.getElementById('bootScreen');
+    if (boot) boot.classList.add('hide');
     document.getElementById('authContainer').classList.remove('show');
     document.getElementById('pendingContainer').classList.remove('show');
     document.getElementById('appContainer').classList.add('hidden');
@@ -340,7 +342,9 @@ auth.onAuthStateChanged((user) => {
                     detachDataListeners();
                 }
                 loadData();
+                loadOrderFeedback();
                 render();
+                fetchWeatherData();
 
                 // 本当のログイン時だけ、未読のお知らせをポップアップ表示（リロードでは出さない）
                 if (isFreshLogin) showLoginAnnouncements(user.uid, userData);
@@ -1138,6 +1142,7 @@ function detachDataListeners() {
         database.ref(key).off('value');
     });
     database.ref('dailyChecklist').off('value');
+    database.ref('orderFeedback').off('value');
     dataListenersAttached = false;
 }
 
@@ -6671,12 +6676,9 @@ function init() {
     initTrendReportToggle(); // コンビニ3社 新商品ヒット予測レポートのトグルを初期化
     initNewProductToggle(); // 週次インテリジェンス（マクロ環境）のトグルを初期化
     initProductResearchToggle(); // 新規商品調査レポートのトグルを初期化
-    loadData();
-    render();
+    // データ購読・描画・天気取得は認証確定後（onAuthStateChanged の承認済み分岐）に行う。
+    // 認証前の購読はルールで拒否されるだけで、描画開始を遅らせる
     startNowLineTimer();
-
-    // 天気データを取得
-    fetchWeatherData();
 
     // ウィンドウリサイズ時にシフトバーを再描画
     let resizeTimeout;
@@ -11495,6 +11497,8 @@ function renderFeedbackList(container, feedbackList) {
 
 // フィードバックデータをFirebaseから読み込み
 function loadOrderFeedback() {
+    // 再ログイン時の二重登録を防いでから張り直す
+    database.ref('orderFeedback').off('value');
     database.ref('orderFeedback').on('value', snap => {
         const data = snap.val();
         if (data) {
@@ -12112,8 +12116,7 @@ if (orderAdviceBtnMobile) {
     orderAdviceBtnMobile.addEventListener('click', showOrderAdviceScreen);
 }
 
-// 初期化時にフィードバックデータを読み込み
-loadOrderFeedback();
+// フィードバックデータの購読は認証確定後（onAuthStateChanged の承認済み分岐）に行う
 
 
 // ==========================================
