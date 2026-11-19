@@ -1479,6 +1479,25 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
     const body = document.getElementById('ganttBody');
     initGanttDelegation();
     body.innerHTML = '';
+
+    // 描画1回ぶんの索引。全期間ぶん溜まったシフトを1日ごとに何度も走査しないよう、先に日付で束ねる
+    // （配列内の並びは元の state と同じ順になる）
+    const groupByDate = (list) => {
+        const map = new Map();
+        for (const item of list) {
+            const bucket = map.get(item.date);
+            if (bucket) bucket.push(item); else map.set(item.date, [item]);
+        }
+        return map;
+    };
+    const shiftsByDate = groupByDate(state.shifts);
+    const overridesByDate = groupByDate(state.shiftOverrides);
+    const shiftsOn = (d) => shiftsByDate.get(d) || [];
+    const overridesOn = (d) => overridesByDate.get(d) || [];
+    // 休日・有給の判定はどれも承認済みだけを見るので、先に絞っておく
+    const approvedLeaves = state.leaveRequests.filter(r => r.status === 'approved');
+    const approvedHolidays = state.holidayRequests.filter(r => r.status === 'approved');
+
     for (let i = 0; i < 7; i++) {
         const date = new Date(state.currentWeekStart);
         date.setDate(date.getDate() + i);
@@ -1591,20 +1610,20 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
         }
 
         // シフト収集
-        const dayShifts = state.shifts.filter(s => s.date === dateStr);
+        const dayShifts = shiftsOn(dateStr);
         const prevDate = new Date(date); prevDate.setDate(prevDate.getDate() - 1);
         const prevStr = formatDate(prevDate);
-        const overnight = state.shifts.filter(s => s.date === prevStr && s.overnight).map(s => ({
+        const overnight = shiftsOn(prevStr).filter(s => s.overnight).map(s => ({
             ...s, id: `on-${s.id}`, date: dateStr, startHour: 0, endHour: s.endHour, isOvernightContinuation: true
         }));
 
         // 有給による上書きシフトのIDを取得
-        const leaveOverrideFixedIds = state.shifts
-            .filter(s => s.date === dateStr && s.isLeaveOverride && s.fixedShiftOverride)
+        const leaveOverrideFixedIds = dayShifts
+            .filter(s => s.isLeaveOverride && s.fixedShiftOverride)
             .map(s => s.fixedShiftOverride);
 
         // この日の単日上書きデータを取得
-        const dayOverrides = state.shiftOverrides.filter(o => o.date === dateStr);
+        const dayOverrides = overridesOn(dateStr);
 
         // 臨時シフト：イベント日は固定シフトを停止
         const specialEvent = getSpecialEvent(dateStr);
@@ -1670,12 +1689,12 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
 
         const prevDow = (dayOfWeek + 6) % 7;
         // 有給による上書きを夜勤継続分にも適用
-        const leaveOverrideFixedIdsForOvernight = state.shifts
-            .filter(s => s.date === prevStr && s.isLeaveOverride && s.fixedShiftOverride)
+        const leaveOverrideFixedIdsForOvernight = shiftsOn(prevStr)
+            .filter(s => s.isLeaveOverride && s.fixedShiftOverride)
             .map(s => s.fixedShiftOverride);
 
         // 前日の単日上書きデータを取得
-        const prevDayOverrides = state.shiftOverrides.filter(o => o.date === prevStr);
+        const prevDayOverrides = overridesOn(prevStr);
             
         const fixedOvernight = state.fixedShifts.filter(f => {
             // 曜日・夜勤チェック
@@ -1718,8 +1737,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
             if (leaveOverrideFixedIdsForOvernight.includes(originalId)) return false;
             // 前日に交代済みの通常シフトがある場合は旧担当の継続バーを出さない
             const orig = state.fixedShifts.find(x => x.id === originalId);
-            const swappedPrev = orig && state.shifts.some(s =>
-                s.date === prevStr &&
+            const swappedPrev = orig && shiftsOn(prevStr).some(s =>
                 s.swapHistory &&
                 s.swapHistory.previousName === orig.name &&
                 s.startHour === orig.startHour &&
@@ -1753,7 +1771,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
                 // どちらもない場合は従来の期間ベースの除外
                 return true;
             };
-            return state.holidayRequests.some(covers) || state.leaveRequests.some(covers);
+            return approvedHolidays.some(covers) || approvedLeaves.some(covers);
         };
 
         // 全日休み・有給の担当者のシフトを除外したリスト
@@ -1775,7 +1793,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
         // 複数シフト選択式の申請は startDate〜endDate が「選択した日の最小〜最大」なので、
         // 期間だけで判定すると離れた日を選んだときに間の日にもバーが出てしまう。
         // 休日申請（下記）と同じく、shiftTimes / selectedShifts に該当日があるかで判定する。
-        const leaves = state.leaveRequests.filter(l => {
+        const leaves = approvedLeaves.filter(l => {
             if (l.status !== 'approved') return false;
             if (!(dateStr >= l.startDate && dateStr <= l.endDate)) return false;
 
@@ -1840,7 +1858,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
         });
 
         // 夜勤の有給の翌日分を表示
-        const overnightLeaves = state.leaveRequests.filter(l => {
+        const overnightLeaves = approvedLeaves.filter(l => {
             if (l.status !== 'approved' || !l.shiftTimes) return false;
             // 前日の日付を取得
             const prevDate = new Date(dateStr);
@@ -1891,7 +1909,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
         barCount += overnightLeaves.length;
 
         // 休日
-        const holidays = state.holidayRequests.filter(h => {
+        const holidays = approvedHolidays.filter(h => {
             if (h.status !== 'approved') return false;
             if (!(dateStr >= h.startDate && dateStr <= h.endDate)) return false;
             
@@ -2003,7 +2021,7 @@ function renderGanttBody(todayStr = formatDate(new Date())) {
         barCount += holidays.length;
         
         // 夜勤の休日の翌日分を表示
-        const overnightHolidays = state.holidayRequests.filter(h => {
+        const overnightHolidays = approvedHolidays.filter(h => {
             if (h.status !== 'approved') return false;
             // 前日の日付を取得
             const prevDate = new Date(dateStr);
