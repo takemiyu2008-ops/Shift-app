@@ -1249,7 +1249,37 @@ function saveToFirebase(key, data) {
         return;
     }
     const ref = database.ref(key);
-    ref.set(data.reduce((acc, item) => { acc[item.id] = item; return acc; }, {}));
+    // 権限エラー等で書き込めなかった時は必ず知らせる（成功表示のまま気づけないのを防ぐ）
+    return ref.set(data.reduce((acc, item) => { acc[item.id] = item; return acc; }, {})).catch(err => {
+        console.error(`${key} の保存に失敗:`, err);
+        showToast('保存に失敗しました。通信状態を確認して、もう一度お試しください。', 'error');
+    });
+}
+
+// トースト通知（操作を止めない完了・エラー表示）。タップで即閉じる
+function showToast(message, type = 'success') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    // エラーは読み上げを割り込ませ、完了通知は控えめに伝える
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.textContent = message;
+    const close = () => {
+        if (!toast.isConnected) return;
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 200);
+    };
+    toast.addEventListener('click', close);
+    container.appendChild(toast);
+    // 長い文やエラーは読み切れるよう長めに出す
+    const duration = (type === 'error' ? 6000 : 3000) + Math.min(4000, Math.max(0, message.length - 20) * 60);
+    setTimeout(close, duration);
 }
 
 // 従業員セレクト更新
@@ -1366,9 +1396,8 @@ function initGanttDelegation() {
         const shiftBar = e.target.closest('.shift-bar');
         if (shiftBar && shiftBar._shiftData) {
             if (!state.isAdmin) return;
-            if (confirm('シフト内容を変更しますか？')) {
-                showShiftPopover(shiftBar._shiftData, e, shiftBar);
-            }
+            // ポップオーバーは開くだけで何も変更しないため、確認は挟まない
+            showShiftPopover(shiftBar._shiftData, e, shiftBar);
         }
     });
 
@@ -1435,13 +1464,12 @@ function initGanttDelegation() {
             if (!state.isAdmin) return;
             e.preventDefault();
             e.stopPropagation();
-            if (confirm('シフト内容を変更しますか？')) {
-                showShiftPopover(shiftBar._shiftData, {
-                    clientX: ganttTouch.startX,
-                    clientY: ganttTouch.startY,
-                    target: shiftBar
-                }, shiftBar);
-            }
+            // スクロール中の誤タップは上の moved / duration 判定で除外済み。確認は挟まず直接開く
+            showShiftPopover(shiftBar._shiftData, {
+                clientX: ganttTouch.startX,
+                clientY: ganttTouch.startY,
+                target: shiftBar
+            }, shiftBar);
         }
     }, { passive: false });
 }
@@ -3729,7 +3757,7 @@ function createHalfDayOff(s, halfDayType) {
     // 必要に応じてシフトを削除する場合はここに追加
 
     const typeText = halfDayType === 'morning' ? '午前半休' : '午後半休';
-    alert(`${typeText}に変更しました。`);
+    showToast(`${typeText}に変更しました。`);
     render();
 }
 function sendBroadcast(title, content) {
@@ -4118,9 +4146,9 @@ function approveRequest(type, id) {
             saveToFirebase('swapRequests', state.swapRequests);
 
             if (updated) {
-                alert('シフト交代を承認しました。\\n' + r.fromEmployee + ' → ' + r.targetEmployee + '\\nシフト表が更新されました。');
+                showToast('シフト交代を承認しました。\n' + r.fromEmployee + ' → ' + r.targetEmployee + '\nシフト表が更新されました。');
             } else {
-                alert('承認しましたが、シフト表の更新に失敗しました。\\nshiftId: ' + (r.shiftId || '未設定'));
+                alert('承認しましたが、シフト表の更新に失敗しました。\nshiftId: ' + (r.shiftId || '未設定'));
             }
         }
     } else if (type === 'holiday') {
@@ -4143,7 +4171,7 @@ function approveRequest(type, id) {
             }
             
             saveToFirebase('holidayRequests', state.holidayRequests);
-            alert('休日申請を承認しました。');
+            showToast('休日申請を承認しました。');
         }
     }
     // 再描画は saveToFirebase のリスナー経由（rAF集約）で行われる
@@ -4321,7 +4349,7 @@ function toggleRole() { state.isAdmin ? switchToStaff() : showPinModal(); }
 function approveUser(uid) {
     if (!confirm('このユーザーを承認しますか？')) return;
     database.ref('users/' + uid).update({ status: 'approved' }).then(() => {
-        alert('ユーザーを承認しました');
+        showToast('ユーザーを承認しました');
         invalidatePendingUserCount();
         renderAdminPanel();
     }).catch(err => {
@@ -4334,7 +4362,7 @@ function approveUser(uid) {
 function rejectUser(uid) {
     if (!confirm('このユーザーの登録を却下しますか？')) return;
     database.ref('users/' + uid).update({ status: 'rejected' }).then(() => {
-        alert('ユーザーを却下しました');
+        showToast('ユーザーを却下しました');
         invalidatePendingUserCount();
         renderAdminPanel();
     }).catch(err => {
@@ -5099,7 +5127,7 @@ function clearAllMessages() {
         saveToFirebase('messages', state.messages);
         updateMessageBar();
         renderMessages();
-        alert('全てのメッセージを削除しました。');
+        showToast('全てのメッセージを削除しました。');
     }
 }
 
@@ -5485,11 +5513,11 @@ function initEventListeners() {
         if (editId) {
             // 編集モード
             updateEmployee(editId, employeeData);
-            alert('従業員情報を更新しました');
+            showToast('従業員情報を更新しました');
         } else {
             // 追加モード
             addEmployee(employeeData);
-            alert('従業員を追加しました');
+            showToast('従業員を追加しました');
         }
 
         closeModal(document.getElementById('employeeModalOverlay'));
@@ -5518,10 +5546,10 @@ function initEventListeners() {
         
         if (id) {
             updateSpecialEvent(id, d);
-            alert('イベントを更新しました');
+            showToast('イベントを更新しました');
         } else {
             addSpecialEvent(d);
-            alert('イベント日を追加しました。\nこの日のシフトは「シフト追加」から個別に登録してください。');
+            showToast('イベント日を追加しました。\nこの日のシフトは「シフト追加」から個別に登録してください。');
         }
         closeModal(document.getElementById('specialEventModalOverlay'));
         document.getElementById('specialEventForm').reset();
@@ -5549,7 +5577,7 @@ function initEventListeners() {
     document.getElementById('broadcastModalClose').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
     document.getElementById('broadcastCancelBtn').onclick = () => closeModal(document.getElementById('broadcastModalOverlay'));
     document.getElementById('broadcastModalOverlay').onclick = e => { if (e.target.id === 'broadcastModalOverlay') closeModal(document.getElementById('broadcastModalOverlay')); };
-    document.getElementById('broadcastForm').onsubmit = e => { e.preventDefault(); sendBroadcast(document.getElementById('broadcastTitle').value.trim(), document.getElementById('broadcastMessage').value.trim()); closeModal(document.getElementById('broadcastModalOverlay')); document.getElementById('broadcastForm').reset(); alert('全従業員にメッセージを送信しました'); };
+    document.getElementById('broadcastForm').onsubmit = e => { e.preventDefault(); sendBroadcast(document.getElementById('broadcastTitle').value.trim(), document.getElementById('broadcastMessage').value.trim()); closeModal(document.getElementById('broadcastModalOverlay')); document.getElementById('broadcastForm').reset(); showToast('全従業員にメッセージを送信しました'); };
 
     // ログイン時お知らせ（閲覧・投稿）
     document.getElementById('announcementViewClose').onclick = () => closeModal(document.getElementById('announcementViewOverlay'));
@@ -5638,7 +5666,7 @@ function initEventListeners() {
         addChangeRequest(d);
         closeModal(document.getElementById('changeModalOverlay'));
         document.getElementById('changeForm').reset();
-        alert('シフト変更申請を送信しました');
+        showToast('シフト変更申請を送信しました');
     };
 
     document.getElementById('swapForm').onsubmit = e => {
@@ -5661,7 +5689,7 @@ function initEventListeners() {
         addSwapRequest({ applicant, shiftId: sid, fromEmployee: shiftName, targetEmployee: document.getElementById('swapTargetEmployee').value, message: document.getElementById('swapMessage').value.trim() });
         closeModal(document.getElementById('swapModalOverlay'));
         document.getElementById('swapForm').reset();
-        alert('シフト交代依頼を送信しました');
+        showToast('シフト交代依頼を送信しました');
     };
 
     document.getElementById('leaveForm').onsubmit = e => {
@@ -5686,7 +5714,7 @@ function initEventListeners() {
         closeModal(document.getElementById('leaveModalOverlay'));
         document.getElementById('leaveForm').reset();
         document.getElementById('leaveShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
-        alert('有給申請を送信しました');
+        showToast('有給申請を送信しました');
     };
 
     document.getElementById('holidayForm').onsubmit = e => {
@@ -5728,7 +5756,7 @@ function initEventListeners() {
         document.getElementById('holidayForm').reset();
         document.getElementById('holidayShiftList').innerHTML = '<p class="no-shift-message">申請者を選択してください</p>';
         document.getElementById('holidayTimeRangeGroup').style.display = 'none';
-        alert('休日申請を送信しました');
+        showToast('休日申請を送信しました');
     };
 
     document.onkeydown = e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => closeModal(m)); };
@@ -5751,7 +5779,7 @@ function initEventListeners() {
         closeModal(document.getElementById('changePinModalOverlay'));
         document.getElementById('changePinForm').reset();
         errEl.style.display = 'none';
-        alert('暗証番号を変更しました');
+        showToast('暗証番号を変更しました');
     };
 }
 
@@ -6491,7 +6519,7 @@ function initPopoverEvents() {
                             deleteShift(deleteTargetId);
                         }
 
-                        alert('休みに変更しました。');
+                        showToast('休みに変更しました。');
                         render();
                     }
                 }
@@ -6586,7 +6614,7 @@ function initPopoverEvents() {
             // ここでの保存は省略可能（次行でまとめて保存される）
 
             approveRequest('leave', leaveRequest.id);
-            alert('有給に変更しました。');
+            showToast('有給に変更しました。');
         }, 100);
     };
 
@@ -8263,14 +8291,14 @@ function saveCurrentMemo(categoryId) {
     saveCategoryMemo(categoryId, today, input.value.trim());
     input.value = '';
 
-    alert('メモを保存しました');
+    showToast('メモを保存しました');
 }
 
 // クイックタグを追加
 function addQuickTag(categoryId, tag) {
     const today = formatDate(new Date());
     saveCategoryMemo(categoryId, today, tag, [tag]);
-    alert(`"${tag}" を保存しました`);
+    showToast(`"${tag}" を保存しました`);
 }
 
 // カテゴリ別クイックタグ取得
@@ -9839,7 +9867,7 @@ async function uploadTrendReport() {
         setTimeout(() => {
             closeTrendReportUploadModal();
             renderTrendReports();
-            alert('レポートをアップロードしました。');
+            showToast('レポートをアップロードしました。');
         }, 500);
         
     } catch (error) {
@@ -10042,7 +10070,7 @@ function submitTrendReport(event, form, reportId = null) {
     saveToFirebase('trendReports', state.trendReports);
     form.closest('.modal-overlay').remove();
     renderTrendReports();
-    alert(reportId ? 'レポートを更新しました。' : 'レポートを追加しました。');
+    showToast(reportId ? 'レポートを更新しました。' : 'レポートを追加しました。');
 }
 
 // ========================================
@@ -10784,7 +10812,7 @@ function submitFeedback(feedbackKey, categoryId, date) {
     // 状態もリセット
     delete state.orderAdvice.feedbackData[feedbackKey].rating;
     
-    alert('フィードバックを保存しました');
+    showToast('フィードバックを保存しました');
 }
 
 // 締切タイマー
@@ -12136,7 +12164,7 @@ function clearUsageStats() {
     database.ref('usageStats').remove();
     state.usageStats = [];
     renderAdminPanel();
-    alert('利用統計データを削除しました');
+    showToast('利用統計データを削除しました');
 }
 
 // 発注アドバイスボタンのイベントリスナー
@@ -12202,7 +12230,7 @@ async function enablePushNotifications() {
             return;
         }
         await registerFcmToken();
-        alert('プッシュ通知を有効化しました。申請が届くと通知されます。');
+        showToast('プッシュ通知を有効化しました。申請が届くと通知されます。');
         renderAdminPanel();
     } catch (err) {
         console.error('プッシュ通知の有効化に失敗:', err);
