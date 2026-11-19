@@ -961,6 +961,30 @@ function restoreSvgBlocks(html, svgBlocks) {
     });
 }
 
+// 外部スクリプトを必要になった時に1回だけ読み込む（初期ロードを軽くするため）
+const scriptLoadPromises = {};
+function loadScriptOnce(src) {
+    if (!scriptLoadPromises[src]) {
+        scriptLoadPromises[src] = new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = src;
+            el.onload = resolve;
+            el.onerror = () => {
+                delete scriptLoadPromises[src];
+                reject(new Error('スクリプトの読み込みに失敗しました: ' + src));
+            };
+            document.head.appendChild(el);
+        });
+    }
+    return scriptLoadPromises[src];
+}
+
+// marked（Markdown変換）はレポート表示時に初めて読み込む
+function loadMarked() {
+    if (typeof marked !== 'undefined') return Promise.resolve();
+    return loadScriptOnce('https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js');
+}
+
 // Markdownレンダリングヘルパー関数
 function renderMarkdown(text) {
     if (!text) return '';
@@ -991,6 +1015,12 @@ function toggleMarkdownPreview(formGroup, mode) {
         textarea.style.display = 'none';
         preview.style.display = 'block';
         preview.innerHTML = renderMarkdown(textarea.value);
+        // marked が未読み込みなら読み込み後に描き直す（プレビュー表示のままの場合のみ）
+        if (typeof marked === 'undefined') {
+            loadMarked().then(() => {
+                if (preview.style.display === 'block') preview.innerHTML = renderMarkdown(textarea.value);
+            }).catch(err => console.error(err));
+        }
         tabs.querySelector('[data-mode="preview"]').classList.add('active');
     } else {
         textarea.style.display = '';
@@ -1177,14 +1207,16 @@ function loadData() {
 // レポート系データを必要になった時点で取得する（取得済みなら即解決）
 function loadReportDataOnce(keys) {
     const targets = keys.filter(k => !onDemandLoaded[k]);
-    if (targets.length === 0) return Promise.resolve();
-    return Promise.all(targets.map(key =>
+    // レポート本文は Markdown なので、変換ライブラリもここで一緒に読み込む。
+    // 読み込めなくても renderMarkdown が改行だけ変換して表示するため、失敗は握りつぶす
+    const markedReady = loadMarked().catch(err => console.error(err));
+    return Promise.all([markedReady, ...targets.map(key =>
         database.ref(key).once('value').then(snap => {
             const data = snap.val();
             state[key] = data ? Object.values(data) : [];
             onDemandLoaded[key] = true;
         })
-    ));
+    )]);
 }
 
 // 発注・スケジュール情報グループを開いた時にレポート系をまとめて取得・描画する
@@ -12180,6 +12212,10 @@ async function enablePushNotifications() {
 
 async function registerFcmToken() {
     const reg = swRegistration || await navigator.serviceWorker.ready;
+    // messaging SDK は通知を実際に使う時だけ読み込む（バージョンは index.html の他の Firebase SDK と揃える）
+    if (typeof firebase.messaging !== 'function') {
+        await loadScriptOnce('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+    }
     const messaging = firebase.messaging();
     const token = await messaging.getToken({
         vapidKey: PUSH_VAPID_KEY,
