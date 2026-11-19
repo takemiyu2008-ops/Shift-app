@@ -2835,6 +2835,25 @@ function deleteShiftOverride(id) {
     state.shiftOverrides = state.shiftOverrides.filter(o => o.id !== id);
     saveToFirebase('shiftOverrides', state.shiftOverrides);
 }
+// シフトID（通常シフトのID、または固定シフトの仮想ID `fx-{固定ID}-{日付}`）から、その日のシフト内容を引く。
+// 固定シフトはその日の単日上書きがあれば上書き後の時間を返す。見つからなければ null
+function resolveShiftRef(shiftId) {
+    if (!shiftId) return null;
+    if (shiftId.startsWith('fx-')) {
+        const parts = shiftId.split('-');
+        const fixedId = parts[1];
+        const date = parts.slice(2).join('-');
+        const fixed = state.fixedShifts.find(f => f.id === fixedId);
+        if (!fixed) return null;
+        const override = state.shiftOverrides.find(o => o.fixedShiftId === fixedId && o.date === date) || null;
+        const src = (override && !override.isDayOff) ? override : fixed;
+        return { isFixed: true, fixed, override, name: fixed.name, date, startHour: src.startHour, endHour: src.endHour, overnight: !!src.overnight };
+    }
+    const shift = state.shifts.find(x => x.id === shiftId);
+    if (!shift) return null;
+    return { isFixed: false, shift, name: shift.name, date: shift.date, startHour: shift.startHour, endHour: shift.endHour, overnight: !!shift.overnight };
+}
+
 function addChangeRequest(d) {
     const r = { id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), ...d };
     state.changeRequests.push(r);
@@ -2842,7 +2861,7 @@ function addChangeRequest(d) {
     trackUsage('request_change', d.applicant);
 
     // シフトの持ち主と管理者にメッセージを送信
-    const shift = state.shifts.find(s => s.id === d.originalShiftId);
+    const shift = resolveShiftRef(d.originalShiftId);
     if (shift) {
         const title = '🔄 シフト変更申請';
         const content = `${d.applicant}さんからシフト変更申請がありました。\nシフト: ${shift.date} ${formatTime(shift.startHour)}-${formatTime(shift.endHour)}\n変更後: ${d.newDate} ${formatTime(d.newStartHour)}-${formatTime(d.newEndHour)}\n理由: ${d.reason}`;
@@ -3906,11 +3925,32 @@ function approveRequest(type, id) {
     if (type === 'change') {
         const r = state.changeRequests.find(x => x.id === id);
         if (r) {
+            const ref = resolveShiftRef(r.originalShiftId);
+            if (!ref) {
+                // 対象が消えているのに「承認済み」にすると、反映されないまま申請だけ閉じてしまう
+                alert('対象のシフトが見つからないため承認できません。\nシフトが削除されている場合は、申請を却下してください。');
+                return;
+            }
             r.status = 'approved';
             r.approvedAt = processedAt;
             r.processedBy = processedBy;
-            const s = state.shifts.find(x => x.id === r.originalShiftId);
-            if (s) {
+            // 夜勤フラグを持たない旧形式の申請は、元のシフトの値を引き継ぐ
+            const newOvernight = r.newOvernight !== undefined ? !!r.newOvernight : ref.overnight;
+            if (ref.isFixed) {
+                // 固定シフトは毎週の定義を変えず、その日だけを単日上書きで変更する
+                const applyOverride = (data) => {
+                    if (ref.override) updateShiftOverride(ref.override.id, data);
+                    else addShiftOverride({ fixedShiftId: ref.fixed.id, date: ref.date, ...data });
+                };
+                if (r.newDate === ref.date) {
+                    applyOverride({ startHour: r.newStartHour, endHour: r.newEndHour, overnight: newOvernight, isDayOff: false });
+                } else {
+                    // 別の日へ移す: 元の日は休みにし、移動先に通常シフトを作る
+                    applyOverride({ startHour: ref.startHour, endHour: ref.endHour, overnight: ref.overnight, isDayOff: true });
+                    addShift({ date: r.newDate, name: ref.name, startHour: r.newStartHour, endHour: r.newEndHour, color: ref.fixed.color, overnight: newOvernight });
+                }
+            } else {
+                const s = ref.shift;
                 // 変更前の情報を保存
                 s.changeHistory = {
                     previousDate: s.date,
@@ -3923,6 +3963,7 @@ function approveRequest(type, id) {
                 s.date = r.newDate;
                 s.startHour = r.newStartHour;
                 s.endHour = r.newEndHour;
+                s.overnight = newOvernight;
             }
             saveToFirebase('shifts', state.shifts);
             saveToFirebase('changeRequests', state.changeRequests);
@@ -4708,9 +4749,10 @@ function renderAdminPanel() {
         const reqs = state.changeRequests.filter(r => r.status === 'pending');
         if (!reqs.length) { c.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">承認待ちなし</p>'; return; }
         reqs.forEach(r => {
-            const s = state.shifts.find(x => x.id === r.originalShiftId);
+            const s = resolveShiftRef(r.originalShiftId);
+            const targetText = s ? `${s.name} - ${s.date} ${formatTime(s.startHour)}-${formatTime(s.endHour)}${s.isFixed ? ' [固定]' : ''}` : '不明（シフトが見つかりません）';
             const card = document.createElement('div'); card.className = 'request-card';
-            card.innerHTML = `<div class="request-info"><h4>🔄 シフト変更申請</h4><p>申請者: ${r.applicant || '不明'}</p><p>対象シフト: ${s?.name || '不明'} - ${s?.date || '?'} ${s?.startHour || '?'}:00-${s?.endHour || '?'}:00</p><p>変更後: ${r.newDate} ${formatTime(r.newStartHour)}-${formatTime(r.newEndHour)}</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('change','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('change','${r.id}')">却下</button></div>`;
+            card.innerHTML = `<div class="request-info"><h4>🔄 シフト変更申請</h4><p>申請者: ${r.applicant || '不明'}</p><p>対象シフト: ${targetText}</p><p>変更後: ${r.newDate} ${formatTime(r.newStartHour)}-${formatTime(r.newEndHour)}${r.newOvernight ? '（夜勤・翌日まで）' : ''}</p><p>理由: ${r.reason}</p></div><div class="request-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('change','${r.id}')">承認</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('change','${r.id}')">却下</button></div>`;
             c.appendChild(card);
         });
     } else if (state.activeAdminTab === 'shiftSwaps') {
@@ -5101,22 +5143,7 @@ function renderMessages() {
             card.onclick = (e) => { if (e.target.tagName !== 'BUTTON') { m.read = true; saveToFirebase('messages', state.messages); updateMessageBar(); renderMessages(); } };
         } else {
             // シフト情報を取得（固定シフトの場合も対応）
-            let shiftInfo = null;
-            if (m.shiftId && m.shiftId.startsWith('fx-')) {
-                // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
-                const parts = m.shiftId.split('-');
-                const originalId = parts[1];
-                const dateStr = parts.slice(2).join('-');
-                const fixed = state.fixedShifts.find(f => f.id === originalId);
-                if (fixed) {
-                    shiftInfo = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour };
-                }
-            } else {
-                const s = state.shifts.find(x => x.id === m.shiftId);
-                if (s) {
-                    shiftInfo = { date: s.date, startHour: s.startHour, endHour: s.endHour };
-                }
-            }
+            const shiftInfo = resolveShiftRef(m.shiftId);
             const dateDisplay = shiftInfo?.date || '?';
             const timeDisplay = shiftInfo ? `${formatTime(shiftInfo.startHour)}-${formatTime(shiftInfo.endHour)}` : '?:00-?:00';
             card.innerHTML = `<div class="message-header"><span class="message-from">🤝 シフト交代依頼</span><span class="message-date">${formatDateTime(m.createdAt)}</span></div><div class="message-content"><strong>${m.fromEmployee}</strong>さんから、<strong>${m.targetEmployee}</strong>さんへの依頼<br>シフト: ${dateDisplay} ${timeDisplay}<br>${m.message}</div><div class="message-actions"><button class="btn btn-success btn-sm" onclick="approveRequest('swap','${m.id}')">交代する</button><button class="btn btn-danger btn-sm" onclick="rejectRequest('swap','${m.id}')">お断り</button></div>`;
@@ -5249,6 +5276,7 @@ function openChangeModal() {
     document.getElementById('changeDate').value = formatDate(new Date());
     document.getElementById('changeStart').value = 9;
     document.getElementById('changeEnd').value = 17;
+    document.getElementById('changeOvernight').checked = false;
     openModal(document.getElementById('changeModalOverlay'));
 }
 
@@ -5420,29 +5448,12 @@ function initEventListeners() {
     document.getElementById('changeCancelBtn').onclick = () => closeModal(document.getElementById('changeModalOverlay'));
     document.getElementById('changeModalOverlay').onclick = e => { if (e.target.id === 'changeModalOverlay') closeModal(document.getElementById('changeModalOverlay')); };
     document.getElementById('changeShiftSelect').onchange = e => {
-        const sid = e.target.value;
-        let shiftData = null;
-
-        if (sid.startsWith('fx-')) {
-            // 固定シフトの場合: fx-{originalId}-{dateStr} 形式
-            const parts = sid.split('-');
-            const originalId = parts[1];
-            const dateStr = parts.slice(2).join('-'); // 日付部分を結合
-            const fixed = state.fixedShifts.find(f => f.id === originalId);
-            if (fixed) {
-                shiftData = { date: dateStr, startHour: fixed.startHour, endHour: fixed.endHour };
-            }
-        } else {
-            const s = state.shifts.find(x => x.id === sid);
-            if (s) {
-                shiftData = { date: s.date, startHour: s.startHour, endHour: s.endHour };
-            }
-        }
-
+        const shiftData = resolveShiftRef(e.target.value);
         if (shiftData) {
             document.getElementById('changeDate').value = shiftData.date;
             document.getElementById('changeStart').value = shiftData.startHour;
             document.getElementById('changeEnd').value = shiftData.endHour;
+            document.getElementById('changeOvernight').checked = shiftData.overnight;
         }
     };
 
@@ -5674,8 +5685,9 @@ function initEventListeners() {
     document.getElementById('changeForm').onsubmit = e => {
         e.preventDefault();
         const applicant = document.getElementById('changeApplicant').value;
-        const d = { applicant, originalShiftId: document.getElementById('changeShiftSelect').value, newDate: document.getElementById('changeDate').value, newStartHour: +document.getElementById('changeStart').value, newEndHour: +document.getElementById('changeEnd').value, reason: document.getElementById('changeReason').value.trim() };
-        if (d.newStartHour >= d.newEndHour) { alert('終了時刻は開始時刻より後に'); return; }
+        const d = { applicant, originalShiftId: document.getElementById('changeShiftSelect').value, newDate: document.getElementById('changeDate').value, newStartHour: +document.getElementById('changeStart').value, newEndHour: +document.getElementById('changeEnd').value, newOvernight: document.getElementById('changeOvernight').checked, reason: document.getElementById('changeReason').value.trim() };
+        if (!d.newOvernight && d.newStartHour >= d.newEndHour) { alert('終了時刻は開始時刻より後に（夜勤の場合は「夜勤」にチェック）'); return; }
+        if (d.newOvernight && d.newStartHour <= d.newEndHour) { alert('夜勤は終了時刻を翌日の時刻に'); return; }
         addChangeRequest(d);
         closeModal(document.getElementById('changeModalOverlay'));
         document.getElementById('changeForm').reset();
